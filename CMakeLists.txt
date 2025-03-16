@@ -9,7 +9,6 @@ set(RUGP_GAME_PATH $ENV{RUGP_GAME_PATH})
 set(CMAKE_INSTALL_PREFIX "${RUGP_GAME_PATH}/")
 
 add_compile_options(/utf-8)
-add_compile_options(/EHs-)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 include_directories("${PROJECT_SOURCE_DIR}/Include")

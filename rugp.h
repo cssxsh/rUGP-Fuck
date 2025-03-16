@@ -3,43 +3,54 @@
 
 #include <stdafx.h>
 
-class RUGP_MODULE;
+struct MFC_MODULE;
 
 class CObjectEx;
-struct CRuntimeClassEx;
+class CRio;
+class CVisual;
+
+class CRioMsg;
 struct CMemberInfo;
+struct CRuntimeClassMsg;
 
 class CPmArchive;
+class COceanNode;
 
-class RUGP_MODULE final
+class CCommandRef;
+class CVmCommand;
+class CVmSync;
+class CVmImage;
+class CVmRet;
+class CVmSound;
+class CVmMsg;
+class CVmCall;
+class CVmGenericMsg;
+class CVmLabel;
+class CVmFlagOp;
+class CVmBlt;
+class CVmJump;
+
+struct CObject_vtbl;
+struct CObjectEx_vtbl;
+struct CRio_vtbl;
+struct CCommandRef_vtbl;
+
+struct MFC_MODULE
 {
-public:
-    explicit RUGP_MODULE(HINSTANCE hInstance);
-    ~RUGP_MODULE();
-
-    const AFX_EXTENSION_MODULE* GetNative() const;
-    LPCSTR GetVersion() const;
-    LPCSTR GetMfcVersion() const;
-
-    CPmArchive* WINAPIV CreateLoadPmArchive(CFile*, SIZE_T = 0x00010000) const;
-    CPmArchive* WINAPIV CreateSavePmArchive(CFile*, SIZE_T = 0x00010000) const;
-    void WINAPIV DestroyPmArchive(CPmArchive*, BOOL = FALSE) const;
-
-protected:
-    typedef BOOL (AFXAPI *LPAfxInitExtensionModule)(AFX_EXTENSION_MODULE&, HMODULE hMod);
-    typedef void (AFXAPI *LPAfxTermExtensionModule)(AFX_EXTENSION_MODULE&, BOOL bAll);
-    typedef CPmArchive* (WINAPIV *LPCreatePmArchive)(CFile*, SIZE_T);
-    typedef void (WINAPIV *LPDestroyPmArchive)(CPmArchive*, BOOL);
-
-    int fetch();
-
-    HMODULE mfc = nullptr;
-    int mfc_version = 0x0000;
-    AFX_EXTENSION_MODULE native = {};
+    HMODULE native;
+    int version;
+    BOOL unicode;
 };
+
+MFC_MODULE GetMfc();
+
+LPCSTR GetMfcVersion();
+
+LPCSTR GetRugpVersion();
 
 #define DECLARE_DYNAMIC_EX(class_name) \
 public: \
+    static const CRuntimeClass* GetClass##class_name(); \
     virtual CRuntimeClass* GetRuntimeClass() const;
 
 class CObjectEx : public CObject
@@ -50,29 +61,58 @@ public:
     virtual void Serialize(CPmArchive&) = 0;
 };
 
-struct CRuntimeClassEx : CRuntimeClass
+#define DECLARE_DYNAMIC_RIO(class_name) \
+public: \
+    static const CRuntimeClass* GetClass##class_name(); \
+    virtual CRuntimeClass* GetRuntimeClass() const;
+
+class CRio : public CObjectEx
 {
-    struct Module
-    {
-        LPCSTR name;
-        LPCSTR file;
-        LPCSTR version;
-    };
+public:
+    DECLARE_DYNAMIC_RIO(CRio)
 
-    CMemberInfo* m_pMemberInfo;
-    void* field_001C; // TODO CRioMsgEntry
-    DWORD field_0020;
-    const Module* m_pModule;
-    CObjectEx* (WINAPIV *m_pfnPlacementCreate)(CObjectEx*);
+    COceanNode* m_pNode;
+    WORD m_wStyle;
 
-    explicit CRuntimeClassEx(const CRuntimeClass& clazz) : CRuntimeClass(clazz)
-    {
-        m_pMemberInfo = nullptr;
-        field_001C = nullptr;
-        field_0020 = 0;
-        m_pModule = nullptr;
-        m_pfnPlacementCreate = nullptr;
-    }
+    virtual LRESULT QueryInterface(LPCSTR, LPVOID*) = 0;
+    virtual DWORD AddRef() = 0;
+    virtual DWORD Release() = 0;
+    virtual BOOL NewObjectConstruct(LPCSTR) = 0;
+    virtual void SerializeUserCondition(CPmArchive&) = 0;
+};
+
+class CVisual : public CRio
+{
+public:
+    DECLARE_DYNAMIC_RIO(CVisual)
+};
+
+// struct CRuntimeClassRio : CRuntimeClassEx
+// {
+//     LPCSTR m_lpszDesc;
+//     DWORD field_0034;
+//     DWORD field_0038;
+//     DWORD field_003C;
+//     DWORD field_0040;
+//
+//     explicit CRuntimeClassRio(const CRuntimeClass& clazz, const LPCSTR description) : CRuntimeClassEx(clazz)
+//     {
+//         m_lpszDesc = description;
+//         field_0034 = 0;
+//         field_0038 = 0;
+//         field_003C = 0;
+//         field_0040 = 0;
+//     }
+// };
+
+class CRioMsg
+{
+public:
+    CRuntimeClassMsg* m_pRTC;
+    DWORD field_0004;
+    CPmArchive* m_pArchive;
+    COceanNode* m_pNode;
+    DWORD field_0010;
 };
 
 struct CMemberInfo
@@ -82,14 +122,233 @@ struct CMemberInfo
     DWORD m_dwOffset;
 };
 
+struct CRuntimeClassMsg
+{
+    LPCSTR m_lpszClassName;
+    CMemberInfo* m_pParamArray;
+    SIZE_T m_nSizeOfMsg;
+    DWORD m_dwFlags;
+    CRuntimeClassMsg* m_pNext;
+};
+
 class CPmArchive
 {
 protected:
-    CPmArchive(CFile*, UINT, INT, LPVOID);
     ~CPmArchive() = default;
 
+    typedef CPmArchive* (WINAPIV *LPCreatePmArchive)(CFile*, SIZE_T);
+    typedef void (WINAPIV *LPDestroyPmArchive)(CPmArchive*, BOOL);
+
 public:
-     virtual LONG Seek(LONG, UINT) = 0;
+    virtual LONG Seek(LONG, UINT) = 0;
+
+    static CPmArchive* WINAPIV CreateLoadPmArchive(CFile*, SIZE_T = 0x00010000);
+    static CPmArchive* WINAPIV CreateSavePmArchive(CFile*, SIZE_T = 0x00010000);
+    static void WINAPIV DestroyPmArchive(CPmArchive*, BOOL);
+};
+
+class COceanNode
+{
+public:
+    struct POS
+    {
+        BOOL m_bNext;
+        INT m_nIndex;
+    };
+
+    struct Children
+    {
+        UINT m_nCount;
+        COceanNode* m_pBucket[0x0C];
+    };
+
+    CRio* m_pObject;
+    COceanNode* m_pNext;
+    CString m_strName;
+    COceanNode* m_pParent;
+    Children* m_pChildren;
+    CRuntimeClass* m_pRCT;
+    UINT m_nRefCount;
+    DWORD m_dwFlags;
+    DWORD m_dwResAddr;
+    DWORD m_dwResSize;
+    DWORD field_0028;
+    DWORD field_002C; // CObject
+
+protected:
+    ~COceanNode() = default;
+
+    typedef COceanNode* (WINAPIV *LPGetRoot)();
+
+public:
+    // CRio* __GetPointer() const;
+    // BOOL IsInterface(LPCSTR) const;
+    // BOOL GetObjectTimeStamp(FILETIME&) const;
+    // bool IsRoot() const;
+    // INT GetCount() const;
+    // INT GetCachedCount() const;
+    // COceanNode* GetNextAssocRef(POS&, CString&) const;
+
+    static const COceanNode* GetRoot();
+    static const COceanNode* GetNull();
+};
+
+class CCommandRef : public CRio
+{
+public:
+    DECLARE_DYNAMIC_RIO(CCommandRef)
+
+    virtual CVmCommand* GetNextCommand() = 0;
+};
+
+class CVmCommand : public CObjectEx
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmCommand)
+
+    CVmCommand* m_pNext;
+    DWORD m_dwFlags;
+};
+
+class CVmSync : public CVmCommand
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmSync)
+
+    COceanNode* m_pNode; // CRio
+    DWORD field_0010; // BYTE
+    DWORD field_0014;
+};
+
+class CVmImage : public CVmCommand
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmImage)
+
+    WORD field_000C;
+    WORD field_000E;
+    DWORD field_0010; // CVmVar*
+    DWORD field_0014; // CVmVar*
+    DWORD field_0018; // BYTE
+};
+
+class CVmRet : public CVmCommand
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmRet)
+};
+
+class CVmSound : public CVmCommand
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmSound)
+
+    COceanNode* m_pPmSoundNode; // CPmSound
+    DWORD field_0010;
+    DWORD field_0014;
+};
+
+class CVmMsg : public CVmCommand
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmMsg)
+
+    COceanNode* m_pMessBoxNode; // CMessBox
+    COceanNode* m_pCRioNode; // COptimizedObs
+    CHAR m_area[];
+};
+
+class CVmCall : public CVmCommand
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmCall)
+
+    COceanNode* m_pRsaNode; // CRsa
+    DWORD m_nCount;
+    DWORD m_area[];
+};
+
+class CVmGenericMsg : public CVmCommand
+{
+public:
+    struct Part
+    {
+        CMemberInfo* m_pMemberInfo;
+        COceanNode* m_pNode;
+    };
+
+    DECLARE_DYNAMIC_EX(CVmGenericMsg)
+
+    CRioMsg* m_pMSG;
+    DWORD field_0010; // CVmVar
+    DWORD field_0014;
+    DWORD m_nCount;
+    Part m_area[];
+};
+
+class CVmLabel : public CVmCommand
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmLabel)
+
+    COceanNode* m_pCLabelNode; // CLabel
+};
+
+class CVmFlagOp : public CVmCommand
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmFlagOp)
+
+    DWORD field_000C; // CVmVar
+    DWORD field_0010; // CVmVar
+    COceanNode* m_pCCommandRefNode; // CCommandRef
+    WORD field_001C;
+};
+
+class CVmBlt : public CVmCommand
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmBlt)
+
+    DWORD field_000C; // Position
+    DWORD field_0010; // CVmVar
+    DWORD field_0014; // CVmVar
+};
+
+class CVmJump : public CVmCommand
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmJump)
+
+    COceanNode* m_pCCommandRefNode; // CCommandRef
+};
+
+struct CObject_vtbl
+{
+    CRuntimeClass* (__thiscall *GetRuntimeClass)(CObject*);
+    void (__thiscall *Destructor)(CObject*, DWORD);
+    void (__thiscall *Serialize)(CObject*, CArchive*);
+    void (__thiscall *AssertValid)(CObject*);
+    void (__thiscall *Dump)(CObject*, CDumpContext*);
+};
+
+struct CObjectEx_vtbl : CObject_vtbl
+{
+    void (__thiscall *Serialize)(CObjectEx*, CPmArchive*);
+};
+
+struct CRio_vtbl : CObjectEx_vtbl
+{
+    LRESULT (__thiscall *QueryInterface)(CRio*, LPCSTR, LPCSTR*);
+    DWORD (__thiscall *AddRef)(CRio*);
+    DWORD (__thiscall *Release)(CRio*);
+    LRESULT (__thiscall *NewObjectConstruct)(CRio*);
+    void (__thiscall *SerializeUserCondition)(CRio*, CPmArchive*);
+};
+
+struct CCommandRef_vtbl : CRio_vtbl
+{
+    CVmCommand* (__thiscall *GetNextCommand)(CCommandRef*);
 };
 
 #endif // RUGP_H
