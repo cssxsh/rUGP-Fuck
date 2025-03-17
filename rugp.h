@@ -87,24 +87,6 @@ public:
     DECLARE_DYNAMIC_RIO(CVisual)
 };
 
-// struct CRuntimeClassRio : CRuntimeClassEx
-// {
-//     LPCSTR m_lpszDesc;
-//     DWORD field_0034;
-//     DWORD field_0038;
-//     DWORD field_003C;
-//     DWORD field_0040;
-//
-//     explicit CRuntimeClassRio(const CRuntimeClass& clazz, const LPCSTR description) : CRuntimeClassEx(clazz)
-//     {
-//         m_lpszDesc = description;
-//         field_0034 = 0;
-//         field_0038 = 0;
-//         field_003C = 0;
-//         field_0040 = 0;
-//     }
-// };
-
 class CRioMsg
 {
 public:

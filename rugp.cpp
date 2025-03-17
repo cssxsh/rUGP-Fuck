@@ -6,15 +6,15 @@ MFC_MODULE GetMfc()
     MFC_MODULE module = {};
     module.version = 0x0600;
     module.unicode = FALSE;
-    module.native = GetModuleHandleA("MFC42.dll");
+    module.native = GetModuleHandleA("MFC42");
     if (module.native != nullptr) return module;
     module.version = 0x0C00;
     module.unicode = FALSE;
-    module.native = GetModuleHandleA("MFC120.dll");
+    module.native = GetModuleHandleA("MFC120");
     if (module.native != nullptr) return module;
     module.version = 0x0E00;
     module.unicode = TRUE;
-    module.native = GetModuleHandleA("MFC140U.dll");
+    module.native = GetModuleHandleA("MFC140U");
     if (module.native != nullptr) return module;
 
     return {};
@@ -46,7 +46,7 @@ LPCSTR GetRugpVersion()
     {
     case 0x0600:
         {
-            const auto rvmm = GetModuleHandleA("rvmm.dll");
+            const auto rvmm = GetModuleHandleA("rvmm");
             auto version = reinterpret_cast<LPCSTR>(GetProcAddress(rvmm, name));
             if (version != nullptr) return version;
             version = reinterpret_cast<LPCSTR>(GetProcAddress(rvmm, MAKEINTRESOURCE(596)));
@@ -55,15 +55,16 @@ LPCSTR GetRugpVersion()
         break;
     case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
+            const auto UnivUI = GetModuleHandleA("UnivUI");
             auto version = reinterpret_cast<LPCSTR>(GetProcAddress(UnivUI, name));
             if (version != nullptr) return version;
             version = reinterpret_cast<LPCSTR>(GetProcAddress(UnivUI, MAKEINTRESOURCE(1100)));
             if (version != nullptr) return version;
         }
         break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO class CrUGP _GLOBAL_rUGP
+        return nullptr;
     default:
         break;
     }
@@ -78,26 +79,18 @@ const CRuntimeClass* CObjectEx::GetClassCObjectEx()
     switch (mfc.version)
     {
     case 0x0600:
+    case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
+            const auto UnivUI = GetModuleHandleA("UnivUI");
             auto address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
             if (address != nullptr) return address;
             address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(837)));
             if (address != nullptr) return address;
         }
         break;
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
-            auto address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            // TODO
-            // proc = reinterpret_cast<LPCreateLoadPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            // if (proc != nullptr) return proc(file, size);
-        }
-        break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO public: static struct CRtcEx CObjEx::classCObjEx
+        return nullptr;
     default:
         break;
     }
@@ -112,26 +105,18 @@ const CRuntimeClass* CRio::GetClassCRio()
     switch (mfc.version)
     {
     case 0x0600:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
-            auto address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(837)));
-            if (address != nullptr) return address;
-        }
-        break;
     case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
+            const auto UnivUI = GetModuleHandleA("UnivUI");
             auto address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
             if (address != nullptr) return address;
-            // TODO
-            // proc = reinterpret_cast<LPCreateLoadPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            // if (proc != nullptr) return proc(file, size);
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(843)));
+            if (address != nullptr) return address;
         }
         break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO public: static struct CRioRTC CRio::classCRio
+        return nullptr;
     default:
         break;
     }
@@ -146,26 +131,18 @@ const CRuntimeClass* CVisual::GetClassCVisual()
     switch (mfc.version)
     {
     case 0x0600:
+    case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
+            const auto UnivUI = GetModuleHandleA("UnivUI");
             auto address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
             if (address != nullptr) return address;
             address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(867)));
             if (address != nullptr) return address;
         }
         break;
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
-            auto address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            // TODO
-            // proc = reinterpret_cast<LPCreateLoadPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            // if (proc != nullptr) return proc(file, size);
-        }
-        break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO public: static struct CRioRTC CVisual::classCVisual
+        return nullptr;
     default:
         break;
     }
@@ -180,26 +157,18 @@ CPmArchive* CPmArchive::CreateLoadPmArchive(CFile* file, const SIZE_T size)
     switch (mfc.version)
     {
     case 0x0600:
+    case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
+            const auto UnivUI = GetModuleHandleA("UnivUI");
             auto proc = reinterpret_cast<LPCreatePmArchive>(GetProcAddress(UnivUI, name));
             if (proc != nullptr) return proc(file, size);
             proc = reinterpret_cast<LPCreatePmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
             if (proc != nullptr) return proc(file, size);
         }
         break;
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
-            auto proc = reinterpret_cast<LPCreatePmArchive>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(file, size);
-            // TODO
-            // proc = reinterpret_cast<LPCreateLoadPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            // if (proc != nullptr) return proc(file, size);
-        }
-        break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO public: static class CPmArchive * __cdecl CPmArchive::CreateLoadPmArchive(class CFile *,unsigned long)
+        return nullptr;
     default:
         break;
     }
@@ -214,26 +183,18 @@ CPmArchive* CPmArchive::CreateSavePmArchive(CFile* file, const SIZE_T size)
     switch (mfc.version)
     {
     case 0x0600:
+    case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
+            const auto UnivUI = GetModuleHandleA("UnivUI");
             auto proc = reinterpret_cast<LPCreatePmArchive>(GetProcAddress(UnivUI, name));
             if (proc != nullptr) return proc(file, size);
             proc = reinterpret_cast<LPCreatePmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(410)));
             if (proc != nullptr) return proc(file, size);
         }
         break;
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
-            auto proc = reinterpret_cast<LPCreatePmArchive>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(file, size);
-            // TODO
-            // proc = reinterpret_cast<LPCreateLoadPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            // if (proc != nullptr) return proc(file, size);
-        }
-        break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO public: static class CPmArchive * __cdecl CPmArchive::CreateSavePmArchive(class CFile *,unsigned long)
+        return nullptr;
     default:
         break;
     }
@@ -249,26 +210,17 @@ void CPmArchive::DestroyPmArchive(CPmArchive* archive, const BOOL bFlag)
     switch (mfc.version)
     {
     case 0x0600:
+    case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
+            const auto UnivUI = GetModuleHandleA("UnivUI");
             auto proc = reinterpret_cast<LPDestroyPmArchive>(GetProcAddress(UnivUI, name));
             if (proc != nullptr) return proc(archive, bFlag);
             proc = reinterpret_cast<LPDestroyPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(426)));
             if (proc != nullptr) return proc(archive, bFlag);
         }
         break;
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
-            auto proc = reinterpret_cast<LPDestroyPmArchive>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(archive, bFlag);
-            // TODO
-            // proc = reinterpret_cast<LPCreateLoadPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            // if (proc != nullptr) return proc(archive, bFlag);
-        }
-        break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO public: static void __cdecl CPmArchive::DestroyPmArchive(class CPmArchive *,int)
     default:
         break;
     }
@@ -281,26 +233,18 @@ const COceanNode* COceanNode::GetRoot()
     switch (mfc.version)
     {
     case 0x0600:
+    case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
+            const auto UnivUI = GetModuleHandleA("UnivUI");
             auto proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, name));
             if (proc != nullptr) return proc();
             proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, MAKEINTRESOURCE(500)));
             if (proc != nullptr) return proc();
         }
         break;
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
-            auto proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc();
-            // TODO
-            // proc = reinterpret_cast<LPCreateLoadPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            // if (proc != nullptr) return proc(file, size);
-        }
-        break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO public: static class COceanNode * __cdecl COceanNode::GetRoot(void)
+        return nullptr;
     default:
         break;
     }
@@ -314,26 +258,18 @@ const COceanNode* COceanNode::GetNull()
     switch (mfc.version)
     {
     case 0x0600:
+    case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
+            const auto UnivUI = GetModuleHandleA("UnivUI");
             auto address = reinterpret_cast<COceanNode*>(GetProcAddress(UnivUI, name));
             if (address != nullptr) return address;
             address = reinterpret_cast<COceanNode*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(784)));
             if (address != nullptr) return address;
         }
         break;
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
-            auto address = reinterpret_cast<COceanNode*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            // TODO
-            // proc = reinterpret_cast<LPCreateLoadPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            // if (proc != nullptr) return proc(file, size);
-        }
-        break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO class CNullEntry _GLOBAL_EnNull
+        return nullptr;
     default:
         break;
     }
@@ -348,26 +284,18 @@ const CRuntimeClass* CCommandRef::GetClassCCommandRef()
     switch (mfc.version)
     {
     case 0x0600:
+    case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("Vm60.dll");
+            const auto UnivUI = GetModuleHandleA("Vm60");
             auto address = reinterpret_cast<const CRuntimeClass*>(GetProcAddress(UnivUI, name));
             if (address != nullptr) return address;
             address = reinterpret_cast<const CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(168)));
             if (address != nullptr) return address;
         }
         break;
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
-            auto address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            // TODO
-            // proc = reinterpret_cast<LPCreateLoadPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            // if (proc != nullptr) return proc(file, size);
-        }
-        break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO public: static struct CRioRTC CCommandRef::classCCommandRef
+        return nullptr;
     default:
         break;
     }
@@ -382,26 +310,18 @@ const CRuntimeClass* CVmMsg::GetClassCVmMsg()
     switch (mfc.version)
     {
     case 0x0600:
+    case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("Vm60.dll");
+            const auto UnivUI = GetModuleHandleA("Vm60");
             auto address = reinterpret_cast<const CRuntimeClass*>(GetProcAddress(UnivUI, name));
             if (address != nullptr) return address;
             address = reinterpret_cast<const CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(193)));
             if (address != nullptr) return address;
         }
         break;
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI.dll");
-            auto address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            // TODO
-            // proc = reinterpret_cast<LPCreateLoadPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            // if (proc != nullptr) return proc(file, size);
-        }
-        break;
-    // case -0x0E00:
-    //     return "14.0 Unicode";
+    case 0x0E00:
+        // TODO public: static struct CRtcEx CVmMsg::classCVmMsg
+        return nullptr;
     default:
         break;
     }
