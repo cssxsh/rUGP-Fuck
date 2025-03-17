@@ -7,7 +7,6 @@ struct MFC_MODULE;
 
 class CObjectEx;
 class CRio;
-class CVisual;
 
 class CRioMsg;
 struct CMemberInfo;
@@ -32,8 +31,8 @@ class CVmJump;
 
 struct CObject_vtbl;
 struct CObjectEx_vtbl;
-struct CRio_vtbl;
-struct CCommandRef_vtbl;
+// struct CRio_vtbl;
+// struct CCommandRef_vtbl;
 
 struct MFC_MODULE
 {
@@ -74,17 +73,11 @@ public:
     COceanNode* m_pNode;
     WORD m_wStyle;
 
-    virtual LRESULT QueryInterface(LPCSTR, LPVOID*) = 0;
-    virtual DWORD AddRef() = 0;
-    virtual DWORD Release() = 0;
-    virtual BOOL NewObjectConstruct(LPCSTR) = 0;
-    virtual void SerializeUserCondition(CPmArchive&) = 0;
-};
-
-class CVisual : public CRio
-{
-public:
-    DECLARE_DYNAMIC_RIO(CVisual)
+    // virtual LRESULT QueryInterface(LPCSTR, LPVOID*) = 0;
+    // virtual DWORD AddRef() = 0;
+    // virtual DWORD Release() = 0;
+    // virtual BOOL NewObjectConstruct(LPCSTR) = 0;
+    // virtual void SerializeUserCondition(CPmArchive&) = 0;
 };
 
 class CRioMsg
@@ -180,7 +173,7 @@ class CCommandRef : public CRio
 public:
     DECLARE_DYNAMIC_RIO(CCommandRef)
 
-    virtual CVmCommand* GetNextCommand() = 0;
+    // virtual CVmCommand* GetNextCommand() = 0;
 };
 
 class CVmCommand : public CObjectEx
@@ -319,16 +312,7 @@ struct CObjectEx_vtbl : CObject_vtbl
     void (__thiscall *Serialize)(CObjectEx*, CPmArchive*);
 };
 
-struct CRio_vtbl : CObjectEx_vtbl
-{
-    LRESULT (__thiscall *QueryInterface)(CRio*, LPCSTR, LPCSTR*);
-    DWORD (__thiscall *AddRef)(CRio*);
-    DWORD (__thiscall *Release)(CRio*);
-    LRESULT (__thiscall *NewObjectConstruct)(CRio*);
-    void (__thiscall *SerializeUserCondition)(CRio*, CPmArchive*);
-};
-
-struct CCommandRef_vtbl : CRio_vtbl
+struct CCommandRef_vtbl
 {
     CVmCommand* (__thiscall *GetNextCommand)(CCommandRef*);
 };

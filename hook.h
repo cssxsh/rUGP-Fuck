@@ -119,7 +119,7 @@ protected:
         FONTENUMPROCA lpProc;
         LPARAM lParam;
     };
-    
+
     static int WINAPI HookEnumFontFamiliesExA(HDC hdc, LPLOGFONTA lpLogFont, FONTENUMPROCA lpProc, LPARAM lParam,
                                               DWORD dwFlags);
 

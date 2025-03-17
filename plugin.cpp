@@ -126,7 +126,7 @@ CString GetUUID(const COceanNode* node)
 {
     auto path = CString();
     if (node == nullptr || node->m_pRCT == nullptr) return path;
-    path.Format("%s@%08X", node->m_pRCT->m_lpszClassName, node->m_dwResAddr);
+    path.Format("%s@%08X", node->m_pRCT->m_lpszClassName, node->m_dwResAddr % 0xA2FB6AD1u);
     return path;
 }
 
@@ -177,10 +177,26 @@ CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
     if (m_pVTBL == nullptr) return;
     m_pfnSerialize = reinterpret_cast<const CObjectEx_vtbl*>(m_pVTBL)->Serialize;
 
-    for (auto clazz = m_pClass; clazz != nullptr; clazz = clazz->m_pfnGetBaseClass())
+    if (std::strcmp(m_pClass->m_lpszClassName, "CResourceClipOnlyRegion") == 0) return;
+    const auto mfc = GetMfc();
+    for (auto clazz = pClass;
+         clazz != nullptr;
+         clazz = clazz->m_pfnGetBaseClass ? clazz->m_pfnGetBaseClass() : nullptr)
     {
         if (clazz != CCommandRef::GetClassCCommandRef()) continue;
-        m_pfnGetNextCommand = reinterpret_cast<const CCommandRef_vtbl*>(m_pVTBL)->GetNextCommand;
+        auto vtbl = reinterpret_cast<DWORD>(m_pVTBL);
+        switch (mfc.version)
+        {
+        case 0x0600:
+            vtbl += 0x002C;
+            break;
+        case 0x0C00:
+            vtbl += 0x0030;
+            break;
+        default:
+            break;
+        }
+        m_pfnGetNextCommand = reinterpret_cast<const CCommandRef_vtbl*>(vtbl)->GetNextCommand;
         break;
     }
 }
@@ -191,7 +207,7 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     if (hModule == nullptr) return FALSE;
     const auto proc = GetProcAddress(hModule, "PluginThisLibrary");
     if (proc == nullptr) return FALSE;
-    
+
     auto reg = GetProcAddress(hModule, "?RegistLibrarySupportRio@@YAXAAUAFX_EXTENSION_MODULE@@@Z");
     if (reg != nullptr)
     {
@@ -267,8 +283,9 @@ void CObjectProxy::DetachHook()
 }
 
 const CObject_vtbl* FASTCALL CObjectProxy::FindVirtualTable( // NOLINT(*-no-recursion)
-    const CRuntimeClass* const rtc, const FARPROC ctor)
+    const CRuntimeClass* const rtc, const FARPROC ctor, const int depth)
 {
+    if (depth >= 3) return nullptr;
     if (IsBadCodePtr(ctor)) return nullptr;
     const auto module = DetourGetContainingModule(const_cast<CRuntimeClass*>(rtc));
     if (DetourGetContainingModule(ctor) != module) return nullptr;
@@ -292,7 +309,7 @@ const CObject_vtbl* FASTCALL CObjectProxy::FindVirtualTable( // NOLINT(*-no-recu
         if (*reinterpret_cast<const BYTE*>(offset + 0x02) != 0xE8) continue;
         const auto jump = *reinterpret_cast<const INT*>(offset + 0x03);
         const auto next = reinterpret_cast<FARPROC>(offset + 0x07 + jump);
-        const auto vtbl = FindVirtualTable(rtc, next);
+        const auto vtbl = FindVirtualTable(rtc, next, depth + 1);
         if (vtbl != nullptr) return vtbl;
     }
 

@@ -72,7 +72,7 @@ protected:
     static std::map<std::string, CVmCommand*> COMMAND_MAP;
     static AFX_EXTENSION_MODULE* TEMP_MODULE;
 
-    static const CObject_vtbl* FASTCALL FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
+    static const CObject_vtbl* FASTCALL FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor, int depth = 0);
 
     static void WINAPIV HookSupportRio(AFX_EXTENSION_MODULE&);
 
