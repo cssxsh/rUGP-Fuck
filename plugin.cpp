@@ -169,8 +169,6 @@ CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
     m_pClass = pClass;
     m_pfnCreateObject = m_pClass->m_pfnCreateObject;
 
-    if (m_pClass == CVisual::GetClassCVisual()) return;
-
     if (m_pfnCreateObject)
     {
         m_pVTBL = FindVirtualTable(m_pClass, reinterpret_cast<FARPROC>(m_pfnCreateObject));
@@ -193,7 +191,24 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     if (hModule == nullptr) return FALSE;
     const auto proc = GetProcAddress(hModule, "PluginThisLibrary");
     if (proc == nullptr) return FALSE;
-    const auto module = reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
+    
+    auto reg = GetProcAddress(hModule, "?RegistLibrarySupportRio@@YAXAAUAFX_EXTENSION_MODULE@@@Z");
+    if (reg != nullptr)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&reinterpret_cast<PVOID&>(reg), HookSupportRio);
+        DetourTransactionCommit();
+    }
+    auto module = reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
+    if (reg != nullptr)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourDetach(&reinterpret_cast<PVOID&>(reg), HookSupportRio);
+        DetourTransactionCommit();
+        module = TEMP_MODULE;
+    }
     if (module == nullptr) return FALSE;
     for (auto clazz = module->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
     {
@@ -284,6 +299,11 @@ const CObject_vtbl* FASTCALL CObjectProxy::FindVirtualTable( // NOLINT(*-no-recu
     return nullptr;
 }
 
+void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
+{
+    TEMP_MODULE = &module;
+}
+
 void FASTCALL CObjectProxy::HookSerialize(CObjectEx* const ecx, DWORD /*edx*/, CPmArchive* const archive)
 {
     const auto name = ecx->GetRuntimeClass()->m_lpszClassName;
@@ -356,3 +376,5 @@ CVmCommand* FASTCALL CObjectProxy::Merge(const CVmCommand* ecx, cJSON* edx) // N
 std::map<std::string, CObjectProxy*> CObjectProxy::REF_MAP;
 
 std::map<std::string, CVmCommand*> CObjectProxy::COMMAND_MAP;
+
+AFX_EXTENSION_MODULE* CObjectProxy::TEMP_MODULE;

@@ -70,8 +70,11 @@ public:
 protected:
     static std::map<std::string, CObjectProxy*> REF_MAP;
     static std::map<std::string, CVmCommand*> COMMAND_MAP;
+    static AFX_EXTENSION_MODULE* TEMP_MODULE;
 
     static const CObject_vtbl* FASTCALL FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
+
+    static void WINAPIV HookSupportRio(AFX_EXTENSION_MODULE&);
 
     static void FASTCALL HookSerialize(CObjectEx* ecx, DWORD edx, CPmArchive* archive);
 
