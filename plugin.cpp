@@ -324,7 +324,7 @@ void CObjectProxy::DetachHook()
         while (p != nullptr)
         {
             const auto command = p;
-            p = pair.second->m_pNext;
+            p = p->m_pNext;
             free(command);
         }
     }
