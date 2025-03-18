@@ -152,7 +152,7 @@ CString GetGameName()
 
 cJSON* LoadTextData()
 {
-    CFile json(GetGameName() + ".json", CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate);
+    CFile json(GetGameName() + ".merge.json", CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate);
     const auto buffer = static_cast<LPSTR>(malloc(json.GetLength()));
     const auto data = json.Read(buffer, json.GetLength())
                           ? cJSON_Parse(buffer)
@@ -165,7 +165,7 @@ cJSON* LoadTextData()
 void SaveTextData(const cJSON*)
 {
     const auto buffer = cJSON_Print(TRANSLATION_DATA);
-    CFile json(GetGameName() + ".json", CFile::modeReadWrite);
+    CFile json(GetGameName() + ".merge.json", CFile::modeReadWrite);
     json.Write(buffer, strlen(buffer));
     cJSON_free(buffer);
 }
