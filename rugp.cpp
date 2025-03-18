@@ -200,6 +200,31 @@ void CPmArchive::DestroyPmArchive(CPmArchive* archive, const BOOL bFlag)
     }
 }
 
+CRio* COceanNode::Fetch() const
+{
+    const auto name = "?__GetPointer@COceanNode@@QBEPAVCRio@@XZ";
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            auto proc = reinterpret_cast<LPFetch>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return proc(this);
+            proc = reinterpret_cast<LPFetch>(GetProcAddress(UnivUI, MAKEINTRESOURCE(75)));
+            if (proc != nullptr) return proc(this);
+        }
+        break;
+    case 0x0E00:
+        // TODO public: class CRio * __thiscall COceanNode::__GetPointer(void)const
+        return nullptr;
+    default:
+        break;
+    }
+    return nullptr;
+}
+
 const COceanNode* COceanNode::GetRoot()
 {
     const auto name = "?GetRoot@COceanNode@@SAPAV1@XZ";
@@ -210,9 +235,9 @@ const COceanNode* COceanNode::GetRoot()
     case 0x0C00:
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
-            auto proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, name));
+            auto proc = reinterpret_cast<LPGetNode>(GetProcAddress(UnivUI, name));
             if (proc != nullptr) return proc();
-            proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, MAKEINTRESOURCE(500)));
+            proc = reinterpret_cast<LPGetNode>(GetProcAddress(UnivUI, MAKEINTRESOURCE(500)));
             if (proc != nullptr) return proc();
         }
         break;

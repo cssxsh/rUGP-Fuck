@@ -48,10 +48,6 @@ CString GetGameUUID();
 
 CString GetGameName();
 
-cJSON* LoadTextData();
-
-void SaveTextData(const cJSON*);
-
 class CObjectProxy final
 {
 public:
@@ -79,8 +75,19 @@ protected:
     static void FASTCALL HookSerialize(CObjectEx* ecx, DWORD edx, CPmArchive* archive);
 
     static CVmCommand* FASTCALL HookGetNextCommand(CCommandRef* ecx, DWORD edx);
+};
 
-    static CVmCommand* FASTCALL Merge(const CVmCommand* ecx, cJSON* edx);
+class COceanTreeIterator final
+{
+public:
+    explicit COceanTreeIterator(const COceanNode* root = COceanNode::GetRoot());
+    DWORD Level() const;
+    const COceanNode* Next();
+
+private:
+    const COceanNode* m_pNode;
+    DWORD m_nLevel;
+    std::map<const COceanNode*, WORD> m_pVisited;
 };
 
 #endif // PLUGIN_H

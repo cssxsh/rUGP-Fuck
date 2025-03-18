@@ -5,6 +5,12 @@
 #include "rugp.h"
 #include "hook.h"
 
+cJSON* LoadTextData();
+
+void SaveTextData(const cJSON*);
+
+CVmCommand* FASTCALL Merge(const CVmCommand* ecx, const cJSON* edx);
+
 static AFX_EXTENSION_MODULE R514783_PLUGIN = {FALSE, nullptr};
 
 static cJSON* TRANSLATION_DATA = nullptr;
@@ -125,8 +131,8 @@ LPCSTR WINAPIV GetPluginString(const DWORD /*param1*/, const DWORD /*param2*/)
 CString GetUUID(const COceanNode* node)
 {
     auto path = CString();
-    if (node == nullptr || node->m_pRCT == nullptr) return path;
-    path.Format("%s@%08X", node->m_pRCT->m_lpszClassName, node->m_dwResAddr % 0xA2FB6AD1u);
+    if (node == nullptr || node->m_pRTC == nullptr) return path;
+    path.Format("%s@%08X", node->m_pRTC->m_lpszClassName, node->m_dwResAddr % 0xA2FB6AD1u);
     return path;
 }
 
@@ -162,6 +168,55 @@ void SaveTextData(const cJSON*)
     CFile json(GetGameName() + ".json", CFile::modeReadWrite);
     json.Write(buffer, strlen(buffer));
     cJSON_free(buffer);
+}
+
+CVmCommand* FASTCALL Merge(const CVmCommand* ecx, cJSON* edx) // NOLINT(*-no-recursion)
+{
+    const auto pClassCVmMsg = CVmMsg::GetClassCVmMsg();
+    auto result = static_cast<CVmCommand*>(nullptr);
+    auto name = CString();
+    name.Format("%08X:%s", ecx->m_dwFlags & 0x000FFFFF, ecx->GetRuntimeClass()->m_lpszClassName);
+    // printf("Merge %s\n", static_cast<LPCSTR>(name));
+    if (ecx->GetRuntimeClass() == pClassCVmMsg)
+    {
+        const auto message = reinterpret_cast<const CVmMsg*>(ecx);
+        auto text = cJSON_GetObjectItem(edx, name);
+        if (cJSON_IsString(text))
+        {
+            const auto value = cJSON_GetStringValue(text, CP_SHIFT_JIS);
+            const auto size = pClassCVmMsg->m_nObjectSize + (strlen(value) + 0x04 & ~0x03);
+            const auto clone = static_cast<CVmMsg*>(malloc(size));
+            memcpy(clone, message, pClassCVmMsg->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
+            memcpy(clone->m_area, value, strlen(value) + 0x04 & ~0x03);
+            cJSON_free(value);
+            result = clone;
+        }
+        else
+        {
+            text = cJSON_CreateString(message->m_area, CP_SHIFT_JIS);
+            cJSON_AddItemToObject(edx, name, text);
+            const auto size = pClassCVmMsg->m_nObjectSize + (strlen(message->m_area) + 0x04 & ~0x03);
+            const auto clone = static_cast<CVmMsg*>(malloc(size));
+            memcpy(clone, message, size); // NOLINT(*-undefined-memory-manipulation)
+            result = clone;
+        }
+    }
+    else
+    {
+        // cJSON_AddItemToObject(edx, name, cJSON_CreateNull());
+        // TODO: size calc
+        const auto size = ecx->m_pNext
+                              ? reinterpret_cast<DWORD>(ecx->m_pNext) - reinterpret_cast<DWORD>(ecx)
+                              : pClassCVmMsg->m_nObjectSize;
+        const auto clone = static_cast<CVmMsg*>(malloc(size));
+        memcpy(clone, ecx, size); // NOLINT(*-undefined-memory-manipulation)
+
+        result = clone;
+    }
+
+    result->m_pNext = ecx->m_pNext ? Merge(ecx->m_pNext, edx) : nullptr;
+
+    return result;
 }
 
 CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
@@ -253,33 +308,27 @@ void CObjectProxy::DetachHook()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    for (const auto& ref : REF_MAP)
+    for (const auto& pair : REF_MAP)
     {
-        if (ref.second->m_pfnGetNextCommand)
+        if (pair.second->m_pfnGetNextCommand)
         {
-            printf("DetourDetach: %s::GetNextCommand\n", ref.second->m_pClass->m_lpszClassName);
-            DetourDetach(&reinterpret_cast<PVOID&>(ref.second->m_pfnGetNextCommand), HookGetNextCommand);
+            printf("DetourDetach: %s::GetNextCommand\n", pair.second->m_pClass->m_lpszClassName);
+            DetourDetach(&reinterpret_cast<PVOID&>(pair.second->m_pfnGetNextCommand), HookGetNextCommand);
         }
     }
     DetourTransactionCommit();
 
-    // TODO
-    // for (struct
-    //      {
-    //          POSITION pos = COMMAND_MAP.GetStartPosition();
-    //          CString key = AfxGetEmptyString();
-    //          CVmCommand* buffer = nullptr;
-    //      } status
-    //      ; status.pos
-    //      ; COMMAND_MAP.GetNextAssoc(status.pos, status.key, reinterpret_cast<LPVOID&>(status.buffer)))
-    // {
-    //     while (status.buffer != nullptr)
-    //     {
-    //         const auto command = status.buffer;
-    //         status.buffer = status.buffer->m_pNext;
-    //         free(command);
-    //     }
-    // }
+    for (const auto& pair : COMMAND_MAP)
+    {
+        auto p = pair.second;
+        while (p != nullptr)
+        {
+            const auto command = p;
+            p = pair.second->m_pNext;
+            free(command);
+        }
+    }
+    COMMAND_MAP.clear();
 }
 
 const CObject_vtbl* FASTCALL CObjectProxy::FindVirtualTable( // NOLINT(*-no-recursion)
@@ -343,55 +392,60 @@ CVmCommand* FASTCALL CObjectProxy::HookGetNextCommand(CCommandRef* const ecx, DW
     return value;
 }
 
-CVmCommand* FASTCALL CObjectProxy::Merge(const CVmCommand* ecx, cJSON* edx) // NOLINT(*-no-recursion)
-{
-    const auto pClassCVmMsg = CVmMsg::GetClassCVmMsg();
-    auto result = static_cast<CVmCommand*>(nullptr);
-    if (ecx->GetRuntimeClass() == pClassCVmMsg)
-    {
-        const auto message = reinterpret_cast<const CVmMsg*>(ecx);
-        auto name = CString();
-        name.Format("%08X", message->m_dwFlags & 0x000FFFFF);
-        auto text = cJSON_GetObjectItem(edx, name);
-        if (cJSON_IsString(text))
-        {
-            const auto value = cJSON_GetStringValue(text, CP_SHIFT_JIS);
-            const auto size = pClassCVmMsg->m_nObjectSize + (strlen(value) + 0x04 & ~0x03);
-            const auto clone = static_cast<CVmMsg*>(malloc(size));
-            memcpy(clone, message, pClassCVmMsg->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-            memcpy(clone->m_area, value, strlen(value) + 0x04 & ~0x03);
-            cJSON_free(value);
-            result = clone;
-        }
-        else
-        {
-            text = cJSON_CreateString(message->m_area, CP_SHIFT_JIS);
-            cJSON_AddItemToObject(edx, name, text);
-            const auto size = pClassCVmMsg->m_nObjectSize + (strlen(message->m_area) + 0x04 & ~0x03);
-            const auto clone = static_cast<CVmMsg*>(malloc(size));
-            memcpy(clone, message, size); // NOLINT(*-undefined-memory-manipulation)
-            result = clone;
-        }
-    }
-    else
-    {
-        // TODO: size calc
-        const auto size = ecx->m_pNext
-                              ? reinterpret_cast<DWORD>(ecx->m_pNext) - reinterpret_cast<DWORD>(ecx)
-                              : pClassCVmMsg->m_nObjectSize;
-        const auto clone = static_cast<CVmMsg*>(malloc(size));
-        memcpy(clone, ecx, size); // NOLINT(*-undefined-memory-manipulation)
-
-        result = clone;
-    }
-
-    result->m_pNext = ecx->m_pNext ? Merge(ecx->m_pNext, edx) : nullptr;
-
-    return result;
-}
-
 std::map<std::string, CObjectProxy*> CObjectProxy::REF_MAP;
 
 std::map<std::string, CVmCommand*> CObjectProxy::COMMAND_MAP;
 
 AFX_EXTENSION_MODULE* CObjectProxy::TEMP_MODULE;
+
+COceanTreeIterator::COceanTreeIterator(const COceanNode* root)
+{
+    m_pNode = root;
+    m_nLevel = root ? 1 : 0;
+}
+
+DWORD COceanTreeIterator::Level() const
+{
+    return m_nLevel;
+}
+
+const COceanNode* COceanTreeIterator::Next()
+{
+    const auto node = m_pNode;
+    if (node == nullptr) return nullptr;
+    constexpr auto empty = COceanNode::Children();
+    const auto null = COceanNode::GetNull();
+
+    for (auto root = m_pNode; root && m_nLevel; root = root->m_pParent, m_nLevel--)
+    {
+        auto mask = static_cast<WORD>(0x0000);
+        const auto visited = m_pVisited[root];
+
+        mask = static_cast<WORD>(0x0001);
+        for (const auto child : (root->m_pChildren ? root->m_pChildren : &empty)->m_pBucket)
+        {
+            if (child == nullptr) continue;
+            if (child == null) continue;
+            mask <<= 0x01;
+            if (visited & mask) continue;
+            m_pNode = child;
+            m_nLevel++;
+            m_pVisited[root] = visited | mask;
+
+            return node;
+        }
+
+        if (root->m_pNext == nullptr) continue;
+        if (root->m_pNext == null) continue;
+        mask = static_cast<WORD>(0x8000);
+        if (visited & mask) continue;
+        m_pNode = root->m_pNext;
+        m_pVisited[root] = visited | mask;
+
+        return node;
+    }
+
+    m_pNode = nullptr;
+    m_nLevel = 0;
+    return nullptr;
+}

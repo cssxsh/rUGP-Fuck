@@ -31,8 +31,7 @@ class CVmJump;
 
 struct CObject_vtbl;
 struct CObjectEx_vtbl;
-// struct CRio_vtbl;
-// struct CCommandRef_vtbl;
+struct CCommandRef_vtbl;
 
 struct MFC_MODULE
 {
@@ -142,7 +141,7 @@ public:
     CString m_strName;
     COceanNode* m_pParent;
     Children* m_pChildren;
-    CRuntimeClass* m_pRCT;
+    CRuntimeClass* m_pRTC;
     UINT m_nRefCount;
     DWORD m_dwFlags;
     DWORD m_dwResAddr;
@@ -153,16 +152,11 @@ public:
 protected:
     ~COceanNode() = default;
 
-    typedef COceanNode* (WINAPIV *LPGetRoot)();
+    typedef CRio* (__thiscall *LPFetch)(const COceanNode*);
+    typedef COceanNode* (WINAPIV *LPGetNode)();
 
 public:
-    // CRio* __GetPointer() const;
-    // BOOL IsInterface(LPCSTR) const;
-    // BOOL GetObjectTimeStamp(FILETIME&) const;
-    // bool IsRoot() const;
-    // INT GetCount() const;
-    // INT GetCachedCount() const;
-    // COceanNode* GetNextAssocRef(POS&, CString&) const;
+    CRio* Fetch() const;
 
     static const COceanNode* GetRoot();
     static const COceanNode* GetNull();
