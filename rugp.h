@@ -7,6 +7,7 @@ struct MFC_MODULE;
 
 class CObjectEx;
 class CRio;
+class CVisual;
 
 class CRioMsg;
 struct CMemberInfo;
@@ -31,6 +32,7 @@ class CVmJump;
 
 struct CObject_vtbl;
 struct CObjectEx_vtbl;
+struct CVisual_vtbl;
 struct CCommandRef_vtbl;
 
 struct MFC_MODULE
@@ -77,6 +79,12 @@ public:
     // virtual DWORD Release() = 0;
     // virtual BOOL NewObjectConstruct(LPCSTR) = 0;
     // virtual void SerializeUserCondition(CPmArchive&) = 0;
+};
+
+class CVisual : public CRio
+{
+public:
+    DECLARE_DYNAMIC_RIO(CVisual)
 };
 
 class CRioMsg
@@ -308,6 +316,11 @@ struct CObject_vtbl
 struct CObjectEx_vtbl : CObject_vtbl
 {
     void (__thiscall *Serialize)(CObjectEx*, CPmArchive*);
+};
+
+struct CVisual_vtbl : CObject_vtbl
+{
+    void (__thiscall *Serialize)(CVisual*, CPmArchive*);
 };
 
 struct CCommandRef_vtbl

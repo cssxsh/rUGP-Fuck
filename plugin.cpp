@@ -238,36 +238,47 @@ CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
 {
     m_pClass = pClass;
     m_pfnCreateObject = m_pClass->m_pfnCreateObject;
-
-    if (m_pfnCreateObject)
-    {
-        m_pVTBL = FindVirtualTable(m_pClass, reinterpret_cast<FARPROC>(m_pfnCreateObject));
-    }
-
+    if (m_pfnCreateObject == nullptr) return;
+    m_pVTBL = FindVirtualTable(m_pClass, reinterpret_cast<FARPROC>(m_pfnCreateObject));
     if (m_pVTBL == nullptr) return;
-    m_pfnSerialize = reinterpret_cast<const CObjectEx_vtbl*>(m_pVTBL)->Serialize;
-
     if (std::strcmp(m_pClass->m_lpszClassName, "CResourceClipOnlyRegion") == 0) return;
+    if (std::strcmp(m_pClass->m_lpszClassName, "CRsa") == 0) printf("...\n");
+
     const auto mfc = GetMfc();
     for (auto clazz = pClass;
          clazz != nullptr;
          clazz = clazz->m_pfnGetBaseClass ? clazz->m_pfnGetBaseClass() : nullptr)
     {
-        if (clazz != CCommandRef::GetClassCCommandRef()) continue;
-        auto vtbl = reinterpret_cast<DWORD>(m_pVTBL);
-        switch (mfc.version)
+        // printf("%s %08X\n", clazz->m_lpszClassName, *reinterpret_cast<const DWORD*>(clazz->m_lpszClassName));
+        switch (*reinterpret_cast<const DWORD*>(clazz->m_lpszClassName))
         {
-        case 0x0600:
-            vtbl += 0x002C;
-            break;
-        case 0x0C00:
-            vtbl += 0x0030;
-            break;
+        case 0x6D6F4343u: // CCommandRef
+            if (clazz != CCommandRef::GetClassCCommandRef()) continue;
+            {
+                auto vtbl = reinterpret_cast<DWORD>(m_pVTBL);
+                switch (mfc.version)
+                {
+                case 0x0600:
+                    vtbl += 0x002C;
+                    break;
+                case 0x0C00:
+                    vtbl += 0x0030;
+                    break;
+                default:
+                    break;
+                }
+                m_pfnGetNextCommand = reinterpret_cast<const CCommandRef_vtbl*>(vtbl)->GetNextCommand;
+            }
+            return;
+        case 0x73695643u: // CVisual
+            if (clazz != CVisual::GetClassCVisual()) continue;
+            {
+                m_pfnSerialize = reinterpret_cast<const CVisual_vtbl*>(m_pVTBL)->Serialize;
+            }
+            return;
         default:
             break;
         }
-        m_pfnGetNextCommand = reinterpret_cast<const CCommandRef_vtbl*>(vtbl)->GetNextCommand;
-        break;
     }
 }
 
@@ -308,12 +319,19 @@ void CObjectProxy::AttachHook()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    for (const auto& ref : REF_MAP)
+    for (const auto& pair : REF_MAP)
     {
-        if (ref.second->m_pfnGetNextCommand)
+        if (pair.second->m_pfnGetNextCommand)
         {
-            printf("DetourAttach: %s::GetNextCommand\n", ref.second->m_pClass->m_lpszClassName);
-            DetourAttach(&reinterpret_cast<PVOID&>(ref.second->m_pfnGetNextCommand), HookGetNextCommand);
+            printf("DetourAttach: %s::GetNextCommand\n", pair.second->m_pClass->m_lpszClassName);
+            DetourAttach(&reinterpret_cast<PVOID&>(pair.second->m_pfnGetNextCommand), HookGetNextCommand);
+        }
+
+        if (pair.second->m_pfnSerialize)
+        {
+            // TODO some classes cannot hook
+            // printf("DetourAttach: %s::Serialize\n", pair.second->m_pClass->m_lpszClassName);
+            // DetourAttach(&reinterpret_cast<PVOID&>(pair.second->m_pfnSerialize), HookSerialize);
         }
     }
     DetourTransactionCommit();
@@ -346,7 +364,7 @@ void CObjectProxy::DetachHook()
     COMMAND_MAP.clear();
 }
 
-const CObject_vtbl* __fastcall CObjectProxy::FindVirtualTable(
+const CObject_vtbl* __fastcall CObjectProxy::FindVirtualTable( // NOLINT(*-no-recursion)
     const CRuntimeClass* const rtc, const FARPROC ctor) // NOLINT(*-misplaced-const)
 {
     if (IsBadCodePtr(ctor)) return nullptr;
@@ -364,6 +382,18 @@ const CObject_vtbl* __fastcall CObjectProxy::FindVirtualTable(
         const auto clazz = *reinterpret_cast<const CRuntimeClass* const*>(get + 0x01);
         if (rtc == clazz) return address;
     }
+    if (ctor != reinterpret_cast<FARPROC>(rtc->m_pfnCreateObject)) return nullptr;
+    for (auto offset = reinterpret_cast<DWORD>(ctor); offset - reinterpret_cast<DWORD>(ctor) < 0x0400; offset++)
+    {
+        // mov     ecx, ...
+        if (*reinterpret_cast<const BYTE*>(offset + 0x00) != 0x8B) continue;
+        // call    ...
+        if (*reinterpret_cast<const BYTE*>(offset + 0x02) != 0xE8) continue;
+        const auto jump = *reinterpret_cast<const INT*>(offset + 0x03);
+        const auto next = reinterpret_cast<FARPROC>(offset + 0x07 + jump);
+        const auto vtbl = FindVirtualTable(rtc, next);
+        if (vtbl != nullptr) return vtbl;
+    }
 
     return nullptr;
 }
@@ -373,9 +403,11 @@ void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
     TEMP_MODULE = &module;
 }
 
-void __thiscall CObjectProxy::HookSerialize(CObjectEx* const ecx, CPmArchive* const archive)
+void __thiscall CObjectProxy::HookSerialize(CVisual* ecx, CPmArchive* archive)
 {
+    const auto uuid = GetUUID(ecx->m_pNode);
     const auto name = ecx->GetRuntimeClass()->m_lpszClassName;
+    printf("Hook %s::Serialize(this=%s)\n", name, static_cast<LPCSTR>(uuid));
     REF_MAP[name]->m_pfnSerialize(ecx, archive);
 }
 

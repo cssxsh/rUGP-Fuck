@@ -124,6 +124,32 @@ const CRuntimeClass* CRio::GetClassCRio()
     return nullptr;
 }
 
+const CRuntimeClass* CVisual::GetClassCVisual()
+{
+    const auto name = "?classCVisual@CVisual@@2UCRioRTC@@A";
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            auto address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(867)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static struct CRioRTC CVisual::classCVisual
+        return nullptr;
+    default:
+        break;
+    }
+
+    return nullptr;
+}
+
 CPmArchive* CPmArchive::CreateLoadFilePmArchive(const LPCSTR path)
 {
     const auto name = "?CreateLoadFilePmArchive@CPmArchive@@SAPAV1@PBD@Z";

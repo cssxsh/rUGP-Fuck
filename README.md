@@ -22,10 +22,10 @@
 
 序列化接口
 
-* `public: class CRio * __thiscall COceanNode::__GetPointer(void) const` 资源序列化接口
+* `public: virtual void __thiscall CVisual::Serialize(CPmArchive*)` 资源序列化接口
 * `public: virtual class CVmCommand * __thiscall CCommandRef::GetNextCommand(void) const` 脚本序列化接口
 
-通过 MFC 的 AFX_EXTENSION_MODULE 将 CRuntimeClass 遍历，并尝试获取虚表，得到序列化接口。  
+通过 MFC 的 AFX_EXTENSION_MODULE 将 CRuntimeClass 遍历，并尝试获取虚表，从而得到序列化函数地址。  
 挂钩后可将内容替换，实现内容翻译。
 
 ## Install

@@ -54,7 +54,7 @@ public:
     const CRuntimeClass* m_pClass;
     const CObject_vtbl* m_pVTBL = nullptr;
     CObject* (__stdcall *m_pfnCreateObject)() = nullptr;
-    void (__thiscall *m_pfnSerialize)(CObjectEx*, CPmArchive*) = nullptr;
+    void (__thiscall *m_pfnSerialize)(CVisual*, CPmArchive*) = nullptr;
     CVmCommand* (__thiscall *m_pfnGetNextCommand)(CCommandRef*) = nullptr;
 
     explicit CObjectProxy(const CRuntimeClass* pClass);
@@ -71,7 +71,7 @@ protected:
     static const CObject_vtbl* __fastcall FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
 
     static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE&);
-    static void __thiscall HookSerialize(CObjectEx* ecx, CPmArchive* archive);
+    static void __thiscall HookSerialize(CVisual* ecx, CPmArchive* archive);
     static CVmCommand* __thiscall HookGetNextCommand(CCommandRef* ecx);
 };
 
