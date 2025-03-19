@@ -110,15 +110,16 @@ class CPmArchive
 protected:
     ~CPmArchive() = default;
 
-    typedef CPmArchive* (WINAPIV *LPCreatePmArchive)(CFile*, SIZE_T);
-    typedef void (WINAPIV *LPDestroyPmArchive)(CPmArchive*, BOOL);
+    typedef CPmArchive* (__cdecl *LPCreateLoadFilePmArchive)(LPCSTR path);
+    typedef CPmArchive* (__cdecl *LPCreateSaveFilePmArchive)(LPCSTR path, SIZE_T);
+    typedef void (__cdecl *LPDestroyPmArchive)(CPmArchive*, BOOL);
 
 public:
     virtual LONG Seek(LONG, UINT) = 0;
 
-    static CPmArchive* WINAPIV CreateLoadPmArchive(CFile*, SIZE_T = 0x00010000);
-    static CPmArchive* WINAPIV CreateSavePmArchive(CFile*, SIZE_T = 0x00010000);
-    static void WINAPIV DestroyPmArchive(CPmArchive*, BOOL);
+    static CPmArchive* CreateLoadFilePmArchive(LPCSTR path);
+    static CPmArchive* CreateSaveFilePmArchive(LPCSTR path);
+    static void DestroyPmArchive(CPmArchive*, BOOL);
 };
 
 class COceanNode
@@ -152,11 +153,14 @@ public:
 protected:
     ~COceanNode() = default;
 
+    typedef BOOL (__thiscall *LPIsDerivedFrom)(const COceanNode*, const CRuntimeClass*);
     typedef CRio* (__thiscall *LPFetch)(const COceanNode*);
-    typedef COceanNode* (WINAPIV *LPGetNode)();
+    typedef COceanNode* (__cdecl *LPGetNode)();
 
 public:
+    BOOL IsDerivedFrom(const CRuntimeClass*) const;
     CRio* Fetch() const;
+    DWORD GetAddress() const;
 
     static const COceanNode* GetRoot();
     static const COceanNode* GetNull();

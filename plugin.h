@@ -53,8 +53,8 @@ class CObjectProxy final
 public:
     const CRuntimeClass* m_pClass;
     const CObject_vtbl* m_pVTBL = nullptr;
+    CObject* (__stdcall *m_pfnCreateObject)() = nullptr;
     void (__thiscall *m_pfnSerialize)(CObjectEx*, CPmArchive*) = nullptr;
-    CObject* (WINAPI *m_pfnCreateObject)() = nullptr;
     CVmCommand* (__thiscall *m_pfnGetNextCommand)(CCommandRef*) = nullptr;
 
     explicit CObjectProxy(const CRuntimeClass* pClass);
@@ -68,13 +68,11 @@ protected:
     static std::map<std::string, CVmCommand*> COMMAND_MAP;
     static AFX_EXTENSION_MODULE* TEMP_MODULE;
 
-    static const CObject_vtbl* FASTCALL FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor, int depth = 0);
+    static const CObject_vtbl* __fastcall FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
 
-    static void WINAPIV HookSupportRio(AFX_EXTENSION_MODULE&);
-
-    static void FASTCALL HookSerialize(CObjectEx* ecx, DWORD edx, CPmArchive* archive);
-
-    static CVmCommand* FASTCALL HookGetNextCommand(CCommandRef* ecx, DWORD edx);
+    static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE&);
+    static void __thiscall HookSerialize(CObjectEx* ecx, CPmArchive* archive);
+    static CVmCommand* __thiscall HookGetNextCommand(CCommandRef* ecx);
 };
 
 class COceanTreeIterator final
@@ -84,10 +82,19 @@ public:
     DWORD Level() const;
     const COceanNode* Next();
 
-private:
+    static void AttachHook();
+    static void DetachHook();
+
+protected:
     const COceanNode* m_pNode;
     DWORD m_nLevel;
     std::map<const COceanNode*, WORD> m_pVisited;
+
+    typedef COceanNode** (__cdecl *LPGetMotherOcean)(COceanNode**);
+
+    static LPGetMotherOcean GetMotherOcean;
+
+    static COceanNode** __cdecl GetMotherOceanHook(COceanNode** pNode);
 };
 
 #endif // PLUGIN_H

@@ -124,9 +124,9 @@ const CRuntimeClass* CRio::GetClassCRio()
     return nullptr;
 }
 
-CPmArchive* CPmArchive::CreateLoadPmArchive(CFile* file, const SIZE_T size)
+CPmArchive* CPmArchive::CreateLoadFilePmArchive(const LPCSTR path)
 {
-    const auto name = "?CreateLoadPmArchive@CPmArchive@@SAPAV1@PAVCFile@@K@Z";
+    const auto name = "?CreateLoadFilePmArchive@CPmArchive@@SAPAV1@PBD@Z";
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -134,14 +134,14 @@ CPmArchive* CPmArchive::CreateLoadPmArchive(CFile* file, const SIZE_T size)
     case 0x0C00:
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
-            auto proc = reinterpret_cast<LPCreatePmArchive>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(file, size);
-            proc = reinterpret_cast<LPCreatePmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(399)));
-            if (proc != nullptr) return proc(file, size);
+            auto proc = reinterpret_cast<LPCreateLoadFilePmArchive>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return proc(path);
+            proc = reinterpret_cast<LPCreateLoadFilePmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(396)));
+            if (proc != nullptr) return proc(path);
         }
         break;
     case 0x0E00:
-        // TODO public: static class CPmArchive * __cdecl CPmArchive::CreateLoadPmArchive(class CFile *,unsigned long)
+        // TODO public: static class CPmArchive * __cdecl CPmArchive::CreateLoadFilePmArchive(char const *)
         return nullptr;
     default:
         break;
@@ -150,9 +150,9 @@ CPmArchive* CPmArchive::CreateLoadPmArchive(CFile* file, const SIZE_T size)
     return nullptr;
 }
 
-CPmArchive* CPmArchive::CreateSavePmArchive(CFile* file, const SIZE_T size)
+CPmArchive* CPmArchive::CreateSaveFilePmArchive(const LPCSTR path)
 {
-    const auto name = "?CreateSavePmArchive@CPmArchive@@SAPAV1@PAVCFile@@K@Z";
+    const auto name = "?CreateSaveFilePmArchive@CPmArchive@@SAPAV1@PBDK@Z";
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -160,14 +160,14 @@ CPmArchive* CPmArchive::CreateSavePmArchive(CFile* file, const SIZE_T size)
     case 0x0C00:
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
-            auto proc = reinterpret_cast<LPCreatePmArchive>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(file, size);
-            proc = reinterpret_cast<LPCreatePmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(410)));
-            if (proc != nullptr) return proc(file, size);
+            auto proc = reinterpret_cast<LPCreateSaveFilePmArchive>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return proc(path, 0x00010000);
+            proc = reinterpret_cast<LPCreateSaveFilePmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(406)));
+            if (proc != nullptr) return proc(path, 0x00010000);
         }
         break;
     case 0x0E00:
-        // TODO public: static class CPmArchive * __cdecl CPmArchive::CreateSavePmArchive(class CFile *,unsigned long)
+        // TODO public: static class CPmArchive * __cdecl CPmArchive::CreateSaveFilePmArchive(char const *,unsigned long)
         return nullptr;
     default:
         break;
@@ -200,6 +200,31 @@ void CPmArchive::DestroyPmArchive(CPmArchive* archive, const BOOL bFlag)
     }
 }
 
+BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
+{
+    const auto name = "?IsDerivedFrom@COceanNode@@IBEHPBUCRioRTC@@@Z";
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            auto proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return proc(this, rtc);
+            proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(UnivUI, MAKEINTRESOURCE(74)));
+            if (proc != nullptr) return proc(this, rtc);
+        }
+        break;
+    case 0x0E00:
+        // TODO protected: int __thiscall COceanNode::IsDerivedFrom(struct CRioRTC const *)const
+        return FALSE;
+    default:
+        break;
+    }
+    return FALSE;
+}
+
 CRio* COceanNode::Fetch() const
 {
     const auto name = "?__GetPointer@COceanNode@@QBEPAVCRio@@XZ";
@@ -225,6 +250,11 @@ CRio* COceanNode::Fetch() const
     return nullptr;
 }
 
+DWORD COceanNode::GetAddress() const
+{
+    return m_dwResAddr % 0xA2FB6AD1u;
+}
+
 const COceanNode* COceanNode::GetRoot()
 {
     const auto name = "?GetRoot@COceanNode@@SAPAV1@XZ";
@@ -237,6 +267,12 @@ const COceanNode* COceanNode::GetRoot()
             const auto UnivUI = GetModuleHandleA("UnivUI");
             auto proc = reinterpret_cast<LPGetNode>(GetProcAddress(UnivUI, name));
             if (proc != nullptr) return proc();
+            const auto is_root = GetProcAddress(UnivUI, "?IsRoot@COceanNode@@QBE_NXZ");
+            if (is_root != nullptr)
+            {
+                const auto address = reinterpret_cast<DWORD>(is_root);
+                return *reinterpret_cast<const COceanNode**>(address + 0x04);
+            }
             proc = reinterpret_cast<LPGetNode>(GetProcAddress(UnivUI, MAKEINTRESOURCE(500)));
             if (proc != nullptr) return proc();
         }

@@ -5,11 +5,11 @@
 #include "rugp.h"
 #include "hook.h"
 
-cJSON* LoadTextData();
+static cJSON* LoadTextData();
 
-void SaveTextData(const cJSON*);
+static void SaveTextData(const cJSON*);
 
-CVmCommand* FASTCALL Merge(const CVmCommand* ecx, const cJSON* edx);
+static CVmCommand* __fastcall Merge(const CVmCommand* ecx, cJSON* edx);
 
 static AFX_EXTENSION_MODULE R514783_PLUGIN = {FALSE, nullptr};
 
@@ -66,8 +66,26 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
             printf("CObjectProxy::AttachHook Fail: 0x%08X\n\n", GetExceptionCode());
         }
 
+        __try
+        {
+            COceanTreeIterator::AttachHook();
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER)
+        {
+            printf("COceanTreeIterator::AttachHook Fail: 0x%08X\n\n", GetExceptionCode());
+        }
+
         break;
     case DLL_PROCESS_DETACH:
+        __try
+        {
+            COceanTreeIterator::DetachHook();
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER)
+        {
+            printf("COceanTreeIterator::DetachHook Fail: 0x%08X\n\n", GetExceptionCode());
+        }
+
         __try
         {
             CObjectProxy::DetachHook();
@@ -114,8 +132,6 @@ const AFX_EXTENSION_MODULE* PluginThisLibrary()
 {
     // CObjectProxy::LoadFromModule("riooor.rpo");
     // CObjectProxy::LoadFromModule("age_classic.rpo");
-    //
-    // CreateThread(nullptr, 0, ConsoleThreadFunction, nullptr, 0, nullptr);
 
     return &R514783_PLUGIN;
 }
@@ -131,8 +147,7 @@ LPCSTR WINAPIV GetPluginString(const DWORD /*param1*/, const DWORD /*param2*/)
 CString GetUUID(const COceanNode* node)
 {
     auto path = CString();
-    if (node == nullptr || node->m_pRTC == nullptr) return path;
-    path.Format("%s@%08X", node->m_pRTC->m_lpszClassName, node->m_dwResAddr % 0xA2FB6AD1u);
+    path.Format("%s@%08X", node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, node->GetAddress());
     return path;
 }
 
@@ -170,7 +185,7 @@ void SaveTextData(const cJSON*)
     cJSON_free(buffer);
 }
 
-CVmCommand* FASTCALL Merge(const CVmCommand* ecx, cJSON* edx) // NOLINT(*-no-recursion)
+CVmCommand* __fastcall Merge(const CVmCommand* ecx, cJSON* edx) // NOLINT(*-no-recursion)
 {
     const auto pClassCVmMsg = CVmMsg::GetClassCVmMsg();
     auto result = static_cast<CVmCommand*>(nullptr);
@@ -331,10 +346,9 @@ void CObjectProxy::DetachHook()
     COMMAND_MAP.clear();
 }
 
-const CObject_vtbl* FASTCALL CObjectProxy::FindVirtualTable( // NOLINT(*-no-recursion)
-    const CRuntimeClass* const rtc, const FARPROC ctor, const int depth)
+const CObject_vtbl* __fastcall CObjectProxy::FindVirtualTable(
+    const CRuntimeClass* const rtc, const FARPROC ctor) // NOLINT(*-misplaced-const)
 {
-    if (depth >= 3) return nullptr;
     if (IsBadCodePtr(ctor)) return nullptr;
     const auto module = DetourGetContainingModule(const_cast<CRuntimeClass*>(rtc));
     if (DetourGetContainingModule(ctor) != module) return nullptr;
@@ -350,17 +364,6 @@ const CObject_vtbl* FASTCALL CObjectProxy::FindVirtualTable( // NOLINT(*-no-recu
         const auto clazz = *reinterpret_cast<const CRuntimeClass* const*>(get + 0x01);
         if (rtc == clazz) return address;
     }
-    for (auto offset = reinterpret_cast<DWORD>(ctor); offset - reinterpret_cast<DWORD>(ctor) < 0x0400; offset++)
-    {
-        // mov     ecx, ...
-        if (*reinterpret_cast<const BYTE*>(offset + 0x00) != 0x8B) continue;
-        // call    ...
-        if (*reinterpret_cast<const BYTE*>(offset + 0x02) != 0xE8) continue;
-        const auto jump = *reinterpret_cast<const INT*>(offset + 0x03);
-        const auto next = reinterpret_cast<FARPROC>(offset + 0x07 + jump);
-        const auto vtbl = FindVirtualTable(rtc, next, depth + 1);
-        if (vtbl != nullptr) return vtbl;
-    }
 
     return nullptr;
 }
@@ -370,13 +373,13 @@ void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
     TEMP_MODULE = &module;
 }
 
-void FASTCALL CObjectProxy::HookSerialize(CObjectEx* const ecx, DWORD /*edx*/, CPmArchive* const archive)
+void __thiscall CObjectProxy::HookSerialize(CObjectEx* const ecx, CPmArchive* const archive)
 {
     const auto name = ecx->GetRuntimeClass()->m_lpszClassName;
     REF_MAP[name]->m_pfnSerialize(ecx, archive);
 }
 
-CVmCommand* FASTCALL CObjectProxy::HookGetNextCommand(CCommandRef* const ecx, DWORD /*edx*/)
+CVmCommand* __thiscall CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
     const auto name = ecx->GetRuntimeClass()->m_lpszClassName;
@@ -448,4 +451,58 @@ const COceanNode* COceanTreeIterator::Next()
     m_pNode = nullptr;
     m_nLevel = 0;
     return nullptr;
+}
+
+void COceanTreeIterator::AttachHook()
+{
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto name = "?GetMotherOcean@@YA?AV?$CRef@VCObjectOcean@@VCObjectOcean_ome@@VTObjectOcean@@@@XZ";
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            GetMotherOcean = reinterpret_cast<LPGetMotherOcean>(GetProcAddress(UnivUI, name));
+            if (GetMotherOcean != nullptr) break;
+            GetMotherOcean = reinterpret_cast<LPGetMotherOcean>(GetProcAddress(UnivUI, MAKEINTRESOURCE(499)));
+            if (GetMotherOcean != nullptr) break;
+        }
+        return;
+    case 0x0E00:
+        // TODO class CRef<class CObjectOcean,class CObjectOcean_ome,class TObjectOcean> __cdecl GetMotherOcean(void)
+        return;
+    default:
+        break;
+    }
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach(&reinterpret_cast<PVOID&>(GetMotherOcean), reinterpret_cast<PVOID>(GetMotherOceanHook));
+    DetourTransactionCommit();
+}
+
+void COceanTreeIterator::DetachHook()
+{
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourDetach(&reinterpret_cast<PVOID&>(GetMotherOcean), reinterpret_cast<PVOID>(GetMotherOceanHook));
+    DetourTransactionCommit();
+
+    GetMotherOcean = nullptr;
+}
+
+COceanTreeIterator::LPGetMotherOcean COceanTreeIterator::GetMotherOcean = nullptr;
+
+COceanNode** __cdecl COceanTreeIterator::GetMotherOceanHook(COceanNode** pNode)
+{
+    GetMotherOcean(pNode);
+    const auto root = *pNode;
+    const auto iterator = new COceanTreeIterator(root);
+    for (auto node = iterator->Next(); node != nullptr; node = iterator->Next())
+    {
+        // TODO ...
+    }
+    delete iterator;
+    return pNode;
 }
