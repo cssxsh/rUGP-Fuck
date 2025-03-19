@@ -202,7 +202,7 @@ CPmArchive* CPmArchive::CreateSaveFilePmArchive(const LPCSTR path)
     return nullptr;
 }
 
-void CPmArchive::DestroyPmArchive(CPmArchive* archive, const BOOL bFlag)
+void CPmArchive::DestroyPmArchive(CPmArchive* archive)
 {
     if (archive == nullptr) return;
     const auto name = "?DestroyPmArchive@CPmArchive@@SAXPAV1@H@Z";
@@ -214,9 +214,9 @@ void CPmArchive::DestroyPmArchive(CPmArchive* archive, const BOOL bFlag)
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
             auto proc = reinterpret_cast<LPDestroyPmArchive>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(archive, bFlag);
+            if (proc != nullptr) return proc(archive, FALSE);
             proc = reinterpret_cast<LPDestroyPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(426)));
-            if (proc != nullptr) return proc(archive, bFlag);
+            if (proc != nullptr) return proc(archive, FALSE);
         }
         break;
     case 0x0E00:

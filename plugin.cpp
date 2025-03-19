@@ -146,9 +146,17 @@ LPCSTR WINAPIV GetPluginString(const DWORD /*param1*/, const DWORD /*param2*/)
 
 CString GetUUID(const COceanNode* node)
 {
-    auto path = CString();
-    path.Format("%s@%08X", node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, node->GetAddress());
-    return path;
+    auto uuid = CString();
+    uuid.Format("%s@%08X", node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, node->GetAddress());
+    return uuid;
+}
+
+CString GetFileName(const COceanNode* node)
+{
+    // TODO Folder
+    auto name = CString();
+    name.Format("%s.%08X.%s", GetGameName(), node->GetAddress(), node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin");
+    return name;
 }
 
 CString GetGameUUID()
@@ -242,7 +250,6 @@ CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
     m_pVTBL = FindVirtualTable(m_pClass, reinterpret_cast<FARPROC>(m_pfnCreateObject));
     if (m_pVTBL == nullptr) return;
     if (std::strcmp(m_pClass->m_lpszClassName, "CResourceClipOnlyRegion") == 0) return;
-    if (std::strcmp(m_pClass->m_lpszClassName, "CRsa") == 0) printf("...\n");
 
     const auto mfc = GetMfc();
     for (auto clazz = pClass;
@@ -330,8 +337,15 @@ void CObjectProxy::AttachHook()
         if (pair.second->m_pfnSerialize)
         {
             // TODO some classes cannot hook
-            // printf("DetourAttach: %s::Serialize\n", pair.second->m_pClass->m_lpszClassName);
-            // DetourAttach(&reinterpret_cast<PVOID&>(pair.second->m_pfnSerialize), HookSerialize);
+            switch (*reinterpret_cast<const DWORD*>(pair.second->m_pClass->m_lpszClassName))
+            {
+            case 0x70695243u: // CRip, CRip007, CRip008
+                printf("DetourAttach: %s::Serialize\n", pair.second->m_pClass->m_lpszClassName);
+                DetourAttach(&reinterpret_cast<PVOID&>(pair.second->m_pfnSerialize), HookSerialize);
+                break;
+            default:
+                break;
+            }
         }
     }
     DetourTransactionCommit();
@@ -408,7 +422,20 @@ void __thiscall CObjectProxy::HookSerialize(CVisual* ecx, CPmArchive* archive)
     const auto uuid = GetUUID(ecx->m_pNode);
     const auto name = ecx->GetRuntimeClass()->m_lpszClassName;
     printf("Hook %s::Serialize(this=%s)\n", name, static_cast<LPCSTR>(uuid));
-    REF_MAP[name]->m_pfnSerialize(ecx, archive);
+    const auto path = GetFileName(ecx->m_pNode);
+    if (CFileFind().FindFile(path))
+    {
+        const auto load = CPmArchive::CreateLoadFilePmArchive(path);
+        REF_MAP[name]->m_pfnSerialize(ecx, load);
+        CPmArchive::DestroyPmArchive(load);
+    }
+    else
+    {
+        REF_MAP[name]->m_pfnSerialize(ecx, archive);
+        const auto save = CPmArchive::CreateSaveFilePmArchive(path);
+        REF_MAP[name]->m_pfnSerialize(ecx, save);
+        CPmArchive::DestroyPmArchive(save);
+    }
 }
 
 CVmCommand* __thiscall CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)

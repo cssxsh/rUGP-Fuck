@@ -44,6 +44,8 @@ __declspec(dllexport) BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, L
 
 CString GetUUID(const COceanNode* node);
 
+CString GetFileName(const COceanNode* node);
+
 CString GetGameUUID();
 
 CString GetGameName();

@@ -127,7 +127,7 @@ public:
 
     static CPmArchive* CreateLoadFilePmArchive(LPCSTR path);
     static CPmArchive* CreateSaveFilePmArchive(LPCSTR path);
-    static void DestroyPmArchive(CPmArchive*, BOOL);
+    static void DestroyPmArchive(CPmArchive*);
 };
 
 class COceanNode
