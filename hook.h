@@ -132,5 +132,4 @@ protected:
                                               LPARAM lParam);
 };
 
-
 #endif // HOOK_H

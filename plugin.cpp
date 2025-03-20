@@ -1,6 +1,7 @@
 #include <stdafx.h>
 #include <detours.h>
 #include <cJSON.h>
+#include <clocale>
 #include "plugin.h"
 #include "rugp.h"
 #include "hook.h"
@@ -25,8 +26,9 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
 
         AllocConsole();
         SetConsoleTitleA("r514783 Plugin Debug Console");
-        SetConsoleCP(CP_SHIFT_JIS);
-        SetConsoleOutputCP(CP_SHIFT_JIS);
+        SetConsoleCP(CP_UTF8);
+        SetConsoleOutputCP(CP_UTF8);
+        setlocale(LC_ALL, ".UTF8");
         freopen("CON", "w", stdout);
 
         printf("MFC Version %s\n", GetMfcVersion());
