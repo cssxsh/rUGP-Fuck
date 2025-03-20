@@ -144,10 +144,11 @@ std::string GetUUID(const COceanNode* node)
 
 std::string GetFilePath(const COceanNode* node)
 {
-    // TODO Folder
     char buffer[MAX_PATH];
-    sprintf(buffer, "./%s/%08X.%s", GetGameName().c_str(), node->GetAddress(),
-            node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin");
+    std::string format = node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin";
+    if (format[0] == 'C') format = format.substr(1);
+    for (char& c : format) c = std::tolower(c); // NOLINT(*-narrowing-conversions)
+    sprintf(buffer, "./%s/%08X.%s", GetGameName().c_str(), node->GetAddress(), format.c_str());
     return buffer;
 }
 
@@ -308,6 +309,7 @@ void CObjectProxy::AttachHook()
 
         if (pair.second->m_pfnSerialize != nullptr)
         {
+            // TODO: CSbm ...
             switch (*reinterpret_cast<const DWORD*>(pair.second->m_pClass->m_lpszClassName))
             {
             case 0x70695243u: // CRip, CRip007, CRip008
@@ -430,7 +432,6 @@ CVmCommand* __thiscall CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
         path.c_str(),
         GENERIC_ALL,
         FILE_SHARE_READ,
-
         nullptr,
         OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL,
