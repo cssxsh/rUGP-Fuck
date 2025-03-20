@@ -38,6 +38,60 @@ LPCSTR GetMfcVersion()
     return nullptr;
 }
 
+BOOL AFXAPI AfxInitExtensionModule(AFX_EXTENSION_MODULE& extension, const HMODULE hMod)
+{
+    typedef BOOL (AFXAPI *LPAfxInitExtensionModule)(AFX_EXTENSION_MODULE&, HMODULE);
+    const auto name = "?AfxInitExtensionModule@@YGHAAUAFX_EXTENSION_MODULE@@PAUHINSTANCE__@@@Z";
+    const auto mfc = GetMfc();
+    auto init = reinterpret_cast<LPAfxInitExtensionModule>(GetProcAddress(mfc.native, name));
+    if (init != nullptr) return init(extension, hMod);
+    switch (mfc.version)
+    {
+    case 0x0600:
+        init = reinterpret_cast<LPAfxInitExtensionModule>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1182)));
+        if (init != nullptr) return init(extension, hMod);
+        break;
+    case 0x0C00:
+        init = reinterpret_cast<LPAfxInitExtensionModule>(GetProcAddress(mfc.native, MAKEINTRESOURCE(2221)));
+        if (init != nullptr) return init(extension, hMod);
+        break;
+    case 0x0E00:
+        init = reinterpret_cast<LPAfxInitExtensionModule>(GetProcAddress(mfc.native, MAKEINTRESOURCE(2268)));
+        if (init != nullptr) return init(extension, hMod);
+        break;
+    default:
+        break;
+    }
+
+    return FALSE;
+}
+
+void AFXAPI AfxTermExtensionModule(AFX_EXTENSION_MODULE& extension, const BOOL bAll)
+{
+    typedef void (AFXAPI *LPAfxTermExtensionModule)(AFX_EXTENSION_MODULE&, BOOL);
+    const auto name = "?AfxTermExtensionModule@@YGXAAUAFX_EXTENSION_MODULE@@H@Z";
+    const auto mfc = GetMfc();
+    auto term = reinterpret_cast<LPAfxTermExtensionModule>(GetProcAddress(mfc.native, name));
+    if (term != nullptr) return term(extension, bAll);
+    switch (mfc.version)
+    {
+    case 0x0600:
+        term = reinterpret_cast<LPAfxTermExtensionModule>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1253)));
+        if (term != nullptr) return term(extension, bAll);
+        break;
+    case 0x0C00:
+        term = reinterpret_cast<LPAfxTermExtensionModule>(GetProcAddress(mfc.native, MAKEINTRESOURCE(2328)));
+        if (term != nullptr) return term(extension, bAll);
+        break;
+    case 0x0E00:
+        term = reinterpret_cast<LPAfxTermExtensionModule>(GetProcAddress(mfc.native, MAKEINTRESOURCE(2374)));
+        if (term != nullptr) return term(extension, bAll);
+        break;
+    default:
+        break;
+    }
+}
+
 LPCSTR GetRugpVersion()
 {
     const auto name = "?_GLOBAL_rUGP@@3VCrUGP@@A";
@@ -152,6 +206,7 @@ const CRuntimeClass* CVisual::GetClassCVisual()
 
 CPmArchive* CPmArchive::CreateLoadFilePmArchive(const LPCSTR path)
 {
+    typedef CPmArchive* (__cdecl *LPCreateLoadFilePmArchive)(LPCSTR path);
     const auto name = "?CreateLoadFilePmArchive@CPmArchive@@SAPAV1@PBD@Z";
     const auto mfc = GetMfc();
     switch (mfc.version)
@@ -178,6 +233,7 @@ CPmArchive* CPmArchive::CreateLoadFilePmArchive(const LPCSTR path)
 
 CPmArchive* CPmArchive::CreateSaveFilePmArchive(const LPCSTR path)
 {
+    typedef CPmArchive* (__cdecl *LPCreateSaveFilePmArchive)(LPCSTR path, SIZE_T);
     const auto name = "?CreateSaveFilePmArchive@CPmArchive@@SAPAV1@PBDK@Z";
     const auto mfc = GetMfc();
     switch (mfc.version)
@@ -205,6 +261,7 @@ CPmArchive* CPmArchive::CreateSaveFilePmArchive(const LPCSTR path)
 void CPmArchive::DestroyPmArchive(CPmArchive* archive)
 {
     if (archive == nullptr) return;
+    typedef void (__cdecl *LPDestroyPmArchive)(CPmArchive*, BOOL);
     const auto name = "?DestroyPmArchive@CPmArchive@@SAXPAV1@H@Z";
     const auto mfc = GetMfc();
     switch (mfc.version)
@@ -228,6 +285,7 @@ void CPmArchive::DestroyPmArchive(CPmArchive* archive)
 
 BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
 {
+    typedef BOOL (__thiscall *LPIsDerivedFrom)(const COceanNode*, const CRuntimeClass*);
     const auto name = "?IsDerivedFrom@COceanNode@@IBEHPBUCRioRTC@@@Z";
     const auto mfc = GetMfc();
     switch (mfc.version)
@@ -253,6 +311,7 @@ BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
 
 CRio* COceanNode::Fetch() const
 {
+    typedef CRio* (__thiscall *LPGetPointer)(const COceanNode*);
     const auto name = "?__GetPointer@COceanNode@@QBEPAVCRio@@XZ";
     const auto mfc = GetMfc();
     switch (mfc.version)
@@ -261,9 +320,9 @@ CRio* COceanNode::Fetch() const
     case 0x0C00:
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
-            auto proc = reinterpret_cast<LPFetch>(GetProcAddress(UnivUI, name));
+            auto proc = reinterpret_cast<LPGetPointer>(GetProcAddress(UnivUI, name));
             if (proc != nullptr) return proc(this);
-            proc = reinterpret_cast<LPFetch>(GetProcAddress(UnivUI, MAKEINTRESOURCE(75)));
+            proc = reinterpret_cast<LPGetPointer>(GetProcAddress(UnivUI, MAKEINTRESOURCE(75)));
             if (proc != nullptr) return proc(this);
         }
         break;
@@ -283,6 +342,7 @@ DWORD COceanNode::GetAddress() const
 
 const COceanNode* COceanNode::GetRoot()
 {
+    typedef COceanNode* (__cdecl *LPGetRoot)();
     const auto name = "?GetRoot@COceanNode@@SAPAV1@XZ";
     const auto mfc = GetMfc();
     switch (mfc.version)
@@ -291,7 +351,7 @@ const COceanNode* COceanNode::GetRoot()
     case 0x0C00:
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
-            auto proc = reinterpret_cast<LPGetNode>(GetProcAddress(UnivUI, name));
+            auto proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, name));
             if (proc != nullptr) return proc();
             const auto is_root = GetProcAddress(UnivUI, "?IsRoot@COceanNode@@QBE_NXZ");
             if (is_root != nullptr)
@@ -299,7 +359,7 @@ const COceanNode* COceanNode::GetRoot()
                 const auto address = reinterpret_cast<DWORD>(is_root);
                 return *reinterpret_cast<const COceanNode**>(address + 0x04);
             }
-            proc = reinterpret_cast<LPGetNode>(GetProcAddress(UnivUI, MAKEINTRESOURCE(500)));
+            proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, MAKEINTRESOURCE(500)));
             if (proc != nullptr) return proc();
         }
         break;

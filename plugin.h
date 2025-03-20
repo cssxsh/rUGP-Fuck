@@ -42,13 +42,11 @@ __declspec(dllexport) LPCSTR WINAPIV GetPluginString(DWORD param1, DWORD param2)
 __declspec(dllexport) BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
 }
 
-CString GetUUID(const COceanNode* node);
+std::string GetUUID(const COceanNode* node);
 
-CString GetFileName(const COceanNode* node);
+std::string GetFilePath(const COceanNode* node);
 
-CString GetGameUUID();
-
-CString GetGameName();
+std::string GetGameName();
 
 class CObjectProxy final
 {

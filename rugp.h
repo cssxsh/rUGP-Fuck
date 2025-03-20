@@ -118,10 +118,6 @@ class CPmArchive
 protected:
     ~CPmArchive() = default;
 
-    typedef CPmArchive* (__cdecl *LPCreateLoadFilePmArchive)(LPCSTR path);
-    typedef CPmArchive* (__cdecl *LPCreateSaveFilePmArchive)(LPCSTR path, SIZE_T);
-    typedef void (__cdecl *LPDestroyPmArchive)(CPmArchive*, BOOL);
-
 public:
     virtual LONG Seek(LONG, UINT) = 0;
 
@@ -160,10 +156,6 @@ public:
 
 protected:
     ~COceanNode() = default;
-
-    typedef BOOL (__thiscall *LPIsDerivedFrom)(const COceanNode*, const CRuntimeClass*);
-    typedef CRio* (__thiscall *LPFetch)(const COceanNode*);
-    typedef COceanNode* (__cdecl *LPGetNode)();
 
 public:
     BOOL IsDerivedFrom(const CRuntimeClass*) const;

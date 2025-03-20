@@ -2,19 +2,16 @@
 #include <detours.h>
 #include <cJSON.h>
 #include <clocale>
+#include <fstream>
 #include "plugin.h"
 #include "rugp.h"
 #include "hook.h"
 
-static cJSON* LoadTextData();
-
-static void SaveTextData(const cJSON*);
+static BOOL CreateMergeDirectory();
 
 static CVmCommand* __fastcall Merge(const CVmCommand* ecx, cJSON* edx);
 
 static AFX_EXTENSION_MODULE R514783_PLUGIN = {FALSE, nullptr};
-
-static cJSON* TRANSLATION_DATA = nullptr;
 
 // ReSharper disable once CppParameterMayBeConst
 BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserved*/)
@@ -22,8 +19,6 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
     switch (dwReason)
     {
     case DLL_PROCESS_ATTACH:
-        AfxInitExtensionModule(R514783_PLUGIN, hInstance);
-
         AllocConsole();
         SetConsoleTitleA("r514783 Plugin Debug Console");
         SetConsoleCP(CP_UTF8);
@@ -36,6 +31,10 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
         printf("cJSON Version %s\n", cJSON_Version());
         printf("Detours Version %x\n", DETOURS_VERSION);
         printf("\n");
+        wprintf(L"CommandLine %s\n", GetCommandLineW());
+        printf("\n");
+
+        AfxInitExtensionModule(R514783_PLUGIN, hInstance);
 
         CObjectProxy::LoadFromModule("UnivUI");
         CObjectProxy::LoadFromModule("rvmm");
@@ -43,11 +42,11 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
 
         __try
         {
-            TRANSLATION_DATA = LoadTextData();
+            CreateMergeDirectory();
         }
         __except (EXCEPTION_EXECUTE_HANDLER)
         {
-            printf("cJSON_Parse Fail: 0x%08X\n\n", GetExceptionCode());
+            printf("CreateMergeDirectory Fail: 0x%08X\n\n", GetExceptionCode());
         }
 
         __try
@@ -106,16 +105,6 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
             printf("Win32Hook::DetachHook Fail: 0x%08X\n\n", GetExceptionCode());
         }
 
-        __try
-        {
-            SaveTextData(TRANSLATION_DATA);
-            cJSON_free(TRANSLATION_DATA);
-        }
-        __except (EXCEPTION_EXECUTE_HANDLER)
-        {
-            printf("cJSON_Print Fail: 0x%08X\n\n", GetExceptionCode());
-        }
-
         FreeConsole();
 
         AfxTermExtensionModule(R514783_PLUGIN, FALSE);
@@ -146,62 +135,43 @@ LPCSTR WINAPIV GetPluginString(const DWORD /*param1*/, const DWORD /*param2*/)
         "\r\n";
 }
 
-CString GetUUID(const COceanNode* node)
+std::string GetUUID(const COceanNode* node)
 {
-    auto uuid = CString();
-    uuid.Format("%s@%08X", node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, node->GetAddress());
-    return uuid;
+    char buffer[MAX_PATH];
+    sprintf(buffer, "%s@%08X", node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, node->GetAddress());
+    return buffer;
 }
 
-CString GetFileName(const COceanNode* node)
+std::string GetFilePath(const COceanNode* node)
 {
     // TODO Folder
-    auto name = CString();
-    name.Format("%s.%08X.%s", GetGameName(), node->GetAddress(), node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin");
-    return name;
+    char buffer[MAX_PATH];
+    sprintf(buffer, "./%s/%08X.%s", GetGameName().c_str(), node->GetAddress(),
+            node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin");
+    return buffer;
 }
 
-CString GetGameUUID()
+std::string GetGameName()
 {
     const auto command = GetCommandLineA();
-    const auto l = strchr(command, '{');
+    const auto l = strrchr(command, '\\') + 1;
     const auto r = strchr(l, '}');
-    return {l + 1, static_cast<int>(reinterpret_cast<DWORD>(r) - reinterpret_cast<DWORD>(l) - 1)};
+    const auto count = static_cast<std::string::size_type>(reinterpret_cast<DWORD>(r) - reinterpret_cast<DWORD>(l));
+    return {l, count};
 }
 
-CString GetGameName()
+BOOL CreateMergeDirectory()
 {
-    const auto uuid = GetGameUUID();
-    return uuid.Right(uuid.GetLength() - uuid.Find('\\') - 1);
-}
-
-cJSON* LoadTextData()
-{
-    CFile json(GetGameName() + ".merge.json", CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate);
-    const auto buffer = static_cast<LPSTR>(malloc(json.GetLength()));
-    const auto data = json.Read(buffer, json.GetLength())
-                          ? cJSON_Parse(buffer)
-                          : cJSON_CreateObject();
-    free(buffer);
-
-    return data;
-}
-
-void SaveTextData(const cJSON*)
-{
-    const auto buffer = cJSON_Print(TRANSLATION_DATA);
-    CFile json(GetGameName() + ".merge.json", CFile::modeReadWrite);
-    json.Write(buffer, strlen(buffer));
-    cJSON_free(buffer);
+    const auto name = GetGameName();
+    return CreateDirectoryA(name.c_str(), nullptr);
 }
 
 CVmCommand* __fastcall Merge(const CVmCommand* ecx, cJSON* edx) // NOLINT(*-no-recursion)
 {
     const auto pClassCVmMsg = CVmMsg::GetClassCVmMsg();
     auto result = static_cast<CVmCommand*>(nullptr);
-    auto name = CString();
-    name.Format("%08X:%s", ecx->m_dwFlags & 0x000FFFFF, ecx->GetRuntimeClass()->m_lpszClassName);
-    // printf("Merge %s\n", static_cast<LPCSTR>(name));
+    char name[MAX_PATH];
+    sprintf(name, "%08X:%s", ecx->m_dwFlags & 0x000FFFFF, ecx->GetRuntimeClass()->m_lpszClassName);
     if (ecx->GetRuntimeClass() == pClassCVmMsg)
     {
         const auto message = reinterpret_cast<const CVmMsg*>(ecx);
@@ -228,7 +198,7 @@ CVmCommand* __fastcall Merge(const CVmCommand* ecx, cJSON* edx) // NOLINT(*-no-r
     }
     else
     {
-        // cJSON_AddItemToObject(edx, name, cJSON_CreateNull());
+        cJSON_AddItemToObject(edx, name, cJSON_CreateNull());
         // TODO: size calc
         const auto size = ecx->m_pNext
                               ? reinterpret_cast<DWORD>(ecx->m_pNext) - reinterpret_cast<DWORD>(ecx)
@@ -330,15 +300,14 @@ void CObjectProxy::AttachHook()
     DetourUpdateThread(GetCurrentThread());
     for (const auto& pair : REF_MAP)
     {
-        if (pair.second->m_pfnGetNextCommand)
+        if (pair.second->m_pfnGetNextCommand != nullptr)
         {
             printf("DetourAttach: %s::GetNextCommand\n", pair.second->m_pClass->m_lpszClassName);
             DetourAttach(&reinterpret_cast<PVOID&>(pair.second->m_pfnGetNextCommand), HookGetNextCommand);
         }
 
-        if (pair.second->m_pfnSerialize)
+        if (pair.second->m_pfnSerialize != nullptr)
         {
-            // TODO some classes cannot hook
             switch (*reinterpret_cast<const DWORD*>(pair.second->m_pClass->m_lpszClassName))
             {
             case 0x70695243u: // CRip, CRip007, CRip008
@@ -377,7 +346,6 @@ void CObjectProxy::DetachHook()
             free(command);
         }
     }
-    COMMAND_MAP.clear();
 }
 
 const CObject_vtbl* __fastcall CObjectProxy::FindVirtualTable( // NOLINT(*-no-recursion)
@@ -423,18 +391,28 @@ void __thiscall CObjectProxy::HookSerialize(CVisual* ecx, CPmArchive* archive)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
     const auto name = ecx->GetRuntimeClass()->m_lpszClassName;
-    printf("Hook %s::Serialize(this=%s)\n", name, static_cast<LPCSTR>(uuid));
-    const auto path = GetFileName(ecx->m_pNode);
-    if (CFileFind().FindFile(path))
+    printf("Hook %s::Serialize(this=%s)\n", name, uuid.c_str());
+
+    const auto path = GetFilePath(ecx->m_pNode);
+    const auto hFile = CreateFileA(
+        path.c_str(),
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        nullptr,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        nullptr);
+    if (hFile != INVALID_HANDLE_VALUE)
     {
-        const auto load = CPmArchive::CreateLoadFilePmArchive(path);
+        CloseHandle(hFile);
+        const auto load = CPmArchive::CreateLoadFilePmArchive(path.c_str());
         REF_MAP[name]->m_pfnSerialize(ecx, load);
         CPmArchive::DestroyPmArchive(load);
     }
     else
     {
         REF_MAP[name]->m_pfnSerialize(ecx, archive);
-        const auto save = CPmArchive::CreateSaveFilePmArchive(path);
+        const auto save = CPmArchive::CreateSaveFilePmArchive(path.c_str());
         REF_MAP[name]->m_pfnSerialize(ecx, save);
         CPmArchive::DestroyPmArchive(save);
     }
@@ -444,14 +422,50 @@ CVmCommand* __thiscall CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
     const auto name = ecx->GetRuntimeClass()->m_lpszClassName;
-    auto value = COMMAND_MAP[static_cast<LPCSTR>(uuid)];
-    if (value != nullptr) return value;
-    printf("Hook %s::GetNextCommand(this=%s)\n", name, static_cast<LPCSTR>(uuid));
-    value = REF_MAP[name]->m_pfnGetNextCommand(ecx);
+    printf("Hook %s::GetNextCommand(this=%s)\n", name, uuid.c_str());
+    auto value = REF_MAP[name]->m_pfnGetNextCommand(ecx);
 
-    if (!cJSON_HasObjectItem(TRANSLATION_DATA, uuid)) cJSON_AddObjectToObject(TRANSLATION_DATA, uuid);
-    value = Merge(value, cJSON_GetObjectItem(TRANSLATION_DATA, uuid));
-    COMMAND_MAP[static_cast<LPCSTR>(uuid)] = value;
+    const auto path = GetFilePath(ecx->m_pNode) + ".json";
+    const auto hFile = CreateFileA(
+        path.c_str(),
+        GENERIC_ALL,
+        FILE_SHARE_READ,
+
+        nullptr,
+        OPEN_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        nullptr);
+    if (hFile == INVALID_HANDLE_VALUE) return value;
+    const auto size = GetFileSize(hFile, nullptr);
+    if (size != 0x00000000)
+    {
+        const auto buffer = static_cast<char*>(malloc(size));
+        ReadFile(hFile, buffer, size, nullptr, nullptr);
+        CloseHandle(hFile);
+        const auto patch = cJSON_ParseWithLength(buffer, size);
+        value = Merge(value, patch);
+        free(buffer);
+        cJSON_free(patch);
+    }
+    else
+    {
+        const auto patch = cJSON_CreateObject();
+        value = Merge(value, patch);
+        const auto buffer = cJSON_Print(patch);
+        WriteFile(hFile, buffer, strlen(buffer), nullptr, nullptr);
+        CloseHandle(hFile);
+        cJSON_free(buffer);
+        cJSON_free(patch);
+    }
+
+    auto p = COMMAND_MAP[uuid];
+    while (p != nullptr)
+    {
+        const auto command = p;
+        p = p->m_pNext;
+        free(command);
+    }
+    COMMAND_MAP[uuid] = value;
 
     return value;
 }
@@ -559,11 +573,11 @@ COceanNode** __cdecl COceanTreeIterator::GetMotherOceanHook(COceanNode** pNode)
 {
     GetMotherOcean(pNode);
     const auto root = *pNode;
-    const auto iterator = new COceanTreeIterator(root);
-    for (auto node = iterator->Next(); node != nullptr; node = iterator->Next())
+    auto iterator = COceanTreeIterator(root);
+    for (auto node = iterator.Next(); node != nullptr; node = iterator.Next())
     {
         // TODO ...
     }
-    delete iterator;
+
     return pNode;
 }
