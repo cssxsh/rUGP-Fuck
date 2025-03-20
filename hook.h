@@ -3,6 +3,10 @@
 
 #include <stdafx.h>
 
+#ifdef _PRSHT_H_
+#pragma comment(lib, "comctl32.lib")
+#endif
+
 class Win32Hook final
 {
 public:
