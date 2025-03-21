@@ -509,6 +509,19 @@ const CRuntimeClass* CCommandRef::GetClassCCommandRef()
     return nullptr;
 }
 
+int CVmCommand::GetVariableAreaSize() const
+{
+    // TODO ?GetValiableAreaSize@CVmCommand@@UAEHXZ
+    typedef int (__thiscall *GetVariableAreaSize)(const CVmCommand*);
+    const auto name = "?GetValiableAreaSize@" + std::string(this->GetRuntimeClass()->m_lpszClassName) + "@@UAEHXZ";
+    auto proc = reinterpret_cast<GetVariableAreaSize>(cache[name]);
+    if (proc != nullptr) return proc(this);
+    const auto vtbl = *reinterpret_cast<FARPROC* const*>(this);
+    const auto index = (this->GetRuntimeClass()->m_wSchema & 0xFFFF) > 0x000E ? 0x09 : 0x07;
+    proc = reinterpret_cast<GetVariableAreaSize>(cache[name] = vtbl[index]);
+    return proc(this);
+}
+
 const CRuntimeClass* CVmMsg::GetClassCVmMsg()
 {
     const auto name = "?classCVmMsg@CVmMsg@@2UCRtcEx@@A";

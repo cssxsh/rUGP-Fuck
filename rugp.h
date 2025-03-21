@@ -181,6 +181,8 @@ public:
 
     CVmCommand* m_pNext;
     DWORD m_dwFlags;
+
+    int GetVariableAreaSize() const;
 };
 
 class CVmSync : public CVmCommand
