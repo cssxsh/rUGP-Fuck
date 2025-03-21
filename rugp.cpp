@@ -97,6 +97,62 @@ void AFXAPI AfxTermExtensionModule(AFX_EXTENSION_MODULE& extension, const BOOL b
     }
 }
 
+BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
+{
+    const auto name = "?IsDerivedFrom@CRuntimeClass@@QBEHPBU1@@Z";
+    typedef BOOL (__thiscall *LPIsDerivedFrom)(const CRuntimeClass*, const CRuntimeClass*);
+    const auto mfc = GetMfc();
+    auto proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(mfc.native, name));
+    if (proc != nullptr) return proc(this, pBaseClass);
+    switch (mfc.version)
+    {
+    case 0x0600:
+        proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(mfc.native, MAKEINTRESOURCE(4045)));
+        if (proc != nullptr) return proc(this, pBaseClass);
+        break;
+    case 0x0C00:
+        proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(mfc.native, MAKEINTRESOURCE(8006)));
+        if (proc != nullptr) return proc(this, pBaseClass);
+        break;
+    case 0x0E00:
+        proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(mfc.native, MAKEINTRESOURCE(8161)));
+        if (proc != nullptr) return proc(this, pBaseClass);
+        break;
+    default:
+        break;
+    }
+
+    return FALSE;
+}
+
+BOOL CObject::IsKindOf(const CRuntimeClass* pClass) const
+{
+    const auto name = "?IsKindOf@CObject@@QBEHPBUCRuntimeClass@@@Z";
+    typedef BOOL (__thiscall *LPIsKindOf)(const CObject*, const CRuntimeClass*);
+    const auto mfc = GetMfc();
+    auto proc = reinterpret_cast<LPIsKindOf>(GetProcAddress(mfc.native, name));
+    if (proc != nullptr) return proc(this, pClass);
+    switch (mfc.version)
+    {
+    case 0x0600:
+        proc = reinterpret_cast<LPIsKindOf>(GetProcAddress(mfc.native, MAKEINTRESOURCE(4083)));
+        if (proc != nullptr) return proc(this, pClass);
+        break;
+    case 0x0C00:
+        proc = reinterpret_cast<LPIsKindOf>(GetProcAddress(mfc.native, MAKEINTRESOURCE(8070)));
+        if (proc != nullptr) return proc(this, pClass);
+        break;
+    case 0x0E00:
+        proc = reinterpret_cast<LPIsKindOf>(GetProcAddress(mfc.native, MAKEINTRESOURCE(8225)));
+        if (proc != nullptr) return proc(this, pClass);
+        break;
+    default:
+        break;
+    }
+
+    return FALSE;
+}
+
 LPCSTR GetRugpVersion()
 {
     const auto name = "?_GLOBAL_rUGP@@3VCrUGP@@A";
