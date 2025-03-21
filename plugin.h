@@ -42,11 +42,11 @@ __declspec(dllexport) LPCSTR WINAPIV GetPluginString(DWORD param1, DWORD param2)
 __declspec(dllexport) BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
 }
 
-std::string GetUUID(const COceanNode* node);
+std::wstring GetUUID(const COceanNode* node);
 
-std::string GetFilePath(const COceanNode* node);
+std::wstring GetFilePath(const COceanNode* node);
 
-std::string GetGameName();
+std::wstring GetGameName();
 
 class CObjectProxy final
 {
@@ -54,6 +54,7 @@ public:
     const CRuntimeClass* m_pClass;
     const CObject_vtbl* m_pVTBL = nullptr;
     CObject* (__stdcall *m_pfnCreateObject)() = nullptr;
+    void (__thiscall *m_pfnDestructor)(CRio*) = nullptr;
     void (__thiscall *m_pfnSerialize)(CVisual*, CPmArchive*) = nullptr;
     CVmCommand* (__thiscall *m_pfnGetNextCommand)(CCommandRef*) = nullptr;
 
@@ -62,15 +63,17 @@ public:
     static BOOL LoadFromModule(LPCSTR lpszModuleName);
     static void AttachHook();
     static void DetachHook();
+    static void Clear();
 
 protected:
-    static std::map<std::string, CObjectProxy*> REF_MAP;
-    static std::map<std::string, CVmCommand*> COMMAND_MAP;
+    static std::map<std::wstring, CObjectProxy*> REF_MAP;
+    static std::map<std::wstring, CVmCommand*> COMMAND_MAP;
     static AFX_EXTENSION_MODULE* TEMP_MODULE;
 
     static const CObject_vtbl* __fastcall FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
 
     static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE&);
+    static void __thiscall HookDestructor(CRio*);
     static void __thiscall HookSerialize(CVisual* ecx, CPmArchive* archive);
     static CVmCommand* __thiscall HookGetNextCommand(CCommandRef* ecx);
 };

@@ -90,6 +90,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
         __try
         {
             CObjectProxy::DetachHook();
+            CObjectProxy::Clear();
         }
         __except (EXCEPTION_EXECUTE_HANDLER)
         {
@@ -135,82 +136,92 @@ LPCSTR WINAPIV GetPluginString(const DWORD /*param1*/, const DWORD /*param2*/)
         "\r\n";
 }
 
-std::string GetUUID(const COceanNode* node)
+std::wstring GetUUID(const COceanNode* const node)
 {
-    char buffer[MAX_PATH];
-    sprintf(buffer, "%s@%08X", node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, node->GetAddress());
+    wchar_t buffer[MAX_PATH];
+    const auto name = Unicode(node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, CP_SHIFT_JIS);
+    swprintf(buffer, MAX_PATH, L"%s@%08X", name, node->GetAddress());
+    free(name);
     return buffer;
 }
 
-std::string GetFilePath(const COceanNode* node)
+std::wstring GetFilePath(const COceanNode* const node)
 {
-    char buffer[MAX_PATH];
-    std::string format = node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin";
-    if (format[0] == 'C') format = format.substr(1);
-    for (char& c : format) c = std::tolower(c); // NOLINT(*-narrowing-conversions)
-    sprintf(buffer, "./%s/%08X.%s", GetGameName().c_str(), node->GetAddress(), format.c_str());
+    wchar_t buffer[MAX_PATH];
+    const auto format = Unicode(node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin", CP_SHIFT_JIS);
+    const auto suffix = format[0] == L'C' ? format + 1 : format;
+    for (auto c = suffix; *c != L'\0'; c++) *c = towlower(*c);
+    swprintf(buffer, MAX_PATH, L"./%s/%08X.%s", GetGameName().c_str(), node->GetAddress(), suffix);
+    free(format);
     return buffer;
 }
 
-std::string GetGameName()
+std::wstring GetGameName()
 {
-    const auto command = GetCommandLineA();
-    const auto l = strrchr(command, '\\') + 1;
-    const auto r = strchr(l, '}');
-    const auto count = static_cast<std::string::size_type>(reinterpret_cast<DWORD>(r) - reinterpret_cast<DWORD>(l));
-    return {l, count};
+    const auto command = GetCommandLineW();
+    const auto l = wcsrchr(command, '\\') + 1;
+    const auto r = wcschr(l, '}');
+    return {l, r};
 }
 
 BOOL CreateMergeDirectory()
 {
     const auto name = GetGameName();
-    return CreateDirectoryA(name.c_str(), nullptr);
+    return CreateDirectoryW(name.c_str(), nullptr);
 }
 
-CVmCommand* __fastcall Merge(const CVmCommand* ecx, cJSON* edx) // NOLINT(*-no-recursion)
+CVmCommand* __fastcall Merge(const CVmCommand* const ecx, cJSON* const edx) // NOLINT(*-no-recursion)
 {
     const auto pClassCVmMsg = CVmMsg::GetClassCVmMsg();
     auto result = static_cast<CVmCommand*>(nullptr);
-    char name[MAX_PATH];
-    sprintf(name, "%08X:%s", ecx->m_dwFlags & 0x000FFFFF, ecx->GetRuntimeClass()->m_lpszClassName);
-    if (ecx->GetRuntimeClass() == pClassCVmMsg)
+    auto prev = static_cast<CVmCommand*>(nullptr);
+    auto next = static_cast<CVmCommand*>(nullptr);
+    for (auto command = ecx; command != nullptr; command = command->m_pNext)
     {
-        const auto message = reinterpret_cast<const CVmMsg*>(ecx);
-        auto text = cJSON_GetObjectItem(edx, name);
-        if (cJSON_IsString(text))
+        char name[MAX_PATH];
+        sprintf(name, "%08X:%s", command->m_dwFlags & 0x000FFFFF, command->GetRuntimeClass()->m_lpszClassName);
+        switch (*reinterpret_cast<const DWORD*>(command->GetRuntimeClass()->m_lpszClassName))
         {
-            const auto value = cJSON_GetStringValue(text, CP_SHIFT_JIS);
-            const auto size = pClassCVmMsg->m_nObjectSize + (strlen(value) + 0x04 & ~0x03);
-            const auto clone = static_cast<CVmMsg*>(malloc(size));
-            memcpy(clone, message, pClassCVmMsg->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-            memcpy(clone->m_area, value, strlen(value) + 0x04 & ~0x03);
-            cJSON_free(value);
-            result = clone;
+        case 0x4D6D5643u: // CVmMsg
+            if (command->GetRuntimeClass() != pClassCVmMsg) continue;
+            {
+                auto text = cJSON_GetObjectItem(edx, name);
+                if (cJSON_IsString(text))
+                {
+                    const auto value = cJSON_GetStringValue(text, CP_SHIFT_JIS);
+                    const auto size = pClassCVmMsg->m_nObjectSize + (strlen(value) + 0x04 & ~0x03);
+                    const auto clone = static_cast<CVmMsg*>(malloc(size));
+                    memcpy(clone, command, pClassCVmMsg->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
+                    memcpy(clone->m_area, value, strlen(value) + 0x04 & ~0x03);
+                    cJSON_free(value);
+                    next = clone;
+                }
+                else
+                {
+                    const auto message = reinterpret_cast<const CVmMsg*>(command);
+                    text = cJSON_CreateString(message->m_area, CP_SHIFT_JIS);
+                    cJSON_AddItemToObject(edx, name, text);
+                    const auto size = pClassCVmMsg->m_nObjectSize + (strlen(message->m_area) + 0x04 & ~0x03);
+                    const auto clone = static_cast<CVmMsg*>(malloc(size));
+                    memcpy(clone, message, size); // NOLINT(*-undefined-memory-manipulation)
+                    next = clone;
+                }
+            }
+            break;
+        default:
+            {
+                cJSON_AddItemToObject(edx, name, cJSON_CreateNull());
+                const auto size = command->GetRuntimeClass()->m_nObjectSize + command->GetVariableAreaSize();
+                const auto clone = static_cast<CVmCommand*>(malloc(size));
+                memcpy(clone, command, size); // NOLINT(*-undefined-memory-manipulation)
+                next = clone;
+            }
+            break;
         }
-        else
-        {
-            text = cJSON_CreateString(message->m_area, CP_SHIFT_JIS);
-            cJSON_AddItemToObject(edx, name, text);
-            const auto size = pClassCVmMsg->m_nObjectSize + (strlen(message->m_area) + 0x04 & ~0x03);
-            const auto clone = static_cast<CVmMsg*>(malloc(size));
-            memcpy(clone, message, size); // NOLINT(*-undefined-memory-manipulation)
-            result = clone;
-        }
-    }
-    else
-    {
-        cJSON_AddItemToObject(edx, name, cJSON_CreateNull());
-        // TODO: size calc
-        const auto size = ecx->m_pNext
-                              ? reinterpret_cast<DWORD>(ecx->m_pNext) - reinterpret_cast<DWORD>(ecx)
-                              : pClassCVmMsg->m_nObjectSize;
-        const auto clone = static_cast<CVmMsg*>(malloc(size));
-        memcpy(clone, ecx, size); // NOLINT(*-undefined-memory-manipulation)
 
-        result = clone;
+        prev == nullptr ? (result = next) : (prev->m_pNext = next);
+        prev = next;
     }
-
-    result->m_pNext = ecx->m_pNext ? Merge(ecx->m_pNext, edx) : nullptr;
 
     return result;
 }
@@ -229,7 +240,6 @@ CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
          clazz != nullptr;
          clazz = clazz->m_pfnGetBaseClass ? clazz->m_pfnGetBaseClass() : nullptr)
     {
-        // printf("%s %08X\n", clazz->m_lpszClassName, *reinterpret_cast<const DWORD*>(clazz->m_lpszClassName));
         switch (*reinterpret_cast<const DWORD*>(clazz->m_lpszClassName))
         {
         case 0x6D6F4343u: // CCommandRef
@@ -248,11 +258,27 @@ CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
                     break;
                 }
                 m_pfnGetNextCommand = reinterpret_cast<const CCommandRef_vtbl*>(vtbl)->GetNextCommand;
+                //
+                const auto start = reinterpret_cast<DWORD>(m_pVTBL->Destructor);
+                for (auto offset = start; offset - start < 0x0400; offset++)
+                {
+                    // mov     ecx, ...
+                    if (*reinterpret_cast<const BYTE*>(offset + 0x00) != 0x8B) continue;
+                    // call    ...
+                    if (*reinterpret_cast<const BYTE*>(offset + 0x02) != 0xE8) continue;
+                    const auto jump = *reinterpret_cast<const INT*>(offset + 0x03);
+                    const auto next = reinterpret_cast<FARPROC>(offset + 0x07 + jump);
+                    if (IsBadCodePtr(next)) continue;
+                    m_pfnDestructor = reinterpret_cast<void(__thiscall *)(CRio*)>(next);
+                    break;
+                }
             }
             return;
         case 0x73695643u: // CVisual
             if (clazz != CVisual::GetClassCVisual()) continue;
             {
+                // CRip, CRip007, CRip008
+                if (*reinterpret_cast<const DWORD*>(clazz->m_lpszClassName) != 0x6F695243u) continue;
                 m_pfnSerialize = reinterpret_cast<const CVisual_vtbl*>(m_pVTBL)->Serialize;
             }
             return;
@@ -289,7 +315,9 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     if (module == nullptr) return FALSE;
     for (auto clazz = module->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
     {
-        REF_MAP[clazz->m_lpszClassName] = new CObjectProxy(clazz);
+        const auto name = Unicode(clazz->m_lpszClassName, CP_SHIFT_JIS);
+        REF_MAP[name] = new CObjectProxy(clazz);
+        free(name);
     }
 
     return TRUE;
@@ -301,24 +329,19 @@ void CObjectProxy::AttachHook()
     DetourUpdateThread(GetCurrentThread());
     for (const auto& pair : REF_MAP)
     {
-        if (pair.second->m_pfnGetNextCommand != nullptr)
+        const auto ref = pair.second;
+        if (ref->m_pfnGetNextCommand != nullptr)
         {
-            printf("DetourAttach: %s::GetNextCommand\n", pair.second->m_pClass->m_lpszClassName);
-            DetourAttach(&reinterpret_cast<PVOID&>(pair.second->m_pfnGetNextCommand), HookGetNextCommand);
+            printf("DetourAttach: %s::GetNextCommand\n", ref->m_pClass->m_lpszClassName);
+            DetourAttach(&reinterpret_cast<PVOID&>(ref->m_pfnGetNextCommand), HookGetNextCommand);
+            printf("DetourAttach: %s::~%s\n", ref->m_pClass->m_lpszClassName, ref->m_pClass->m_lpszClassName);
+            DetourAttach(&reinterpret_cast<PVOID&>(ref->m_pfnDestructor), HookDestructor);
         }
 
-        if (pair.second->m_pfnSerialize != nullptr)
+        if (ref->m_pfnSerialize != nullptr)
         {
-            // TODO: CSbm ...
-            switch (*reinterpret_cast<const DWORD*>(pair.second->m_pClass->m_lpszClassName))
-            {
-            case 0x70695243u: // CRip, CRip007, CRip008
-                printf("DetourAttach: %s::Serialize\n", pair.second->m_pClass->m_lpszClassName);
-                DetourAttach(&reinterpret_cast<PVOID&>(pair.second->m_pfnSerialize), HookSerialize);
-                break;
-            default:
-                break;
-            }
+            printf("DetourAttach: %s::Serialize\n", ref->m_pClass->m_lpszClassName);
+            DetourAttach(&reinterpret_cast<PVOID&>(ref->m_pfnSerialize), HookSerialize);
         }
     }
     DetourTransactionCommit();
@@ -330,33 +353,30 @@ void CObjectProxy::DetachHook()
     DetourUpdateThread(GetCurrentThread());
     for (const auto& pair : REF_MAP)
     {
-        if (pair.second->m_pfnGetNextCommand)
+        const auto ref = pair.second;
+        if (ref->m_pfnGetNextCommand != nullptr)
         {
-            printf("DetourDetach: %s::GetNextCommand\n", pair.second->m_pClass->m_lpszClassName);
-            DetourDetach(&reinterpret_cast<PVOID&>(pair.second->m_pfnGetNextCommand), HookGetNextCommand);
+            printf("DetourDetach: %s::GetNextCommand\n", ref->m_pClass->m_lpszClassName);
+            DetourDetach(&reinterpret_cast<PVOID&>(ref->m_pfnGetNextCommand), HookGetNextCommand);
+        }
+
+        if (ref->m_pfnSerialize != nullptr)
+        {
+            printf("DetourDetach: %s::Serialize\n", ref->m_pClass->m_lpszClassName);
+            DetourDetach(&reinterpret_cast<PVOID&>(ref->m_pfnSerialize), HookSerialize);
         }
     }
     DetourTransactionCommit();
-
-    for (const auto& pair : COMMAND_MAP)
-    {
-        auto p = pair.second;
-        while (p != nullptr)
-        {
-            const auto command = p;
-            p = p->m_pNext;
-            free(command);
-        }
-    }
 }
 
 const CObject_vtbl* __fastcall CObjectProxy::FindVirtualTable( // NOLINT(*-no-recursion)
-    const CRuntimeClass* const rtc, const FARPROC ctor) // NOLINT(*-misplaced-const)
+    const CRuntimeClass* const rtc, FARPROC const ctor) // NOLINT(*-misplaced-const)
 {
     if (IsBadCodePtr(ctor)) return nullptr;
     const auto module = DetourGetContainingModule(const_cast<CRuntimeClass*>(rtc));
     if (DetourGetContainingModule(ctor) != module) return nullptr;
-    for (auto offset = reinterpret_cast<DWORD>(ctor); offset - reinterpret_cast<DWORD>(ctor) < 0x0400; offset++)
+    const auto start = reinterpret_cast<DWORD>(ctor);
+    for (auto offset = start; offset - start < 0x0400; offset++)
     {
         // mov     dword ptr [*], ...
         if (*reinterpret_cast<const BYTE*>(offset + 0x00) != 0xC7) continue;
@@ -369,7 +389,7 @@ const CObject_vtbl* __fastcall CObjectProxy::FindVirtualTable( // NOLINT(*-no-re
         if (rtc == clazz) return address;
     }
     if (ctor != reinterpret_cast<FARPROC>(rtc->m_pfnCreateObject)) return nullptr;
-    for (auto offset = reinterpret_cast<DWORD>(ctor); offset - reinterpret_cast<DWORD>(ctor) < 0x0400; offset++)
+    for (auto offset = start; offset - start < 0x0400; offset++)
     {
         // mov     ecx, ...
         if (*reinterpret_cast<const BYTE*>(offset + 0x00) != 0x8B) continue;
@@ -384,19 +404,62 @@ const CObject_vtbl* __fastcall CObjectProxy::FindVirtualTable( // NOLINT(*-no-re
     return nullptr;
 }
 
+void CObjectProxy::Clear()
+{
+    for (const auto& pair : COMMAND_MAP)
+    {
+        auto p = pair.second;
+        while (p != nullptr)
+        {
+            const auto command = p;
+            p = p->m_pNext;
+            free(command);
+        }
+    }
+    COMMAND_MAP.clear();
+
+    for (const auto& pair : REF_MAP)
+    {
+        delete pair.second;
+    }
+    REF_MAP.clear();
+}
+
 void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
 {
     TEMP_MODULE = &module;
 }
 
-void __thiscall CObjectProxy::HookSerialize(CVisual* ecx, CPmArchive* archive)
+void CObjectProxy::HookDestructor(CRio* const ecx)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
-    const auto name = ecx->GetRuntimeClass()->m_lpszClassName;
-    printf("Hook %s::Serialize(this=%s)\n", name, uuid.c_str());
+    const auto name = Unicode(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
+    const auto ref = REF_MAP[name];
+    wprintf(L"Hook %s::~%s(this=%s)\n", name, name, uuid.c_str());
+    free(name);
+
+    auto cache = COMMAND_MAP[uuid];
+    while (cache != nullptr)
+    {
+        const auto command = cache;
+        cache = cache->m_pNext;
+        free(command);
+    }
+
+    return ref->m_pfnDestructor(ecx);
+}
+
+void __thiscall CObjectProxy::HookSerialize(CVisual* const ecx, CPmArchive* const archive)
+{
+    const auto uuid = GetUUID(ecx->m_pNode);
+    const auto name = Unicode(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
+    const auto ref = REF_MAP[name];
+    wprintf(L"Hook %s::Serialize(this=%s)\n", name, uuid.c_str());
+    free(name);
+    if (ecx->m_pNode->m_dwResAddr == 0x00000000) return ref->m_pfnSerialize(ecx, archive);
 
     const auto path = GetFilePath(ecx->m_pNode);
-    const auto hFile = CreateFileA(
+    const auto hFile = CreateFileW(
         path.c_str(),
         GENERIC_READ,
         FILE_SHARE_READ,
@@ -407,15 +470,19 @@ void __thiscall CObjectProxy::HookSerialize(CVisual* ecx, CPmArchive* archive)
     if (hFile != INVALID_HANDLE_VALUE)
     {
         CloseHandle(hFile);
-        const auto load = CPmArchive::CreateLoadFilePmArchive(path.c_str());
-        REF_MAP[name]->m_pfnSerialize(ecx, load);
+        const auto ansi = Ansi(path.c_str(), CP_ACP);
+        const auto load = CPmArchive::CreateLoadFilePmArchive(ansi);
+        free(ansi);
+        ref->m_pfnSerialize(ecx, load);
         CPmArchive::DestroyPmArchive(load);
     }
     else
     {
-        REF_MAP[name]->m_pfnSerialize(ecx, archive);
-        const auto save = CPmArchive::CreateSaveFilePmArchive(path.c_str());
-        REF_MAP[name]->m_pfnSerialize(ecx, save);
+        ref->m_pfnSerialize(ecx, archive);
+        const auto ansi = Ansi(path.c_str(), CP_ACP);
+        const auto save = CPmArchive::CreateSaveFilePmArchive(ansi);
+        free(ansi);
+        ref->m_pfnSerialize(ecx, save);
         CPmArchive::DestroyPmArchive(save);
     }
 }
@@ -423,23 +490,27 @@ void __thiscall CObjectProxy::HookSerialize(CVisual* ecx, CPmArchive* archive)
 CVmCommand* __thiscall CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
-    const auto name = ecx->GetRuntimeClass()->m_lpszClassName;
-    printf("Hook %s::GetNextCommand(this=%s)\n", name, uuid.c_str());
-    auto value = REF_MAP[name]->m_pfnGetNextCommand(ecx);
+    const auto cache = COMMAND_MAP[uuid];
+    if (cache != nullptr) return cache;
+    const auto name = Unicode(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
+    const auto ref = REF_MAP[name];
+    wprintf(L"Hook %s::GetNextCommand(this=%s)\n", name, uuid.c_str());
+    free(name);
+    auto value = ref->m_pfnGetNextCommand(ecx);
 
-    const auto path = GetFilePath(ecx->m_pNode) + ".json";
-    const auto hFile = CreateFileA(
+    const auto path = GetFilePath(ecx->m_pNode) + L".json";
+    const auto hFile = CreateFileW(
         path.c_str(),
-        GENERIC_ALL,
+        GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ,
         nullptr,
         OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL,
         nullptr);
     if (hFile == INVALID_HANDLE_VALUE) return value;
-    const auto size = GetFileSize(hFile, nullptr);
-    if (size != 0x00000000)
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
     {
+        const auto size = GetFileSize(hFile, nullptr);
         const auto buffer = static_cast<char*>(malloc(size));
         ReadFile(hFile, buffer, size, nullptr, nullptr);
         CloseHandle(hFile);
@@ -459,25 +530,18 @@ CVmCommand* __thiscall CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
         cJSON_free(patch);
     }
 
-    auto p = COMMAND_MAP[uuid];
-    while (p != nullptr)
-    {
-        const auto command = p;
-        p = p->m_pNext;
-        free(command);
-    }
     COMMAND_MAP[uuid] = value;
 
     return value;
 }
 
-std::map<std::string, CObjectProxy*> CObjectProxy::REF_MAP;
+std::map<std::wstring, CObjectProxy*> CObjectProxy::REF_MAP;
 
-std::map<std::string, CVmCommand*> CObjectProxy::COMMAND_MAP;
+std::map<std::wstring, CVmCommand*> CObjectProxy::COMMAND_MAP;
 
 AFX_EXTENSION_MODULE* CObjectProxy::TEMP_MODULE;
 
-COceanTreeIterator::COceanTreeIterator(const COceanNode* root)
+COceanTreeIterator::COceanTreeIterator(const COceanNode* const root)
 {
     m_pNode = root;
     m_nLevel = root ? 1 : 0;
@@ -570,7 +634,7 @@ void COceanTreeIterator::DetachHook()
 
 COceanTreeIterator::LPGetMotherOcean COceanTreeIterator::GetMotherOcean = nullptr;
 
-COceanNode** __cdecl COceanTreeIterator::GetMotherOceanHook(COceanNode** pNode)
+COceanNode** __cdecl COceanTreeIterator::GetMotherOceanHook(COceanNode** const pNode)
 {
     GetMotherOcean(pNode);
     const auto root = *pNode;
