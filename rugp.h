@@ -139,10 +139,14 @@ public:
     static void HookAttachTextCore(HookCallback<FARPROC>, FARPROC);
 
 protected:
-    static FARPROC a;
-    static FARPROC b;
-    static FARPROC c;
-    static FARPROC d;
+    static FARPROC IS;
+    static FARPROC SINGLE;
+    static FARPROC MULTIPLE;
+    static FARPROC SIZE;
+
+    static void EbxToEsi();
+    static void EbpToEbx();
+    static void EsiToEbx();
 
     static FARPROC GetAttachTextCore();
     static FARPROC GetAttachInstructionText();

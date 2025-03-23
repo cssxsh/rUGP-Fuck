@@ -663,63 +663,177 @@ const CRuntimeClass* CMessBox::GetClassCMessBox()
     return nullptr;
 }
 
-__declspec(naked) void __cdecl GetEbpToEbx()
-{
-    // __asm call    CMessBox::a;
-    __asm mov     ecx, ebp;
-    __asm dec     ecx;
-    __asm push    ecx;
-    __asm mov     ecx, esi;
-    __asm call    CMessBox::d;
-    __asm dec     eax;
-    __asm test    eax, eax;
-    __asm jz      end;
-    loc:
-    __asm xor     ecx, ecx;
-    __asm mov     cl, [ebp+0];
-    __asm shl     ebx, 8;
-    __asm or      ebx, ecx;
-    __asm inc     ebp;
-    __asm dec     eax;
-    __asm test    eax, eax;
-    __asm jnz     loc;
-    __asm jmp     CMessBox::c;
-    end:
-    __asm jmp     CMessBox::b;
-}
-
-FARPROC CMessBox::a;
-
-FARPROC CMessBox::b;
-
-FARPROC CMessBox::c;
-
-FARPROC CMessBox::d;
-
 void CMessBox::HookAttachTextCore(const HookCallback<FARPROC> callback, const FARPROC hook) // NOLINT(*-misplaced-const)
 {
-    const auto address = GetAttachTextCore();
-    auto start = reinterpret_cast<DWORD>(address);
-    // mov     al, bl
-    // xor     al, 20h
-    for (auto offset = start; offset - start < 0x1000; offset++)
+    const auto clazz = GetClassCMessBox();
+    switch (clazz->m_wSchema)
     {
-        if (*reinterpret_cast<const DWORD*>(offset + 0x00) != 0x2034C38Au) continue;
-        start = offset;
+    case 0xE000000Au:
+    case 0xE000000Cu:
+        if (IS == nullptr)
+        {
+            const auto address = GetAttachTextCore();
+            auto start = reinterpret_cast<DWORD>(address);
+            // push    esi
+            // call    ...
+            for (auto offset = start; offset - start < 0x1000; offset++)
+            {
+                if (*reinterpret_cast<const BYTE*>(offset + 0x00) != 0x56u) continue;
+                if (*reinterpret_cast<const BYTE*>(offset + 0x01) != 0xFFu) continue;
+                start = offset;
+                break;
+            }
+            if (start == reinterpret_cast<DWORD>(address)) return;
+            const auto l0 = start;
+            // jz      ...
+            const auto l1 = l0 + 0x0012 + *reinterpret_cast<DWORD*>(l0 + 0x000E);
+            // cmp     ebx, 8179h
+            const auto l2 = l0 + 0x001C;
+
+            IS = reinterpret_cast<FARPROC>(l0);
+            SINGLE = reinterpret_cast<FARPROC>(l1);
+            MULTIPLE = reinterpret_cast<FARPROC>(l2);
+        }
+        callback(IS, reinterpret_cast<FARPROC>(EbxToEsi));
+        SIZE = hook;
+        break;
+    case 0xE000000Fu:
+        if (IS == nullptr)
+        {
+            const auto address = GetAttachTextCore();
+            auto start = reinterpret_cast<DWORD>(address);
+            // mov     al, bl
+            // xor     al, 20h
+            for (auto offset = start; offset - start < 0x1000; offset++)
+            {
+                if (*reinterpret_cast<const DWORD*>(offset + 0x00) != 0x2034C38Au) continue;
+                start = offset;
+                break;
+            }
+            if (start == reinterpret_cast<DWORD>(address)) return;
+            const auto l0 = start;
+            // ja      ...
+            const auto l1 = l0 + 0x000E + *reinterpret_cast<DWORD*>(l0 + 0x000A);
+            // cmp     ebx, 8179h
+            const auto l2 = l0 + 0x0019;
+
+            IS = reinterpret_cast<FARPROC>(l0);
+            SINGLE = reinterpret_cast<FARPROC>(l1);
+            MULTIPLE = reinterpret_cast<FARPROC>(l2);
+        }
+        callback(IS, reinterpret_cast<FARPROC>(EbpToEbx));
+        SIZE = hook;
+        break;
+    case 0xE0000011u:
+        if (IS == nullptr)
+        {
+            const auto address = GetAttachTextCore();
+            auto start = reinterpret_cast<DWORD>(address);
+            // mov     al, bl
+            // xor     al, 20h
+            for (auto offset = start; offset - start < 0x1000; offset++)
+            {
+                if (*reinterpret_cast<const DWORD*>(offset + 0x00) != 0x2034C38Au) continue;
+                start = offset;
+                break;
+            }
+            if (start == reinterpret_cast<DWORD>(address)) return;
+            const auto l0 = start;
+            // ja      ...
+            const auto l1 = l0 + 0x000E + *reinterpret_cast<DWORD*>(l0 + 0x000A);
+            // cmp     ...
+            const auto l2 = l0 + 0x0017;
+
+            IS = reinterpret_cast<FARPROC>(l0);
+            SINGLE = reinterpret_cast<FARPROC>(l1);
+            MULTIPLE = reinterpret_cast<FARPROC>(l2);
+        }
+        callback(IS, reinterpret_cast<FARPROC>(EsiToEbx));
+        SIZE = hook;
+        break;
+    default:
         break;
     }
-    if (start == reinterpret_cast<DWORD>(address)) return;
-    const auto l0 = start;
-    // ja      ...
-    const auto l1 = l0 + 0x000E + *reinterpret_cast<DWORD*>(l0 + 0x000A);
-    // cmp     ebx, 8179h
-    const auto l2 = l0 + 0x0019;
+}
 
-    a = reinterpret_cast<FARPROC>(l0);
-    b = reinterpret_cast<FARPROC>(l1);
-    c = reinterpret_cast<FARPROC>(l2);
-    d = hook;
-    callback(a, reinterpret_cast<FARPROC>(GetEbpToEbx));
+FARPROC CMessBox::IS;
+
+FARPROC CMessBox::SINGLE;
+
+FARPROC CMessBox::MULTIPLE;
+
+FARPROC CMessBox::SIZE;
+
+__declspec(naked) void CMessBox::EbxToEsi()
+{
+    __asm mov ecx, ebx;
+    __asm dec ecx;
+    __asm push ecx;
+    __asm mov ecx, edi;
+    __asm call CMessBox::SIZE;
+    __asm dec eax;
+    __asm test eax, eax;
+    __asm jz end;
+loc:
+    __asm xor ecx, ecx;
+    __asm mov cl, [ebx];
+    __asm inc ebx;
+    __asm shl esi, 8;
+    __asm or esi, ecx;
+    __asm dec eax;
+    __asm test eax, eax;
+    __asm jnz loc;
+    __asm jmp CMessBox::MULTIPLE;
+end:
+    __asm jmp CMessBox::SINGLE;
+}
+
+__declspec(naked) void CMessBox::EbpToEbx()
+{
+    __asm mov ecx, ebp;
+    __asm dec ecx;
+    __asm push ecx;
+    __asm mov ecx, esi;
+    __asm call CMessBox::SIZE;
+    __asm dec eax;
+    __asm test eax, eax;
+    __asm jz end;
+loc:
+    __asm xor ecx, ecx;
+    __asm mov cl, [ebp];
+    __asm inc ebp;
+    __asm shl ebx, 8;
+    __asm or ebx, ecx;
+    __asm dec eax;
+    __asm test eax, eax;
+    __asm jnz loc;
+    __asm jmp CMessBox::MULTIPLE;
+end:
+    __asm jmp CMessBox::SINGLE;
+}
+
+__declspec(naked) void CMessBox::EsiToEbx()
+{
+    __asm mov ecx, esi;
+    __asm dec ecx;
+    __asm push ecx;
+    __asm mov ecx, edx;
+    __asm call CMessBox::SIZE;
+    __asm dec eax;
+    __asm test eax, eax;
+    __asm jz end;
+loc:
+    __asm xor ecx, ecx;
+    __asm mov cl, [esi];
+    __asm inc esi;
+    __asm shl ebx, 8;
+    __asm or ebx, ecx;
+    __asm dec eax;
+    __asm test eax, eax;
+    __asm jnz loc;
+    __asm jmp CMessBox::MULTIPLE;
+end:
+    __asm jmp CMessBox::SINGLE;
 }
 
 FARPROC CMessBox::GetAttachTextCore()
