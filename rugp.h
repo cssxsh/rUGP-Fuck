@@ -7,33 +7,28 @@ struct MFC_MODULE;
 
 class CObjectEx;
 class CRio;
-class CVisual;
 
-class CRioMsg;
-struct CMemberInfo;
-struct CRuntimeClassMsg;
+class CVisual;
+class CRip;
+class CS5i;
+
+class CUI;
+class CImgBox;
+class CMessBox;
 
 class CPmArchive;
 class COceanNode;
 
 class CCommandRef;
 class CVmCommand;
-class CVmSync;
-class CVmImage;
-class CVmRet;
-class CVmSound;
 class CVmMsg;
-class CVmCall;
-class CVmGenericMsg;
-class CVmLabel;
-class CVmFlagOp;
-class CVmBlt;
-class CVmJump;
 
 struct CObject_vtbl;
 struct CObjectEx_vtbl;
-struct CVisual_vtbl;
 struct CCommandRef_vtbl;
+
+template <typename F>
+using HookProc = F (CALLBACK*)(F, F);
 
 struct MFC_MODULE
 {
@@ -79,6 +74,12 @@ public:
     // virtual DWORD Release() = 0;
     // virtual BOOL NewObjectConstruct(LPCSTR) = 0;
     // virtual void SerializeUserCondition(CPmArchive&) = 0;
+
+    using REG = void (__cdecl *)(AFX_EXTENSION_MODULE&);
+
+    static void __cdecl LibrarySupport(AFX_EXTENSION_MODULE&);
+
+    static FARPROC HookLibrarySupport(HookProc<REG>, REG);
 };
 
 class CVisual : public CRio
@@ -87,30 +88,61 @@ public:
     DECLARE_DYNAMIC_RIO(CVisual)
 };
 
-class CRioMsg
+class CRip : public CVisual
 {
 public:
-    CRuntimeClassMsg* m_pRTC;
-    DWORD field_0004;
-    CPmArchive* m_pArchive;
-    COceanNode* m_pNode;
-    DWORD field_0010;
+    DECLARE_DYNAMIC_RIO(CRip)
 };
 
-struct CMemberInfo
+class CS5i : public CVisual
 {
-    LPCSTR m_lpszName;
-    CRuntimeClass* m_pRTC;
-    DWORD m_dwOffset;
+public:
+    DECLARE_DYNAMIC_RIO(CS5i)
+
+    using LPDrawSzText = void (__thiscall *)(CS5i*, DWORD, DWORD, LPBYTE, COceanNode**);
+    using LPDrawSzTextClip = void (__thiscall *)(CS5i*, DWORD, DWORD, LPBYTE, COceanNode**, WORD*);
+    using LPDrawFont = DWORD (__thiscall *)(CS5i*, DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
+
+    DWORD DrawFont(DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
+
+    static FARPROC HookDrawSzText(HookProc<LPDrawSzText>, LPDrawSzText);
+    static FARPROC HookDrawSzTextClip(HookProc<LPDrawSzTextClip>, LPDrawSzTextClip);
+    static FARPROC HookDrawFont(HookProc<LPDrawFont>, LPDrawFont);
+
+protected:
+    static const CObjectEx_vtbl* GetVisualTable();
 };
 
-struct CRuntimeClassMsg
+class CUI : public CRio
 {
-    LPCSTR m_lpszClassName;
-    CMemberInfo* m_pParamArray;
-    SIZE_T m_nSizeOfMsg;
-    DWORD m_dwFlags;
-    CRuntimeClassMsg* m_pNext;
+public:
+    DECLARE_DYNAMIC_RIO(CUI)
+};
+
+class CImgBox : public CUI
+{
+public:
+    DECLARE_DYNAMIC_RIO(CImgBox)
+
+    using LPDrawSzText = void (__thiscall *)(CImgBox*, DWORD, DWORD, LPBYTE, COceanNode**);
+    using LPDrawFont = DWORD (__thiscall *)(CImgBox*, DWORD, DWORD, UINT, COceanNode**);
+
+    DWORD DrawFont(DWORD, DWORD, UINT, COceanNode**);
+
+    static FARPROC HookDrawSzText(HookProc<LPDrawSzText>, LPDrawSzText);
+};
+
+class CMessBox : public CRio
+{
+public:
+    DECLARE_DYNAMIC_RIO(CMessBox)
+
+    using LPAttachTextCore = void (__thiscall *)(CMessBox*, LPBYTE);
+
+    static FARPROC HookAttachTextCore(HookProc<LPAttachTextCore>, LPAttachTextCore);
+
+protected:
+    static const CObjectEx_vtbl* GetVisualTable();
 };
 
 class CPmArchive
@@ -158,12 +190,17 @@ protected:
     ~COceanNode() = default;
 
 public:
+    using GET = COceanNode** (__cdecl *)(COceanNode**);
+
     BOOL IsDerivedFrom(const CRuntimeClass*) const;
     CRio* Fetch() const;
     DWORD GetAddress() const;
 
     static const COceanNode* GetRoot();
     static const COceanNode* GetNull();
+    static const COceanNode* GetMotherOcean();
+
+    static FARPROC HookGetMotherOcean(HookProc<GET>, GET);
 };
 
 class CCommandRef : public CRio
@@ -185,44 +222,6 @@ public:
     int GetVariableAreaSize() const;
 };
 
-class CVmSync : public CVmCommand
-{
-public:
-    DECLARE_DYNAMIC_EX(CVmSync)
-
-    COceanNode* m_pNode; // CRio
-    DWORD field_0010; // BYTE
-    DWORD field_0014;
-};
-
-class CVmImage : public CVmCommand
-{
-public:
-    DECLARE_DYNAMIC_EX(CVmImage)
-
-    WORD field_000C;
-    WORD field_000E;
-    DWORD field_0010; // CVmVar*
-    DWORD field_0014; // CVmVar*
-    DWORD field_0018; // BYTE
-};
-
-class CVmRet : public CVmCommand
-{
-public:
-    DECLARE_DYNAMIC_EX(CVmRet)
-};
-
-class CVmSound : public CVmCommand
-{
-public:
-    DECLARE_DYNAMIC_EX(CVmSound)
-
-    COceanNode* m_pPmSoundNode; // CPmSound
-    DWORD field_0010;
-    DWORD field_0014;
-};
-
 class CVmMsg : public CVmCommand
 {
 public:
@@ -231,71 +230,6 @@ public:
     COceanNode* m_pMessBoxNode; // CMessBox
     COceanNode* m_pCRioNode; // COptimizedObs
     CHAR m_area[];
-};
-
-class CVmCall : public CVmCommand
-{
-public:
-    DECLARE_DYNAMIC_EX(CVmCall)
-
-    COceanNode* m_pRsaNode; // CRsa
-    DWORD m_nCount;
-    DWORD m_area[];
-};
-
-class CVmGenericMsg : public CVmCommand
-{
-public:
-    struct Part
-    {
-        CMemberInfo* m_pMemberInfo;
-        COceanNode* m_pNode;
-    };
-
-    DECLARE_DYNAMIC_EX(CVmGenericMsg)
-
-    CRioMsg* m_pMSG;
-    DWORD field_0010; // CVmVar
-    DWORD field_0014;
-    DWORD m_nCount;
-    Part m_area[];
-};
-
-class CVmLabel : public CVmCommand
-{
-public:
-    DECLARE_DYNAMIC_EX(CVmLabel)
-
-    COceanNode* m_pCLabelNode; // CLabel
-};
-
-class CVmFlagOp : public CVmCommand
-{
-public:
-    DECLARE_DYNAMIC_EX(CVmFlagOp)
-
-    DWORD field_000C; // CVmVar
-    DWORD field_0010; // CVmVar
-    COceanNode* m_pCCommandRefNode; // CCommandRef
-    WORD field_001C;
-};
-
-class CVmBlt : public CVmCommand
-{
-public:
-    DECLARE_DYNAMIC_EX(CVmBlt)
-
-    DWORD field_000C; // Position
-    DWORD field_0010; // CVmVar
-    DWORD field_0014; // CVmVar
-};
-
-class CVmJump : public CVmCommand
-{
-public:
-    DECLARE_DYNAMIC_EX(CVmJump)
-
-    COceanNode* m_pCCommandRefNode; // CCommandRef
 };
 
 struct CObject_vtbl
@@ -310,11 +244,6 @@ struct CObject_vtbl
 struct CObjectEx_vtbl : CObject_vtbl
 {
     void (__thiscall *Serialize)(CObjectEx*, CPmArchive*);
-};
-
-struct CVisual_vtbl : CObject_vtbl
-{
-    void (__thiscall *Serialize)(CVisual*, CPmArchive*);
 };
 
 struct CCommandRef_vtbl

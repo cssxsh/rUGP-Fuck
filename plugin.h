@@ -48,6 +48,12 @@ std::wstring GetFilePath(const COceanNode* node);
 
 std::wstring GetGameName();
 
+template <typename F>
+F CALLBACK AttachDetourHook(F, F);
+
+template <typename F>
+F CALLBACK DetachDetourHook(F, F);
+
 class CObjectProxy final
 {
 public:
@@ -55,7 +61,7 @@ public:
     const CObject_vtbl* m_pVTBL = nullptr;
     CObject* (__stdcall *m_pfnCreateObject)() = nullptr;
     void (__thiscall *m_pfnDestructor)(CRio*) = nullptr;
-    void (__thiscall *m_pfnSerialize)(CVisual*, CPmArchive*) = nullptr;
+    void (__thiscall *m_pfnSerialize)(CObjectEx*, CPmArchive*) = nullptr;
     CVmCommand* (__thiscall *m_pfnGetNextCommand)(CCommandRef*) = nullptr;
 
     explicit CObjectProxy(const CRuntimeClass* pClass);
@@ -72,10 +78,17 @@ protected:
 
     static const CObject_vtbl* __fastcall FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
 
-    static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE&);
-    static void __thiscall HookDestructor(CRio*);
+    static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE& module);
+    static void __thiscall HookDestructor(CRio* ecx);
     static void __thiscall HookSerialize(CVisual* ecx, CPmArchive* archive);
     static CVmCommand* __thiscall HookGetNextCommand(CCommandRef* ecx);
+
+    static void __thiscall HookDrawSzText(CS5i* ecx, DWORD, DWORD, LPBYTE, COceanNode**);
+    static void __thiscall HookDrawSzTextClip(CS5i* ecx, DWORD, DWORD, LPBYTE, COceanNode**, WORD*);
+
+    static void __thiscall HookDrawSzText(CImgBox* ecx, DWORD, DWORD, LPBYTE, COceanNode**);
+
+    static void __thiscall HookAttachTextCore(CMessBox* ecx, LPBYTE);
 };
 
 class COceanTreeIterator final
@@ -93,11 +106,10 @@ protected:
     DWORD m_nLevel;
     std::map<const COceanNode*, WORD> m_pVisited;
 
-    typedef COceanNode** (__cdecl *LPGetMotherOcean)(COceanNode**);
+    static FARPROC CALLBACK Attach(FARPROC, FARPROC);
+    static FARPROC CALLBACK Detach(FARPROC, FARPROC);
 
-    static LPGetMotherOcean GetMotherOcean;
-
-    static COceanNode** __cdecl GetMotherOceanHook(COceanNode** pNode);
+    static COceanNode** __cdecl HookGetMotherOcean(COceanNode** pNode);
 };
 
 #endif // PLUGIN_H
