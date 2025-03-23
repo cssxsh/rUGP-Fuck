@@ -25,10 +25,9 @@ class CVmMsg;
 
 struct CObject_vtbl;
 struct CObjectEx_vtbl;
-struct CCommandRef_vtbl;
 
 template <typename F>
-using HookProc = F (CALLBACK*)(F, F);
+using HookCallback = void (CALLBACK*)(F&, F);
 
 struct MFC_MODULE
 {
@@ -79,7 +78,7 @@ public:
 
     static void __cdecl LibrarySupport(AFX_EXTENSION_MODULE&);
 
-    static FARPROC HookLibrarySupport(HookProc<REG>, REG);
+    static void HookLibrarySupport(HookCallback<REG>, REG);
 };
 
 class CVisual : public CRio
@@ -99,15 +98,15 @@ class CS5i : public CVisual
 public:
     DECLARE_DYNAMIC_RIO(CS5i)
 
-    using LPDrawSzText = void (__thiscall *)(CS5i*, DWORD, DWORD, LPBYTE, COceanNode**);
-    using LPDrawSzTextClip = void (__thiscall *)(CS5i*, DWORD, DWORD, LPBYTE, COceanNode**, WORD*);
+    using LPDrawSzText = void (__thiscall *)(CS5i*, DWORD, DWORD, LPCSTR, COceanNode**);
+    using LPDrawSzTextClip = void (__thiscall *)(CS5i*, DWORD, DWORD, LPCSTR, COceanNode**, WORD*);
     using LPDrawFont = DWORD (__thiscall *)(CS5i*, DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
 
     DWORD DrawFont(DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
 
-    static FARPROC HookDrawSzText(HookProc<LPDrawSzText>, LPDrawSzText);
-    static FARPROC HookDrawSzTextClip(HookProc<LPDrawSzTextClip>, LPDrawSzTextClip);
-    static FARPROC HookDrawFont(HookProc<LPDrawFont>, LPDrawFont);
+    static void HookDrawSzText(HookCallback<LPDrawSzText>, LPDrawSzText);
+    static void HookDrawSzTextClip(HookCallback<LPDrawSzTextClip>, LPDrawSzTextClip);
+    static void HookDrawFont(HookCallback<LPDrawFont>, LPDrawFont);
 
 protected:
     static const CObjectEx_vtbl* GetVisualTable();
@@ -124,12 +123,12 @@ class CImgBox : public CUI
 public:
     DECLARE_DYNAMIC_RIO(CImgBox)
 
-    using LPDrawSzText = void (__thiscall *)(CImgBox*, DWORD, DWORD, LPBYTE, COceanNode**);
+    using LPDrawSzText = void (__thiscall *)(CImgBox*, DWORD, DWORD, LPCSTR, COceanNode**);
     using LPDrawFont = DWORD (__thiscall *)(CImgBox*, DWORD, DWORD, UINT, COceanNode**);
 
     DWORD DrawFont(DWORD, DWORD, UINT, COceanNode**);
 
-    static FARPROC HookDrawSzText(HookProc<LPDrawSzText>, LPDrawSzText);
+    static void HookDrawSzText(HookCallback<LPDrawSzText>, LPDrawSzText);
 };
 
 class CMessBox : public CRio
@@ -137,11 +136,16 @@ class CMessBox : public CRio
 public:
     DECLARE_DYNAMIC_RIO(CMessBox)
 
-    using LPAttachTextCore = void (__thiscall *)(CMessBox*, LPBYTE);
-
-    static FARPROC HookAttachTextCore(HookProc<LPAttachTextCore>, LPAttachTextCore);
+    static void HookAttachTextCore(HookCallback<FARPROC>, FARPROC);
 
 protected:
+    static FARPROC a;
+    static FARPROC b;
+    static FARPROC c;
+    static FARPROC d;
+
+    static FARPROC GetAttachTextCore();
+    static FARPROC GetAttachInstructionText();
     static const CObjectEx_vtbl* GetVisualTable();
 };
 
@@ -152,6 +156,8 @@ protected:
 
 public:
     virtual LONG Seek(LONG, UINT) = 0;
+
+    const CArchive* GetNative();
 
     static CPmArchive* CreateLoadFilePmArchive(LPCSTR path);
     static CPmArchive* CreateSaveFilePmArchive(LPCSTR path);
@@ -190,17 +196,20 @@ protected:
     ~COceanNode() = default;
 
 public:
+    using RELEASE = void (__thiscall *)(COceanNode*);
     using GET = COceanNode** (__cdecl *)(COceanNode**);
 
     BOOL IsDerivedFrom(const CRuntimeClass*) const;
     CRio* Fetch() const;
+    void Release();
     DWORD GetAddress() const;
 
     static const COceanNode* GetRoot();
     static const COceanNode* GetNull();
     static const COceanNode* GetMotherOcean();
 
-    static FARPROC HookGetMotherOcean(HookProc<GET>, GET);
+    static void HookRelease(HookCallback<RELEASE>, RELEASE);
+    static void HookGetMotherOcean(HookCallback<GET>, GET);
 };
 
 class CCommandRef : public CRio
@@ -244,11 +253,6 @@ struct CObject_vtbl
 struct CObjectEx_vtbl : CObject_vtbl
 {
     void (__thiscall *Serialize)(CObjectEx*, CPmArchive*);
-};
-
-struct CCommandRef_vtbl
-{
-    CVmCommand* (__thiscall *GetNextCommand)(CCommandRef*);
 };
 
 #endif // RUGP_H

@@ -69,7 +69,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
 
         __try
         {
-            COceanTreeIterator::AttachHook();
+            COceanTree::AttachHook();
         }
         __except (EXCEPTION_EXECUTE_HANDLER)
         {
@@ -80,7 +80,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
     case DLL_PROCESS_DETACH:
         __try
         {
-            COceanTreeIterator::DetachHook();
+            COceanTree::DetachHook();
         }
         __except (EXCEPTION_EXECUTE_HANDLER)
         {
@@ -165,25 +165,21 @@ std::wstring GetGameName()
 }
 
 template <typename F>
-F CALLBACK AttachDetourHook(F from, const F to)
+void CALLBACK DetourAttachCallback(F& from, const F to)
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach(&reinterpret_cast<PVOID&>(from), reinterpret_cast<PVOID>(to));
     DetourTransactionCommit();
-
-    return from;
 }
 
 template <typename F>
-F CALLBACK DetachDetourHook(F from, const F to)
+void CALLBACK DetourDetachCallback(F& from, const F to)
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourDetach(&reinterpret_cast<PVOID&>(from), reinterpret_cast<PVOID>(to));
     DetourTransactionCommit();
-
-    return from;
 }
 
 BOOL CreateMergeDirectory()
@@ -266,19 +262,19 @@ CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
     const auto mfc = GetMfc();
     if (pClass->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
     {
-        auto vtbl = reinterpret_cast<DWORD>(m_pVTBL);
+        const auto vtbl = reinterpret_cast<const FARPROC*>(m_pVTBL);
         switch (mfc.version)
         {
         case 0x0600:
-            vtbl += 0x002C;
+            m_pfnGetNextCommand = reinterpret_cast<CVmCommand*(__thiscall *)(CCommandRef*)>(vtbl[0x000B]);
             break;
         case 0x0C00:
-            vtbl += 0x0030;
-            break;
+            m_pfnGetNextCommand = reinterpret_cast<CVmCommand*(__thiscall *)(CCommandRef*)>(vtbl[0x000C]);
         default:
+            // TODO ?GetNextCommand@CCommandRef@@UBEPAVCVmCommand@@XZ
+            m_pfnGetNextCommand = nullptr;
             break;
         }
-        m_pfnGetNextCommand = reinterpret_cast<const CCommandRef_vtbl*>(vtbl)->GetNextCommand;
         //
         const auto start = reinterpret_cast<DWORD>(m_pVTBL->Destructor);
         for (auto offset = start; offset - start < 0x0400; offset++)
@@ -308,11 +304,12 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     const auto proc = GetProcAddress(hModule, "PluginThisLibrary");
     if (proc == nullptr) return FALSE;
 
-    TEMP_MODULE = nullptr;
-    CRio::HookLibrarySupport(DetachDetourHook<CRio::REG>, HookSupportRio);
+    MODULE_MAP[hModule] = nullptr;
+    CRio::HookLibrarySupport(DetourAttachCallback<CRio::REG>, HookSupportRio);
     auto module = reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
-    CRio::HookLibrarySupport(DetachDetourHook<CRio::REG>, HookSupportRio);
-    if (TEMP_MODULE != nullptr) module = TEMP_MODULE;
+    CRio::HookLibrarySupport(DetourDetachCallback<CRio::REG>, HookSupportRio);
+    if (MODULE_MAP[hModule] != nullptr) module = MODULE_MAP[hModule];
+    else MODULE_MAP[hModule] = module;
     for (auto clazz = module->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
     {
         const auto name = Unicode(clazz->m_lpszClassName, CP_SHIFT_JIS);
@@ -354,12 +351,12 @@ void CObjectProxy::AttachHook()
     // CS5i::HookDrawSzText(AttachDetourHook<CS5i::LPDrawSzText>, HookDrawSzText);
     // wprintf(L"DetourAttach: CS5i::DrawSzTextClip\n");
     // CS5i::HookDrawSzTextClip(AttachDetourHook<CS5i::LPDrawSzTextClip>, HookDrawSzTextClip);
-    //
+
     // wprintf(L"DetourAttach: CImgBox::DrawSzText\n");
     // CImgBox::HookDrawSzText(AttachDetourHook<CImgBox::LPDrawSzText>, HookDrawSzText);
 
     wprintf(L"DetourAttach: CMessBox::AttachTextCore\n");
-    CMessBox::HookAttachTextCore(AttachDetourHook<CMessBox::LPAttachTextCore>, HookAttachTextCore);
+    CMessBox::HookAttachTextCore(DetourAttachCallback<FARPROC>, reinterpret_cast<FARPROC>(HookCharacterByteSize));
 }
 
 void CObjectProxy::DetachHook()
@@ -390,7 +387,7 @@ void CObjectProxy::DetachHook()
     DetourTransactionCommit();
 }
 
-const CObject_vtbl* __fastcall CObjectProxy::FindVirtualTable( // NOLINT(*-no-recursion)
+const CObject_vtbl* CObjectProxy::FindVirtualTable( // NOLINT(*-no-recursion)
     const CRuntimeClass* const rtc, FARPROC const ctor) // NOLINT(*-misplaced-const)
 {
     if (IsBadCodePtr(ctor)) return nullptr;
@@ -452,7 +449,7 @@ void CObjectProxy::Clear()
 void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
 {
     CRio::LibrarySupport(module);
-    TEMP_MODULE = &module;
+    MODULE_MAP[DetourGetContainingModule(&module)] = &module;
 }
 
 void CObjectProxy::HookDestructor(CRio* const ecx)
@@ -475,12 +472,12 @@ void CObjectProxy::HookDestructor(CRio* const ecx)
     return ref->m_pfnDestructor(ecx);
 }
 
-void __thiscall CObjectProxy::HookSerialize(CVisual* const ecx, CPmArchive* const archive)
+void CObjectProxy::HookSerialize(CVisual* const ecx, CPmArchive* const archive)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
     const auto name = Unicode(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
     const auto ref = REF_MAP[name];
-    wprintf(L"Hook %s::Serialize(this=%s)\n", name, uuid.c_str());
+    wprintf(L"Hook %s::Serialize(this=%s, file=0x%p)\n", name, uuid.c_str(), archive->GetNative()->GetFile()->m_hFile);
     free(name);
     if (ecx->m_pNode->m_dwResAddr == 0x00000000) return ref->m_pfnSerialize(ecx, archive);
 
@@ -513,7 +510,7 @@ void __thiscall CObjectProxy::HookSerialize(CVisual* const ecx, CPmArchive* cons
     }
 }
 
-CVmCommand* __thiscall CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
+CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
     const auto cache = COMMAND_MAP[uuid];
@@ -562,8 +559,7 @@ CVmCommand* __thiscall CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
 }
 
 void CObjectProxy::HookDrawSzText(
-    CS5i* const ecx, DWORD const x0, DWORD const y0, LPBYTE const text, // NOLINT(*-misplaced-const)
-    COceanNode** const context)
+    CS5i* const ecx, DWORD const x0, DWORD const y0, LPCSTR const text, COceanNode** const context)
 {
     WORD body[4];
     body[0] = *reinterpret_cast<WORD*>(reinterpret_cast<DWORD>(ecx) + 0x24);
@@ -575,14 +571,13 @@ void CObjectProxy::HookDrawSzText(
 }
 
 void CObjectProxy::HookDrawSzTextClip(
-    CS5i* const ecx, DWORD const x0, DWORD const y0, LPBYTE const text, // NOLINT(*-misplaced-const)
-    COceanNode** const context, WORD* const body)
+    CS5i* const ecx, DWORD const x0, DWORD const y0, LPCSTR const text, COceanNode** const context, WORD* const body)
 {
     auto x = x0;
     auto y = y0;
     for (auto ptr = text; *ptr != '\0'; ++ptr)
     {
-        auto uChar = static_cast<UINT>(*ptr);
+        auto uChar = static_cast<UINT>(*ptr); // NOLINT(*-str34-c)
         if (uChar == '\n')
         {
             x = x0;
@@ -602,14 +597,13 @@ void CObjectProxy::HookDrawSzTextClip(
 }
 
 void CObjectProxy::HookDrawSzText(
-    CImgBox* const ecx, DWORD const x0, DWORD const y0, LPBYTE const text, // NOLINT(*-misplaced-const)
-    COceanNode** const context)
+    CImgBox* const ecx, DWORD const x0, DWORD const y0, LPCSTR const text, COceanNode** const context)
 {
     auto x = x0;
     auto y = y0;
     for (auto ptr = text; *ptr != '\0'; ++ptr)
     {
-        auto uChar = static_cast<UINT>(*ptr);
+        auto uChar = static_cast<UINT>(*ptr); // NOLINT(*-str34-c)
         if (uChar == '\n')
         {
             x = x0;
@@ -627,30 +621,60 @@ void CObjectProxy::HookDrawSzText(
     }
 }
 
-void CObjectProxy::HookAttachTextCore(
-    CMessBox* const ecx, LPBYTE const text) // NOLINT(*-misplaced-const)
+int CObjectProxy::HookCharacterByteSize(
+    CRio* const ecx, LPCSTR const text)
 {
-    wprintf(L"%hs\n", reinterpret_cast<LPCSTR>(text));
+    // if ((text[0x0000] & 0x80) == 0x00) return 1;
+    // if ((text[0x0000] & 0xE0) == 0xC0) return 2;
+    // if ((text[0x0000] & 0xF0) == 0xE0) return 3;
+    // if ((text[0x0000] & 0xF8) == 0xF0) return 4;
+    // const auto unicode = Unicode(text, CP_SHIFT_JIS);
+    // free(unicode);
+    return (text[0x0000] ^ 0x20) + 0x5F <= 0x3Bu ? 0x02 : 0x01;
 }
 
 std::map<std::wstring, CObjectProxy*> CObjectProxy::REF_MAP;
 
 std::map<std::wstring, CVmCommand*> CObjectProxy::COMMAND_MAP;
 
-AFX_EXTENSION_MODULE* CObjectProxy::TEMP_MODULE;
+std::map<HMODULE, const AFX_EXTENSION_MODULE*> CObjectProxy::MODULE_MAP;
 
-COceanTreeIterator::COceanTreeIterator(const COceanNode* const root)
+void COceanTree::AttachHook()
+{
+    COceanNode::HookGetMotherOcean(DetourAttachCallback<COceanNode::GET>, HookGetMotherOcean);
+}
+
+void COceanTree::DetachHook()
+{
+    COceanNode::HookGetMotherOcean(DetourDetachCallback<COceanNode::GET>, HookGetMotherOcean);
+}
+
+COceanNode** COceanTree::HookGetMotherOcean(COceanNode** pNode)
+{
+    wprintf(L"Hook GetMotherOcean()\n");
+    *pNode = const_cast<COceanNode*>(COceanNode::GetMotherOcean());
+    const auto root = *pNode;
+    auto iterator = Iterator(root);
+    for (auto node = iterator.Next(); node != nullptr; node = iterator.Next())
+    {
+        // TODO ...
+    }
+
+    return pNode;
+}
+
+COceanTree::Iterator::Iterator(const COceanNode* const root)
 {
     m_pNode = root;
     m_nLevel = root ? 1 : 0;
 }
 
-DWORD COceanTreeIterator::Level() const
+DWORD COceanTree::Iterator::Level() const
 {
     return m_nLevel;
 }
 
-const COceanNode* COceanTreeIterator::Next()
+const COceanNode* COceanTree::Iterator::Next()
 {
     const auto node = m_pNode;
     if (node == nullptr) return nullptr;
@@ -689,27 +713,4 @@ const COceanNode* COceanTreeIterator::Next()
     m_pNode = nullptr;
     m_nLevel = 0;
     return nullptr;
-}
-
-void COceanTreeIterator::AttachHook()
-{
-    COceanNode::HookGetMotherOcean(AttachDetourHook<COceanNode::GET>, HookGetMotherOcean);
-}
-
-void COceanTreeIterator::DetachHook()
-{
-    COceanNode::HookGetMotherOcean(DetachDetourHook<COceanNode::GET>, HookGetMotherOcean);
-}
-
-COceanNode** __cdecl COceanTreeIterator::HookGetMotherOcean(COceanNode** pNode)
-{
-    *pNode = const_cast<COceanNode*>(COceanNode::GetMotherOcean());
-    const auto root = *pNode;
-    auto iterator = COceanTreeIterator(root);
-    for (auto node = iterator.Next(); node != nullptr; node = iterator.Next())
-    {
-        // TODO ...
-    }
-
-    return pNode;
 }

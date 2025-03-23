@@ -49,10 +49,10 @@ std::wstring GetFilePath(const COceanNode* node);
 std::wstring GetGameName();
 
 template <typename F>
-F CALLBACK AttachDetourHook(F, F);
+void CALLBACK DetourAttachCallback(F&, F);
 
 template <typename F>
-F CALLBACK DetachDetourHook(F, F);
+void CALLBACK DetourDetachCallback(F&, F);
 
 class CObjectProxy final
 {
@@ -74,7 +74,7 @@ public:
 protected:
     static std::map<std::wstring, CObjectProxy*> REF_MAP;
     static std::map<std::wstring, CVmCommand*> COMMAND_MAP;
-    static AFX_EXTENSION_MODULE* TEMP_MODULE;
+    static std::map<HMODULE, const AFX_EXTENSION_MODULE*> MODULE_MAP;
 
     static const CObject_vtbl* __fastcall FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
 
@@ -83,33 +83,38 @@ protected:
     static void __thiscall HookSerialize(CVisual* ecx, CPmArchive* archive);
     static CVmCommand* __thiscall HookGetNextCommand(CCommandRef* ecx);
 
-    static void __thiscall HookDrawSzText(CS5i* ecx, DWORD, DWORD, LPBYTE, COceanNode**);
-    static void __thiscall HookDrawSzTextClip(CS5i* ecx, DWORD, DWORD, LPBYTE, COceanNode**, WORD*);
+    static void __thiscall HookDrawSzText(CS5i* ecx, DWORD, DWORD, LPCSTR, COceanNode**);
+    static void __thiscall HookDrawSzTextClip(CS5i* ecx, DWORD, DWORD, LPCSTR, COceanNode**, WORD*);
 
-    static void __thiscall HookDrawSzText(CImgBox* ecx, DWORD, DWORD, LPBYTE, COceanNode**);
+    static void __thiscall HookDrawSzText(CImgBox* ecx, DWORD, DWORD, LPCSTR, COceanNode**);
 
-    static void __thiscall HookAttachTextCore(CMessBox* ecx, LPBYTE);
+    static int __thiscall HookCharacterByteSize(CRio* ecx, LPCSTR);
 };
 
-class COceanTreeIterator final
+class COceanTree final
 {
 public:
-    explicit COceanTreeIterator(const COceanNode* root = COceanNode::GetRoot());
-    DWORD Level() const;
-    const COceanNode* Next();
-
     static void AttachHook();
     static void DetachHook();
 
 protected:
-    const COceanNode* m_pNode;
-    DWORD m_nLevel;
-    std::map<const COceanNode*, WORD> m_pVisited;
-
-    static FARPROC CALLBACK Attach(FARPROC, FARPROC);
-    static FARPROC CALLBACK Detach(FARPROC, FARPROC);
-
     static COceanNode** __cdecl HookGetMotherOcean(COceanNode** pNode);
+
+    class Iterator final
+    {
+    public:
+        explicit Iterator(const COceanNode* root = COceanNode::GetRoot());
+        DWORD Level() const;
+        const COceanNode* Next();
+
+        static void AttachHook();
+        static void DetachHook();
+
+    protected:
+        const COceanNode* m_pNode;
+        DWORD m_nLevel;
+        std::map<const COceanNode*, WORD> m_pVisited;
+    };
 };
 
 #endif // PLUGIN_H
