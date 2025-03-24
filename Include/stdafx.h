@@ -9,17 +9,11 @@
 #define _AFXDLL
 #endif // _AFXDLL
 
-#ifndef AFX_COMDAT
-#define AFX_COMDAT __declspec(selectany)
-#endif // AFX_COMDAT
-
 #include <afxwin.h>         // MFC core and standard components
 #include <afxext.h>         // MFC extensions
 #include <afxdisp.h>        // MFC automation classes
 #include <afxdtctl.h>       // MFC support for Internet Explorer common controls
 #include <afxcmn.h>         // MFC support for Windows common controls.
-
-typedef const BYTE FAR* LPCBYTE;
 
 #ifndef CP_SHIFT_JIS
 #define CP_SHIFT_JIS 932
@@ -28,6 +22,10 @@ typedef const BYTE FAR* LPCBYTE;
 #ifndef CP_GB2312
 #define CP_GB2312 936
 #endif // CP_GB2312
+
+#ifndef CP_GB18030
+#define CP_GB18030 54936
+#endif // CP_GB18030
 
 inline LPWSTR WINAPI Unicode(const LPCSTR lpText, const UINT nCodePage)
 {
