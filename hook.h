@@ -15,69 +15,74 @@ public:
     static void DetachHook();
 
 protected:
-    typedef HWND (WINAPI *LPCreateWindowExA)(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
-                                             int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu,
-                                             HINSTANCE hInstance, LPVOID lpParam);
+    using LPCreateWindowExA = HWND (WINAPI *)(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
+                                              int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu,
+                                              HINSTANCE hInstance, LPVOID lpParam);
     static LPCreateWindowExA pfnCreateWindowExA;
 
-    typedef HWND (WINAPI *LPCreateMDIWindowA)(LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
-                                              int X, int Y, int nWidth, int nHeight, HWND hWndParent,
-                                              HINSTANCE hInstance, LPARAM lParam);
+    using LPCreateMDIWindowA = HWND (WINAPI *)(LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
+                                               int X, int Y, int nWidth, int nHeight, HWND hWndParent,
+                                               HINSTANCE hInstance, LPARAM lParam);
     static LPCreateMDIWindowA pfnCreateMDIWindowA;
 
-    typedef BOOL (WINAPI *LPSetWindowTextA)(HWND hWnd, LPCSTR lpString);
+    using LPSetWindowTextA = BOOL (WINAPI *)(HWND hWnd, LPCSTR lpString);
     static LPSetWindowTextA pfnSetWindowTextA;
 
-    typedef HPROPSHEETPAGE (WINAPI *LPCreatePropertySheetPageA)(LPCPROPSHEETPAGEA lpPropSheetPage);
+    using LPCreatePropertySheetPageA = HPROPSHEETPAGE (WINAPI *)(LPCPROPSHEETPAGEA lpPropSheetPage);
     static LPCreatePropertySheetPageA pfnCreatePropertySheetPageA;
 
-    typedef int (WINAPI *LPPropertySheetA)(LPCPROPSHEETHEADERA);
+    using LPPropertySheetA = int (WINAPI *)(LPCPROPSHEETHEADERA);
     static LPPropertySheetA pfnPropertySheetA;
 
-    typedef HWND (WINAPI *LPCreateDialogParamA)(HINSTANCE hInstance, LPCSTR lpTemplateName, HWND hWndParent,
-                                                DLGPROC lpDialogFunc, LPARAM dwInitParam);
+    using LPCreateDialogParamA = HWND (WINAPI *)(HINSTANCE hInstance, LPCSTR lpTemplateName, HWND hWndParent,
+                                                 DLGPROC lpDialogFunc, LPARAM dwInitParam);
     static LPCreateDialogParamA pfnCreateDialogParamA;
 
-    typedef HWND (WINAPI *LPCreateDialogIndirectParamA)(HINSTANCE hInstance, LPCDLGTEMPLATEA lpTemplate,
-                                                        HWND hWndParent,
-                                                        DLGPROC lpDialogFunc, LPARAM dwInitParam);
+    using LPCreateDialogIndirectParamA = HWND (WINAPI *)(HINSTANCE hInstance, LPCDLGTEMPLATEA lpTemplate,
+                                                         HWND hWndParent,
+                                                         DLGPROC lpDialogFunc, LPARAM dwInitParam);
     static LPCreateDialogIndirectParamA pfnCreateDialogIndirectParamA;
 
-    typedef int (WINAPI *LPDialogBoxParamA)(HINSTANCE hInstance, LPCSTR lpTemplateName, HWND hWndParent,
-                                            DLGPROC lpDialogFunc, LPARAM dwInitParam);
+    using LPDialogBoxParamA = int (WINAPI *)(HINSTANCE hInstance, LPCSTR lpTemplateName, HWND hWndParent,
+                                             DLGPROC lpDialogFunc, LPARAM dwInitParam);
     static LPDialogBoxParamA pfnDialogBoxParamA;
 
-    typedef int (WINAPI *LPDialogBoxIndirectParamA)(HINSTANCE hInstance, LPCDLGTEMPLATEA hDialogTemplate,
-                                                    HWND hWndParent, DLGPROC lpDialogFunc, LPARAM dwInitParam);
+    using LPDialogBoxIndirectParamA = int (WINAPI *)(HINSTANCE hInstance, LPCDLGTEMPLATEA hDialogTemplate,
+                                                     HWND hWndParent, DLGPROC lpDialogFunc, LPARAM dwInitParam);
     static LPDialogBoxIndirectParamA pfnDialogBoxIndirectParamA;
 
-    typedef int (WINAPI *LPSetDlgItemTextA)(HWND hDlg, int nIDDlgItem, LPCSTR lpString);
+    using LPSetDlgItemTextA = int (WINAPI *)(HWND hDlg, int nIDDlgItem, LPCSTR lpString);
     static LPSetDlgItemTextA pfnSetDlgItemTextA;
 
-    typedef int (WINAPI *LPMessageBoxA)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType);
+    using LPMessageBoxA = int (WINAPI *)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType);
     static LPMessageBoxA pfnMessageBoxA;
 
-    typedef int (WINAPI *LPMessageBoxExA)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType, WORD wLanguageId);
+    using LPMessageBoxExA = int (WINAPI *)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType, WORD wLanguageId);
     static LPMessageBoxExA pfnMessageBoxExA;
 
-    typedef HFONT (WINAPI *LPCreateFontA)(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight,
-                                          DWORD bItalic, DWORD bUnderline, DWORD bStrikeOut,
-                                          DWORD iCharSet, DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality,
-                                          DWORD iPitchAndFamily, LPCSTR pszFaceName);
+    using LPCreateFontA = HFONT (WINAPI *)(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight,
+                                           DWORD bItalic, DWORD bUnderline, DWORD bStrikeOut,
+                                           DWORD iCharSet, DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality,
+                                           DWORD iPitchAndFamily, LPCSTR pszFaceName);
     static LPCreateFontA pfnCreateFontA;
 
-    typedef HFONT (WINAPI *LPCreateFontIndirectA)(const LOGFONTA* lpLogFont);
+    using LPCreateFontIndirectA = HFONT (WINAPI *)(const LOGFONTA* lpLogFont);
     static LPCreateFontIndirectA pfnCreateFontIndirectA;
 
-    typedef int (WINAPI *LPEnumFontFamiliesExA)(HDC hdc, LPLOGFONTA lpLogFont, FONTENUMPROCA lpProc,
-                                                LPARAM lParam, DWORD dwFlags);
+    using LPEnumFontFamiliesExA = int (WINAPI *)(HDC hdc, LPLOGFONTA lpLogFont, FONTENUMPROCA lpProc,
+                                                 LPARAM lParam, DWORD dwFlags);
     static LPEnumFontFamiliesExA pfnEnumFontFamiliesExA;
 
-    typedef int (WINAPI *LPEnumFontFamiliesA)(HDC hdc, LPCSTR lpLogFont, FONTENUMPROCA lpProc, LPARAM lParam);
+    using LPEnumFontFamiliesA = int (WINAPI *)(HDC hdc, LPCSTR lpLogFont, FONTENUMPROCA lpProc, LPARAM lParam);
     static LPEnumFontFamiliesA pfnEnumFontFamiliesA;
 
-    typedef int (WINAPI *LPEnumFontsA)(HDC hdc, LPCSTR lpLogFont, FONTENUMPROCA lpProc, LPARAM lParam);
+    using LPEnumFontsA = int (WINAPI *)(HDC hdc, LPCSTR lpLogFont, FONTENUMPROCA lpProc, LPARAM lParam);
     static LPEnumFontsA pfnEnumFontsA;
+
+    using LPGetGlyphOutlineA = DWORD (WINAPI *)(HDC hdc, UINT uChar, UINT fuFormat,
+                                                LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer,
+                                                const MAT2* lpmat2);
+    static LPGetGlyphOutlineA pfnGetGlyphOutlineA;
 
     static HWND WINAPI HookCreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
                                            int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu,
@@ -134,6 +139,10 @@ protected:
     static int CALLBACK HookEnumFontsCallback(const LOGFONTW* lpLogFont, const TEXTMETRICW* lpTextMetric,
                                               DWORD dwFontType,
                                               LPARAM lParam);
+
+    static DWORD WINAPI HookGetGlyphOutlineA(HDC hdc, UINT uChar, UINT fuFormat,
+                                             LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer,
+                                             const MAT2* lpmat2);
 };
 
 #endif // HOOK_H
