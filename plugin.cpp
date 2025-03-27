@@ -617,6 +617,36 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 PATCH_CACHE[address] = record;
             }
             break;
+        // 0xA844
+        case 0x0000815Cu:
+            {
+                const auto address = reinterpret_cast<LPDWORD>(offset);
+                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
+                record->block_size = sizeof(DWORD);
+                memcpy(record->origin, address, record->block_size);
+                auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
+                VirtualProtect(address, record->block_size, protect, &protect);
+                *address = 0x0000A844u;
+                VirtualProtect(address, record->block_size, protect, &protect);
+                PATCH_CACHE[address] = record;
+            }
+            break;
+        // 0xA9A4
+        case 0x0000849Fu:
+            {
+                const auto address = reinterpret_cast<LPDWORD>(offset);
+                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
+                record->block_size = sizeof(DWORD);
+                memcpy(record->origin, address, record->block_size);
+                auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
+                VirtualProtect(address, record->block_size, protect, &protect);
+                *address = 0x0000A9A4u;
+                VirtualProtect(address, record->block_size, protect, &protect);
+                PATCH_CACHE[address] = record;
+            }
+            break;
         default:
             break;
         }
