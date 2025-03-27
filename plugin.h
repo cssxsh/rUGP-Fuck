@@ -54,6 +54,12 @@ void CALLBACK DetourAttachCallback(F&, F);
 template <typename F>
 void CALLBACK DetourDetachCallback(F&, F);
 
+struct CodePatchRecord
+{
+    SIZE_T block_size;
+    BYTE origin[];
+};
+
 class CObjectProxy final
 {
 public:
@@ -61,7 +67,7 @@ public:
     const CObject_vtbl* m_pVTBL = nullptr;
     CObject* (__stdcall *m_pfnCreateObject)() = nullptr;
     void (__thiscall *m_pfnDestructor)(CRio*) = nullptr;
-    void (__thiscall *m_pfnSerialize)(CObjectEx*, CPmArchive*) = nullptr;
+    void (__thiscall *m_pfnSerialize)(CRio*, CPmArchive*) = nullptr;
     CVmCommand* (__thiscall *m_pfnGetNextCommand)(CCommandRef*) = nullptr;
 
     explicit CObjectProxy(const CRuntimeClass* pClass);
@@ -75,19 +81,25 @@ protected:
     static std::map<std::wstring, CObjectProxy*> REF_MAP;
     static std::map<std::wstring, CVmCommand*> COMMAND_MAP;
     static std::map<HMODULE, const AFX_EXTENSION_MODULE*> MODULE_MAP;
+    static std::map<LPVOID, CodePatchRecord*> PATCH_CACHE;
+    static std::map<LPVOID, UINT> CHARACTER_CACHE;
 
     static const CObject_vtbl* __fastcall FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
+    static void __fastcall AttachCharacterPatch(LPCSTR lpszModuleName);
+    static void __fastcall DetachCharacterPatch(LPCSTR lpszModuleName);
+    static void __fastcall AttachCharacterHandle(LPBYTE address);
 
     static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE& module);
     static void __thiscall HookDestructor(CRio* ecx);
-    static void __thiscall HookSerialize(CVisual* ecx, CPmArchive* archive);
+    static void __thiscall HookSerialize(CRio* ecx, CPmArchive* archive);
     static CVmCommand* __thiscall HookGetNextCommand(CCommandRef* ecx);
 
-    static void __thiscall HookDrawSzText(CS5i* ecx, DWORD, DWORD, LPCSTR, COceanNode**);
-    static void __thiscall HookDrawSzTextClip(CS5i* ecx, DWORD, DWORD, LPCSTR, COceanNode**, WORD*);
+    static BOOL __cdecl HookIsMultiple(char);
+    static int __thiscall HookDrawFont(CS5i* ecx, DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
+    static int __thiscall HookDrawFont(CImgBox* ecx, DWORD, DWORD, UINT, COceanNode**);
 
-    static void __thiscall HookDrawSzText(CImgBox* ecx, DWORD, DWORD, LPCSTR, COceanNode**);
-
+    static void __thiscall HookCharacterStore(LPVOID, LPCVOID, SIZE_T);
+    static void __thiscall HookCharacterLoad(LPVOID, LPVOID, SIZE_T);
     static int __thiscall HookCharacterByteSize(CRio* ecx, LPCSTR);
 };
 

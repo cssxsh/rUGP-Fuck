@@ -24,7 +24,7 @@ class CVmCommand;
 class CVmMsg;
 
 struct CObject_vtbl;
-struct CObjectEx_vtbl;
+struct CRio_vtbl;
 
 template <typename F>
 using HookCallback = void (CALLBACK*)(F&, F);
@@ -75,10 +75,13 @@ public:
     // virtual void SerializeUserCondition(CPmArchive&) = 0;
 
     using REG = void (__cdecl *)(AFX_EXTENSION_MODULE&);
+    using IS_MULTIPLE = BOOL (__cdecl *)(char);
+    using CHARACTER_BYTE_SIZE = int (__thiscall *)(CRio*, LPCSTR);
 
     static void __cdecl LibrarySupport(AFX_EXTENSION_MODULE&);
 
     static void HookLibrarySupport(HookCallback<REG>, REG);
+    static void HookIsMultiple(HookCallback<IS_MULTIPLE>, IS_MULTIPLE);
 };
 
 class CVisual : public CRio
@@ -98,18 +101,14 @@ class CS5i : public CVisual
 public:
     DECLARE_DYNAMIC_RIO(CS5i)
 
-    using LPDrawSzText = void (__thiscall *)(CS5i*, DWORD, DWORD, LPCSTR, COceanNode**);
-    using LPDrawSzTextClip = void (__thiscall *)(CS5i*, DWORD, DWORD, LPCSTR, COceanNode**, WORD*);
-    using LPDrawFont = DWORD (__thiscall *)(CS5i*, DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
+    using LPDrawFont = int (__thiscall *)(CS5i*, DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
 
-    DWORD DrawFont(DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
+    int DrawFont(DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
 
-    static void HookDrawSzText(HookCallback<LPDrawSzText>, LPDrawSzText);
-    static void HookDrawSzTextClip(HookCallback<LPDrawSzTextClip>, LPDrawSzTextClip);
     static void HookDrawFont(HookCallback<LPDrawFont>, LPDrawFont);
 
 protected:
-    static const CObjectEx_vtbl* GetVisualTable();
+    static const CRio_vtbl* GetVisualTable();
 };
 
 class CUI : public CRio
@@ -123,12 +122,11 @@ class CImgBox : public CUI
 public:
     DECLARE_DYNAMIC_RIO(CImgBox)
 
-    using LPDrawSzText = void (__thiscall *)(CImgBox*, DWORD, DWORD, LPCSTR, COceanNode**);
-    using LPDrawFont = DWORD (__thiscall *)(CImgBox*, DWORD, DWORD, UINT, COceanNode**);
+    using LPDrawFont = int (__thiscall *)(CImgBox*, DWORD, DWORD, UINT, COceanNode**);
 
-    DWORD DrawFont(DWORD, DWORD, UINT, COceanNode**);
+    int DrawFont(DWORD, DWORD, UINT, COceanNode**);
 
-    static void HookDrawSzText(HookCallback<LPDrawSzText>, LPDrawSzText);
+    static void HookDrawFont(HookCallback<LPDrawFont>, LPDrawFont);
 };
 
 class CMessBox : public CRio
@@ -136,21 +134,29 @@ class CMessBox : public CRio
 public:
     DECLARE_DYNAMIC_RIO(CMessBox)
 
-    static void HookAttachTextCore(HookCallback<FARPROC>, FARPROC);
+    using LPStore = void (__thiscall *)(LPVOID, LPCVOID, SIZE_T);
+    using LPLoad = void (__thiscall *)(LPVOID, LPVOID, SIZE_T);
+
+    static LPStore& GetStore();
+    static LPLoad& GetLoad();
+
+    static void HookAttachTextCore(HookCallback<FARPROC>, CHARACTER_BYTE_SIZE);
 
 protected:
     static FARPROC IS;
     static FARPROC SINGLE;
     static FARPROC MULTIPLE;
-    static FARPROC SIZE;
+    static CHARACTER_BYTE_SIZE SIZE;
 
     static void EbxToEsi();
     static void EbpToEbx();
     static void EsiToEbx();
 
+
     static FARPROC GetAttachTextCore();
     static FARPROC GetAttachInstructionText();
-    static const CObjectEx_vtbl* GetVisualTable();
+
+    static const CRio_vtbl* GetVisualTable();
 };
 
 class CPmArchive
@@ -254,9 +260,9 @@ struct CObject_vtbl
     void (__thiscall *Dump)(CObject*, CDumpContext*);
 };
 
-struct CObjectEx_vtbl : CObject_vtbl
+struct CRio_vtbl : CObject_vtbl
 {
-    void (__thiscall *Serialize)(CObjectEx*, CPmArchive*);
+    void (__thiscall *Serialize)(CRio*, CPmArchive*);
 };
 
 #endif // RUGP_H
