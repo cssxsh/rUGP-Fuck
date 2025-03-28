@@ -73,7 +73,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
         }
         __except (EXCEPTION_EXECUTE_HANDLER)
         {
-            wprintf(L"COceanTreeIterator::AttachHook Fail: 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"COceanTree::AttachHook Fail: 0x%08X\n\n", GetExceptionCode());
         }
 
         break;
@@ -84,7 +84,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
         }
         __except (EXCEPTION_EXECUTE_HANDLER)
         {
-            wprintf(L"COceanTreeIterator::DetachHook Fail: 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"COceanTree::DetachHook Fail: 0x%08X\n\n", GetExceptionCode());
         }
 
         __try
@@ -269,14 +269,15 @@ CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
     const auto mfc = GetMfc();
     if (pClass->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
     {
+        using LPGetNextCommand = CVmCommand*(__thiscall *)(CCommandRef*);
         const auto vtbl = reinterpret_cast<const FARPROC*>(m_pVTBL);
         switch (mfc.version)
         {
         case 0x0600:
-            m_pfnGetNextCommand = reinterpret_cast<CVmCommand*(__thiscall *)(CCommandRef*)>(vtbl[0x000B]);
+            m_pfnGetNextCommand = reinterpret_cast<LPGetNextCommand>(vtbl[0x000B]);
             break;
         case 0x0C00:
-            m_pfnGetNextCommand = reinterpret_cast<CVmCommand*(__thiscall *)(CCommandRef*)>(vtbl[0x000C]);
+            m_pfnGetNextCommand = reinterpret_cast<LPGetNextCommand>(vtbl[0x000C]);
         default:
             // TODO ?GetNextCommand@CCommandRef@@UBEPAVCVmCommand@@XZ
             m_pfnGetNextCommand = nullptr;
@@ -312,9 +313,15 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     if (proc == nullptr) return FALSE;
 
     MODULE_MAP[hModule] = nullptr;
-    CRio::HookLibrarySupport(DetourAttachCallback<CRio::REG>, HookSupportRio);
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), HookDrawFont);
+    DetourTransactionCommit();
     auto module = reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
-    CRio::HookLibrarySupport(DetourDetachCallback<CRio::REG>, HookSupportRio);
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), HookDrawFont);
+    DetourTransactionCommit();
     if (MODULE_MAP[hModule] != nullptr) module = MODULE_MAP[hModule];
     else MODULE_MAP[hModule] = module;
     for (auto clazz = module->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
@@ -353,26 +360,16 @@ void CObjectProxy::AttachHook()
         free(name);
     }
     {
-        auto& store = CMessBox::GetStore();
+        wprintf(L"DetourAttach: CS5i::DrawFont\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont()), HookDrawFont);
+        wprintf(L"DetourAttach: CS5RFont::GetCachedFont\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
         wprintf(L"DetourAttach: CHeapHistoryPtr::Store\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(store), HookCharacterStore);
-        auto& load = CMessBox::GetLoad();
-        wprintf(L"DetourAttach: CHeapHistoryPtr::Load\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(load), HookCharacterLoad);
+        DetourAttach(&reinterpret_cast<PVOID&>(CMessBox::FetchStore()), HookCharacterStore);
+        wprintf(L"DetourAttach: IsDBCS\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchIsMultiple()), HookIsMultiple);
     }
     DetourTransactionCommit();
-
-    wprintf(L"DetourAttach: IsDBCS\n");
-    CRio::HookIsMultiple(DetourAttachCallback<CRio::IS_MULTIPLE>, HookIsMultiple);
-
-    // wprintf(L"DetourAttach: CS5i::DrawFont\n");
-    // CS5i::HookDrawFont(DetourAttachCallback<CS5i::LPDrawFont>, HookDrawFont);
-
-    // wprintf(L"DetourAttach: CImgBox::DrawFont\n");
-    // CImgBox::HookDrawFont(DetourAttachCallback<CImgBox::LPDrawFont>, HookDrawFont);
-
-    // wprintf(L"DetourAttach: CMessBox::AttachTextCore\n");
-    // CMessBox::HookAttachTextCore(DetourAttachCallback<FARPROC>, HookCharacterByteSize);
 
     AttachCharacterPatch("UnivUI");
     AttachCharacterPatch("rvmm");
@@ -403,6 +400,16 @@ void CObjectProxy::DetachHook()
         }
 
         free(name);
+    }
+    {
+        wprintf(L"DetourDetach: CS5i::DrawFont\n");
+        DetourDetach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont()), HookDrawFont);
+        wprintf(L"DetourDetach: CS5RFont::GetCachedFont\n");
+        DetourDetach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
+        wprintf(L"DetourDetach: CHeapHistoryPtr::Store\n");
+        DetourDetach(&reinterpret_cast<PVOID&>(CMessBox::FetchStore()), HookCharacterStore);
+        wprintf(L"DetourDetach: IsDBCS\n");
+        DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchIsMultiple()), HookIsMultiple);
     }
     DetourTransactionCommit();
 
@@ -522,7 +529,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 address[0x05] = 0x7Fu;
                 VirtualProtect(address, record->block_size, protect, &protect);
                 PATCH_CACHE[address] = record;
-                AttachCharacterHandle(address + record->block_size);
+                // AttachCharacterHandle(address + record->block_size);
             }
             break;
         // push    esi
@@ -539,7 +546,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 if (IsBadCodePtr(*reinterpret_cast<FARPROC*>(address + 0x03))) continue;
                 const auto proc = **reinterpret_cast<FARPROC**>(address + 0x03);
                 if (proc != is) continue;
-                AttachCharacterHandle(address + 0x0C);
+                // AttachCharacterHandle(address + 0x0C);
             }
             break;
         // 0xA1A1
@@ -729,12 +736,6 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
         end = start + 0x00;
     }
 
-    const auto codes = static_cast<LPBYTE>(VirtualAlloc(
-        nullptr,
-        0x0100,
-        MEM_COMMIT | MEM_RESERVE,
-        PAGE_EXECUTE_READWRITE));
-
     switch (const auto size = end - start)
     {
     case 0x00u:
@@ -742,10 +743,17 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
     // inc     ...
     case 0x01u:
         {
+            const auto codes = static_cast<LPBYTE>(VirtualAlloc(
+                nullptr,
+                0x0020,
+                MEM_COMMIT | MEM_RESERVE,
+                PAGE_EXECUTE_READWRITE));
+            memset(codes, 0xCCu, 0x0020);
+            auto hook = end;
             const auto diff = start[0x00] - 0x40u;
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
-            DetourAttach(&reinterpret_cast<PVOID&>(end), codes);
+            DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
             DetourTransactionCommit();
             auto index = 0x00;
             // dec     ...
@@ -768,7 +776,7 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
             // jmp     ...
             codes[index++] = 0xE9;
             *reinterpret_cast<int*>(codes + index) =
-                reinterpret_cast<int>(end) - reinterpret_cast<int>(codes + index + 0x04);
+                reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
         }
         return;
     // movzx   ..., byte ptr [...]
@@ -804,11 +812,17 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
     case 0x0B:
         if (end[-0x04] != 0x08u) return;
         {
+            const auto codes = static_cast<LPBYTE>(VirtualAlloc(
+                nullptr,
+                0x0040,
+                MEM_COMMIT | MEM_RESERVE,
+                PAGE_EXECUTE_READWRITE));
+            memset(codes, 0xCCu, 0x0040);
+            auto hook = end;
             const auto diff = end[-0x01] - 0x40u;
-            const auto diff2 = end[-0x05] - 0xE0u;
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
-            DetourAttach(&reinterpret_cast<PVOID&>(end), codes);
+            DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
             DetourTransactionCommit();
             auto index = 0x00;
             // dec     ...
@@ -816,7 +830,7 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
             // dec     ...
             codes[index++] = 0x48 + diff;
             // shr     ..., 0x10
-            codes[index++] = 0xC1, codes[index++] = 0xE0 + diff2, codes[index++] = 0x10;
+            codes[index++] = 0xC1, codes[index++] = end[-0x05], codes[index++] = 0x10;
             // push    eax
             codes[index++] = 0x50;
             // push    ...
@@ -848,7 +862,7 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
             // jmp     ...
             codes[index++] = 0xE9;
             *reinterpret_cast<int*>(codes + index) =
-                reinterpret_cast<int>(end) - reinterpret_cast<int>(codes + index + 0x04);
+                reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
         }
         return;
     default:
@@ -859,7 +873,7 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
 
 void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
 {
-    CRio::LibrarySupport(module);
+    CRio::FetchLibrarySupport()(module);
     MODULE_MAP[DetourGetContainingModule(&module)] = &module;
 }
 
@@ -975,52 +989,35 @@ BOOL CObjectProxy::HookIsMultiple(char const c)
 }
 
 int CObjectProxy::HookDrawFont(
-    CS5i* const ecx, DWORD const x, DWORD const y, WORD* const rect, WORD* const out, UINT uChar,
-    COceanNode** const context)
+    LPVOID const ecx, DWORD const x, DWORD const y, WORD* const rect, WORD* const out, // NOLINT(*-misplaced-const)
+    UINT uChar, CFontContext* const context)
 {
-    // const auto uuid = GetUUID(ecx->m_pNode);
-    // wprintf(L"Hook CS5i::DrawFont(x=%d, y=%d, uChar=0x%08X)\n", x, y, uChar);
-    if ((uChar & 0xFF00u) > 0x0000 && (uChar & 0x00FFu) < 0x0040)
-    {
-        auto& prev = CHARACTER_CACHE[ecx];
-        if (prev == NULL)
-        {
-            prev = uChar;
-            return 0;
-        }
-        uChar |= prev << 0x10;
-        prev = NULL;
-    }
-    // wprintf(L"Hook CS5i::DrawFont(x=%d, y=%d, uChar=0x%08X)\n", x, y, uChar);
-    return ecx->DrawFont(x, y, rect, out, uChar, context);
+    if ((uChar & 0xFF00) != 0x0000 && (uChar & 0x00FF) <= 0x0039) uChar = CHARACTER_MAP[uChar];
+    return CS5i::FetchDrawFont()(ecx, x, y, rect, out, uChar, context);
 }
 
-int CObjectProxy::HookDrawFont(
-    CImgBox* const ecx, DWORD const x, DWORD const y, UINT const uChar, COceanNode** const context)
+LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT const uChar, COceanNode* const node)
 {
-    // const auto uuid = GetUUID(ecx->m_pNode);
-    // wprintf(L"Hook CImgBox::DrawFont(x=%d, y=%d, uChar=0x%08X)\n", x, y, uChar);
-    return ecx->DrawFont(x, y, uChar, context);
+    if (uChar <= 0xFFFF) return ecx->GetCachedFont(uChar, node);
+    auto& font = FONT_CACHE[uChar];
+    if (font == nullptr) font = ecx->CreateNewFont(uChar, node);
+    return font;
 }
 
 void CObjectProxy::HookCharacterStore(
     LPVOID const ecx, LPCVOID const source, SIZE_T const size) // NOLINT(*-misplaced-const)
 {
-    CMessBox::GetStore()(ecx, source, size);
+    CMessBox::FetchStore()(ecx, source, size);
     if (size != 2) return;
-    if (*static_cast<const UINT*>(source) <= 0xFFFF) return;
-    CMessBox::GetStore()(ecx, static_cast<const BYTE*>(source) + 0x02, size);
+    const auto key = *static_cast<const WORD*>(source);
+    if ((key & 0xFF00) == 0x0000 || (key & 0x00FF) >= 0x0040) return;
+    CHARACTER_MAP[key] = *static_cast<const UINT*>(source);
 }
 
 void CObjectProxy::HookCharacterLoad(
     LPVOID const ecx, LPVOID const target, SIZE_T const size) // NOLINT(*-misplaced-const)
 {
-    CMessBox::GetLoad()(ecx, target, size);
-    if (size != 2) return;
-    const auto uChar = *static_cast<UINT*>(target);
-    if ((uChar & 0xFF00) < 0xFF) return;
-    if ((uChar & 0x00FF) > 0x39) return;
-    CMessBox::GetLoad()(ecx, static_cast<LPBYTE>(target) + 0x02, size);
+    CMessBox::FetchLoad()(ecx, target, size);
 }
 
 int CObjectProxy::HookCharacterByteSize(
@@ -1040,24 +1037,32 @@ std::map<HMODULE, const AFX_EXTENSION_MODULE*> CObjectProxy::MODULE_MAP;
 
 std::map<LPVOID, CodePatchRecord*> CObjectProxy::PATCH_CACHE;
 
-std::map<LPVOID, UINT> CObjectProxy::CHARACTER_CACHE;
+std::map<WORD, UINT> CObjectProxy::CHARACTER_MAP;
+
+std::map<UINT, LPVOID> CObjectProxy::FONT_CACHE;
 
 void COceanTree::AttachHook()
 {
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
     wprintf(L"DetourAttach: GetMotherOcean\n");
-    COceanNode::HookGetMotherOcean(DetourAttachCallback<COceanNode::GET>, HookGetMotherOcean);
+    DetourAttach(&reinterpret_cast<PVOID&>(COceanNode::FetchGetMotherOcean()), HookGetMotherOcean);
+    DetourTransactionCommit();
 }
 
 void COceanTree::DetachHook()
 {
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
     wprintf(L"DetourDetach: GetMotherOcean\n");
-    COceanNode::HookGetMotherOcean(DetourDetachCallback<COceanNode::GET>, HookGetMotherOcean);
+    DetourDetach(&reinterpret_cast<PVOID&>(COceanNode::FetchGetMotherOcean()), HookGetMotherOcean);
+    DetourTransactionCommit();
 }
 
-COceanNode** COceanTree::HookGetMotherOcean(COceanNode** pNode)
+COceanNode** COceanTree::HookGetMotherOcean(COceanNode** const pNode)
 {
     wprintf(L"Hook GetMotherOcean()\n");
-    *pNode = const_cast<COceanNode*>(COceanNode::GetMotherOcean());
+    *pNode = *COceanNode::FetchGetMotherOcean()(pNode);
     const auto root = *pNode;
     auto iterator = Iterator(root);
     for (auto node = iterator.Next(); node != nullptr; node = iterator.Next())

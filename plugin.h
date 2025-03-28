@@ -48,12 +48,6 @@ std::wstring GetFilePath(const COceanNode* node);
 
 std::wstring GetGameName();
 
-template <typename F>
-void CALLBACK DetourAttachCallback(F&, F);
-
-template <typename F>
-void CALLBACK DetourDetachCallback(F&, F);
-
 struct CodePatchRecord
 {
     SIZE_T block_size;
@@ -82,7 +76,8 @@ protected:
     static std::map<std::wstring, CVmCommand*> COMMAND_MAP;
     static std::map<HMODULE, const AFX_EXTENSION_MODULE*> MODULE_MAP;
     static std::map<LPVOID, CodePatchRecord*> PATCH_CACHE;
-    static std::map<LPVOID, UINT> CHARACTER_CACHE;
+    static std::map<WORD, UINT> CHARACTER_MAP;
+    static std::map<UINT, LPVOID> FONT_CACHE;
 
     static const CObject_vtbl* __fastcall FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
     static void __fastcall AttachCharacterPatch(LPCSTR lpszModuleName);
@@ -91,12 +86,12 @@ protected:
 
     static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE& module);
     static void __thiscall HookDestructor(CRio* ecx);
-    static void __thiscall HookSerialize(CRio* ecx, CPmArchive* archive);
+    static void __thiscall HookSerialize(CRio* ecx, CPmArchive*);
     static CVmCommand* __thiscall HookGetNextCommand(CCommandRef* ecx);
 
-    static BOOL __cdecl HookIsMultiple(char);
-    static int __thiscall HookDrawFont(CS5i* ecx, DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
-    static int __thiscall HookDrawFont(CImgBox* ecx, DWORD, DWORD, UINT, COceanNode**);
+    static BOOL __cdecl HookIsMultiple(CHAR);
+    static int __thiscall HookDrawFont(LPVOID ecx, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
+    static LPVOID __thiscall HookGetCachedFont(CS5RFont* ecx, UINT, COceanNode*);
 
     static void __thiscall HookCharacterStore(LPVOID, LPCVOID, SIZE_T);
     static void __thiscall HookCharacterLoad(LPVOID, LPVOID, SIZE_T);

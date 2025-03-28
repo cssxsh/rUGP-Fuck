@@ -18,6 +18,7 @@ class CMessBox;
 
 class CPmArchive;
 class COceanNode;
+class CFontContext;
 
 class CCommandRef;
 class CVmCommand;
@@ -26,8 +27,6 @@ class CVmMsg;
 struct CObject_vtbl;
 struct CRio_vtbl;
 
-template <typename F>
-using HookCallback = void (CALLBACK*)(F&, F);
 
 struct MFC_MODULE
 {
@@ -76,12 +75,9 @@ public:
 
     using REG = void (__cdecl *)(AFX_EXTENSION_MODULE&);
     using IS_MULTIPLE = BOOL (__cdecl *)(char);
-    using CHARACTER_BYTE_SIZE = int (__thiscall *)(CRio*, LPCSTR);
 
-    static void __cdecl LibrarySupport(AFX_EXTENSION_MODULE&);
-
-    static void HookLibrarySupport(HookCallback<REG>, REG);
-    static void HookIsMultiple(HookCallback<IS_MULTIPLE>, IS_MULTIPLE);
+    static REG& FetchLibrarySupport();
+    static IS_MULTIPLE& FetchIsMultiple();
 };
 
 class CVisual : public CRio
@@ -101,14 +97,25 @@ class CS5i : public CVisual
 public:
     DECLARE_DYNAMIC_RIO(CS5i)
 
-    using LPDrawFont = int (__thiscall *)(CS5i*, DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
+    using LPDrawFont = int (__thiscall *)(LPVOID, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
 
-    int DrawFont(DWORD, DWORD, WORD*, WORD*, UINT, COceanNode**);
-
-    static void HookDrawFont(HookCallback<LPDrawFont>, LPDrawFont);
+    static LPDrawFont& FetchDrawFont();
 
 protected:
     static const CRio_vtbl* GetVisualTable();
+};
+
+class CS5RFont : public CVisual
+{
+public:
+    DECLARE_DYNAMIC_RIO(CS5RFont)
+    
+    using LPGetFont = LPVOID (__thiscall *)(CS5RFont*, UINT, COceanNode*);
+
+    LPVOID GetCachedFont(UINT, COceanNode*);
+    LPVOID CreateNewFont(UINT, COceanNode*);
+    
+    static LPGetFont& FetchGetCachedFont();
 };
 
 class CUI : public CRio
@@ -122,11 +129,11 @@ class CImgBox : public CUI
 public:
     DECLARE_DYNAMIC_RIO(CImgBox)
 
-    using LPDrawFont = int (__thiscall *)(CImgBox*, DWORD, DWORD, UINT, COceanNode**);
+    using LPDrawFont = int (__thiscall *)(CImgBox*, DWORD, DWORD, UINT, CFontContext*);
 
-    int DrawFont(DWORD, DWORD, UINT, COceanNode**);
+    int DrawFont(DWORD, DWORD, UINT, CFontContext*);
 
-    static void HookDrawFont(HookCallback<LPDrawFont>, LPDrawFont);
+    static LPDrawFont& FetchDrawFont();
 };
 
 class CMessBox : public CRio
@@ -137,24 +144,12 @@ public:
     using LPStore = void (__thiscall *)(LPVOID, LPCVOID, SIZE_T);
     using LPLoad = void (__thiscall *)(LPVOID, LPVOID, SIZE_T);
 
-    static LPStore& GetStore();
-    static LPLoad& GetLoad();
-
-    static void HookAttachTextCore(HookCallback<FARPROC>, CHARACTER_BYTE_SIZE);
+    static LPStore& FetchStore();
+    static LPLoad& FetchLoad();
 
 protected:
-    static FARPROC IS;
-    static FARPROC SINGLE;
-    static FARPROC MULTIPLE;
-    static CHARACTER_BYTE_SIZE SIZE;
-
-    static void EbxToEsi();
-    static void EbpToEbx();
-    static void EsiToEbx();
-
-
-    static FARPROC GetAttachTextCore();
-    static FARPROC GetAttachInstructionText();
+    static FARPROC& FetchAttachTextCore();
+    static FARPROC& FetchAttachInstructionText();
 
     static const CRio_vtbl* GetVisualTable();
 };
@@ -206,20 +201,26 @@ protected:
     ~COceanNode() = default;
 
 public:
-    using RELEASE = void (__thiscall *)(COceanNode*);
-    using GET = COceanNode** (__cdecl *)(COceanNode**);
+    using LPGetMotherOcean = COceanNode** (__cdecl *)(COceanNode**);
 
     BOOL IsDerivedFrom(const CRuntimeClass*) const;
-    CRio* Fetch() const;
-    void Release();
+    CRio* FetchRef() const;
+    void ReleaseRef();
     DWORD GetAddress() const;
 
     static const COceanNode* GetRoot();
     static const COceanNode* GetNull();
-    static const COceanNode* GetMotherOcean();
 
-    static void HookRelease(HookCallback<RELEASE>, RELEASE);
-    static void HookGetMotherOcean(HookCallback<GET>, GET);
+    static LPGetMotherOcean& FetchGetMotherOcean();
+};
+
+class CFontContext
+{
+public:
+    COceanNode* m_pAttr;
+    DWORD field_0004;
+    DWORD field_0008;
+    DWORD field_000C;
 };
 
 class CCommandRef : public CRio
@@ -227,7 +228,7 @@ class CCommandRef : public CRio
 public:
     DECLARE_DYNAMIC_RIO(CCommandRef)
 
-    // virtual CVmCommand* GetNextCommand() = 0;
+    CVmCommand* GetNextCommand();
 };
 
 class CVmCommand : public CObjectEx

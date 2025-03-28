@@ -338,7 +338,7 @@ HPROPSHEETPAGE Win32Hook::HookCreatePropertySheetPageA(const LPCPROPSHEETPAGEA l
     wprintf(L"Hook CreatePropertySheetPageA(pszTitle=%s)\n", unicode);
     const_cast<LPSTR&>(lpPropSheetPage->pszTitle) = Ansi(unicode, CP_ACP);
     free(unicode);
-    // TODO: ...
+    // TODO: CreatePropertySheetPageA -> CreatePropertySheetPageW
     const auto result = pfnCreatePropertySheetPageA(lpPropSheetPage);
     free(const_cast<LPSTR&>(lpPropSheetPage->pszTitle));
     const_cast<LPCSTR&>(lpPropSheetPage->pszTitle) = title;
@@ -352,7 +352,7 @@ int Win32Hook::HookPropertySheetA(const LPCPROPSHEETHEADERA lpPropSheetHeader)
     wprintf(L"Hook PropertySheetA(pszCaption=%s)\n", unicode);
     const_cast<LPSTR&>(lpPropSheetHeader->pszCaption) = Ansi(unicode, CP_ACP);
     free(unicode);
-    // TODO: ...
+    // TODO: PropertySheetA -> PropertySheetW
     const auto result = pfnPropertySheetA(lpPropSheetHeader);
     free(const_cast<LPSTR&>(lpPropSheetHeader->pszCaption));
     const_cast<LPCSTR&>(lpPropSheetHeader->pszCaption) = caption;
@@ -629,16 +629,29 @@ DWORD Win32Hook::HookGetGlyphOutlineA(const HDC hdc, // NOLINT(*-misplaced-const
                                       const LPVOID pvBuffer, // NOLINT(*-misplaced-const)
                                       const MAT2* lpmat2)
 {
-    wprintf(L"Hook GetGlyphOutlineA(hdc=0x%p, uChar=%08X)\n", hdc, uChar);
-    switch (uChar)
+    wprintf(L"Hook GetGlyphOutlineA(hdc=0x%p, uChar=0x%08X)\n", hdc, uChar);
+    UINT unicode = uChar;
+    if (uChar <= 0x000000FF)
     {
-    case 0x0000A739u:
-        // 0x8139A739u
-        return GetGlyphOutlineW(hdc, 0x30FB, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
-    case 0x0000AC38u:
-        // 0x8137AC38u
-        return GetGlyphOutlineW(hdc, 0x266A, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
-    default:
-        return pfnGetGlyphOutlineA(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
+        char buffer[1];
+        buffer[0] = static_cast<char>((uChar & 0x000000FFu) >> 0x00);
+        MultiByteToWideChar(CP_GB18030, 0, buffer, -1, reinterpret_cast<LPWSTR>(&unicode), 1);
     }
+    else if (uChar <= 0x0000FFFF)
+    {
+        char buffer[2];
+        buffer[0] = static_cast<char>((uChar & 0x0000FF00u) >> 0x08);
+        buffer[1] = static_cast<char>((uChar & 0x000000FFu) >> 0x00);
+        MultiByteToWideChar(CP_GB18030, 0, buffer, -1, reinterpret_cast<LPWSTR>(&unicode), 1);
+    }
+    else
+    {
+        char buffer[4];
+        buffer[0] = static_cast<char>((uChar & 0xFF000000u) >> 0x18);
+        buffer[1] = static_cast<char>((uChar & 0x00FF0000u) >> 0x10);
+        buffer[2] = static_cast<char>((uChar & 0x0000FF00u) >> 0x08);
+        buffer[3] = static_cast<char>((uChar & 0x000000FFu) >> 0x00);
+        MultiByteToWideChar(CP_GB18030, 0, buffer, -1, reinterpret_cast<LPWSTR>(&unicode), 1);
+    }
+    return GetGlyphOutlineW(hdc, unicode, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
 }
