@@ -375,9 +375,9 @@ void CObjectProxy::AttachHook()
     }
     DetourTransactionCommit();
 
-    // AttachCharacterPatch("UnivUI");
-    // AttachCharacterPatch("rvmm");
-    // AttachCharacterPatch("Vm60");
+    AttachCharacterPatch("UnivUI");
+    AttachCharacterPatch("rvmm");
+    AttachCharacterPatch("Vm60");
 }
 
 void CObjectProxy::DetachHook()
@@ -496,17 +496,17 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
     const auto hModule = GetModuleHandleA(lpszModuleName);
     if (hModule == nullptr) return;
     const auto size = DetourGetModuleSize(hModule);
-    const auto start = reinterpret_cast<DWORD>(hModule);
+    const auto start = reinterpret_cast<LPBYTE>(hModule);
     for (auto offset = start; offset < start + size; offset++)
     {
-        if (IsBadReadPtr(reinterpret_cast<FARPROC>(offset), sizeof(DWORD))) continue;
+        if (IsBadReadPtr(offset, sizeof(DWORD))) continue;
         switch (*reinterpret_cast<const DWORD*>(offset))
         {
         // add     al, 5Fh
         // cmp     al, 3Bh
         case 0x3B3C5F04u:
             {
-                const auto address = reinterpret_cast<LPBYTE>(offset + 0x00);
+                const auto address = offset + 0x00;
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + 0x04));
                 record->block_size = 0x04;
@@ -518,7 +518,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 address[0x03] = 0x7Fu;
                 VirtualProtect(address, record->block_size, protect, &protect);
                 PATCH_CACHE[address] = record;
-                // AttachCharacterHandle(address + record->block_size);
+                AttachCharacterHandle(address + record->block_size);
             }
             break;
         // add     bl, 5Fh
@@ -531,7 +531,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         // cmp     dl, 3Bh
         case 0x3BFA805Fu:
             {
-                const auto address = reinterpret_cast<LPBYTE>(offset - 0x02);
+                const auto address = offset - 0x02;
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + 0x06));
                 record->block_size = 0x06;
@@ -543,7 +543,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 address[0x05] = 0x7Fu;
                 VirtualProtect(address, record->block_size, protect, &protect);
                 PATCH_CACHE[address] = record;
-                // AttachCharacterHandle(address + record->block_size);
+                AttachCharacterHandle(address + record->block_size);
             }
             break;
         // push    esi
@@ -554,13 +554,13 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
             {
                 const auto is = GetProcAddress(GetModuleHandleA("GMfc"), "?IsDBCS@@YAHD@Z");
                 if (is == nullptr) continue;
-                const auto address = reinterpret_cast<LPBYTE>(offset - 0x07);
+                const auto address = offset - 0x07;
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
                 if (address[0x01] != 0xFFu || address[0x02] != 0x15u) continue;
                 if (IsBadCodePtr(*reinterpret_cast<FARPROC*>(address + 0x03))) continue;
                 const auto proc = **reinterpret_cast<FARPROC**>(address + 0x03);
                 if (proc != is) continue;
-                // AttachCharacterHandle(address + 0x0C);
+                AttachCharacterHandle(address + 0x0C);
             }
             break;
         // 0xA1A1
@@ -568,6 +568,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -583,6 +584,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -598,6 +600,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -613,6 +616,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -628,6 +632,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -643,6 +648,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -658,6 +664,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -765,10 +772,10 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
             memset(codes, 0xCCu, 0x0020);
             auto hook = end;
             const auto diff = start[0x00] - 0x40u;
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-            DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
-            DetourTransactionCommit();
+            // DetourTransactionBegin();
+            // DetourUpdateThread(GetCurrentThread());
+            // DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
+            // DetourTransactionCommit();
             auto index = 0x00;
             // dec     ...
             codes[index++] = 0x48 + diff;
@@ -791,6 +798,7 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
             codes[index++] = 0xE9;
             *reinterpret_cast<int*>(codes + index) =
                 reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
+            VirtualProtect(codes, 0x0020, PAGE_EXECUTE_READ, nullptr);
         }
         return;
     // movzx   ..., byte ptr [...]
@@ -868,8 +876,7 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
             codes[index++] = 0x85, codes[index++] = 0xC0;
             // jnz     loop
             codes[index++] = 0x0F, codes[index++] = 0x85;
-            *reinterpret_cast<int*>(codes + index) =
-                reinterpret_cast<int>(codes + loop) - reinterpret_cast<int>(codes + index + 0x04);
+            *reinterpret_cast<int*>(codes + index) = loop - (index + 0x04);
             index += 0x04;
             // pop     eax
             codes[index++] = 0x58;
@@ -877,6 +884,7 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
             codes[index++] = 0xE9;
             *reinterpret_cast<int*>(codes + index) =
                 reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
+            VirtualProtect(codes, 0x0040, PAGE_EXECUTE_READ, nullptr);
         }
         return;
     default:
