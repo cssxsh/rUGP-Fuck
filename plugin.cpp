@@ -172,24 +172,6 @@ std::wstring GetGameName()
     return {l, r};
 }
 
-template <typename F>
-void CALLBACK DetourAttachCallback(F& from, const F to)
-{
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    DetourAttach(&reinterpret_cast<PVOID&>(from), reinterpret_cast<PVOID>(to));
-    DetourTransactionCommit();
-}
-
-template <typename F>
-void CALLBACK DetourDetachCallback(F& from, const F to)
-{
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    DetourDetach(&reinterpret_cast<PVOID&>(from), reinterpret_cast<PVOID>(to));
-    DetourTransactionCommit();
-}
-
 BOOL CreateMergeDirectory()
 {
     const auto name = GetGameName();
@@ -278,6 +260,7 @@ CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
             break;
         case 0x0C00:
             m_pfnGetNextCommand = reinterpret_cast<LPGetNextCommand>(vtbl[0x000C]);
+            break;
         default:
             // TODO ?GetNextCommand@CCommandRef@@UBEPAVCVmCommand@@XZ
             m_pfnGetNextCommand = nullptr;
@@ -313,17 +296,23 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     if (proc == nullptr) return FALSE;
 
     MODULE_MAP[hModule] = nullptr;
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), HookDrawFont);
-    DetourTransactionCommit();
-    auto module = reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), HookDrawFont);
-    DetourTransactionCommit();
-    if (MODULE_MAP[hModule] != nullptr) module = MODULE_MAP[hModule];
-    else MODULE_MAP[hModule] = module;
+    if (CRio::FetchLibrarySupport() != nullptr)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), HookSupportRio);
+        DetourTransactionCommit();
+        reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), HookSupportRio);
+        DetourTransactionCommit();
+    }
+    else
+    {
+        MODULE_MAP[hModule] = reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
+    }
+    const auto module = MODULE_MAP[hModule];
     for (auto clazz = module->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
     {
         const auto name = Unicode(clazz->m_lpszClassName, CP_SHIFT_JIS);
@@ -359,21 +348,36 @@ void CObjectProxy::AttachHook()
 
         free(name);
     }
+    if (CS5i::FetchDrawFont1())
     {
         wprintf(L"DetourAttach: CS5i::DrawFont\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont()), HookDrawFont);
+        DetourAttach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont1()), HookDrawFont1);
+    }
+    if (CS5i::FetchDrawFont2())
+    {
+        wprintf(L"DetourAttach: CS5i::DrawFont\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont2()), HookDrawFont2);
+    }
+    if (CS5RFont::FetchGetCachedFont())
+    {
         wprintf(L"DetourAttach: CS5RFont::GetCachedFont\n");
         DetourAttach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
+    }
+    if (CMessBox::FetchStore())
+    {
         wprintf(L"DetourAttach: CHeapHistoryPtr::Store\n");
         DetourAttach(&reinterpret_cast<PVOID&>(CMessBox::FetchStore()), HookCharacterStore);
+    }
+    if (CRio::FetchIsMultiple())
+    {
         wprintf(L"DetourAttach: IsDBCS\n");
         DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchIsMultiple()), HookIsMultiple);
     }
     DetourTransactionCommit();
 
-    AttachCharacterPatch("UnivUI");
-    AttachCharacterPatch("rvmm");
-    AttachCharacterPatch("Vm60");
+    // AttachCharacterPatch("UnivUI");
+    // AttachCharacterPatch("rvmm");
+    // AttachCharacterPatch("Vm60");
 }
 
 void CObjectProxy::DetachHook()
@@ -401,13 +405,23 @@ void CObjectProxy::DetachHook()
 
         free(name);
     }
+    if (CS5i::FetchDrawFont1())
     {
         wprintf(L"DetourDetach: CS5i::DrawFont\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont()), HookDrawFont);
+        DetourDetach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont1()), HookDrawFont1);
+    }
+    if (CS5RFont::FetchGetCachedFont())
+    {
         wprintf(L"DetourDetach: CS5RFont::GetCachedFont\n");
         DetourDetach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
+    }
+    if (CMessBox::FetchStore())
+    {
         wprintf(L"DetourDetach: CHeapHistoryPtr::Store\n");
         DetourDetach(&reinterpret_cast<PVOID&>(CMessBox::FetchStore()), HookCharacterStore);
+    }
+    if (CRio::FetchIsMultiple())
+    {
         wprintf(L"DetourDetach: IsDBCS\n");
         DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchIsMultiple()), HookIsMultiple);
     }
@@ -504,7 +518,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 address[0x03] = 0x7Fu;
                 VirtualProtect(address, record->block_size, protect, &protect);
                 PATCH_CACHE[address] = record;
-                AttachCharacterHandle(address + record->block_size);
+                // AttachCharacterHandle(address + record->block_size);
             }
             break;
         // add     bl, 5Fh
@@ -767,7 +781,7 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
             // call    ...
             codes[index++] = 0xE8;
             *reinterpret_cast<int*>(codes + index) =
-                reinterpret_cast<int>(HookCharacterByteSize) - reinterpret_cast<int>(codes + index + 0x04);
+                reinterpret_cast<int>(CharacterByteSize) - reinterpret_cast<int>(codes + index + 0x04);
             index += 0x04;
             // add     ..., eax
             codes[index++] = 0x01, codes[index++] = 0xC0 + diff;
@@ -838,7 +852,7 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
             // call    ...
             codes[index++] = 0xE8;
             *reinterpret_cast<int*>(codes + index) =
-                reinterpret_cast<int>(HookCharacterByteSize) - reinterpret_cast<int>(codes + index + 0x04);
+                reinterpret_cast<int>(CharacterByteSize) - reinterpret_cast<int>(codes + index + 0x04);
             index += 0x04;
             const auto loop = index;
             // push    eax
@@ -983,17 +997,27 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
     return value;
 }
 
-BOOL CObjectProxy::HookIsMultiple(char const c)
+BOOL CObjectProxy::HookIsMultiple(CHAR const c)
 {
     return (c & 0x80u) == 0x80u;
 }
 
-int CObjectProxy::HookDrawFont(
-    LPVOID const ecx, DWORD const x, DWORD const y, WORD* const rect, WORD* const out, // NOLINT(*-misplaced-const)
-    UINT uChar, CFontContext* const context)
+int CObjectProxy::HookDrawFont1(
+    LPVOID const ecx, // NOLINT(*-misplaced-const)
+    DWORD const x, DWORD const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
 {
+    const auto s5i = CS5i::Match(ecx);
     if ((uChar & 0xFF00) != 0x0000 && (uChar & 0x00FF) <= 0x0039) uChar = CHARACTER_MAP[uChar];
-    return CS5i::FetchDrawFont()(ecx, x, y, rect, out, uChar, context);
+    return CS5i::FetchDrawFont1()(ecx, x, y, rect, out, uChar, context);
+}
+
+void CObjectProxy::HookDrawFont2(
+    LPVOID const ecx, LPINT const width, // NOLINT(*-misplaced-const)
+    DWORD const x, DWORD const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
+{
+    const auto s5i = CS5i::Match(ecx);
+    if ((uChar & 0xFF00) != 0x0000 && (uChar & 0x00FF) <= 0x0039) uChar = CHARACTER_MAP[uChar];
+    return CS5i::FetchDrawFont2()(ecx, width, x, y, rect, out, uChar, context);
 }
 
 LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT const uChar, COceanNode* const node)
@@ -1005,7 +1029,8 @@ LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT const uChar, COceanNo
 }
 
 void CObjectProxy::HookCharacterStore(
-    LPVOID const ecx, LPCVOID const source, SIZE_T const size) // NOLINT(*-misplaced-const)
+    LPVOID const ecx, // NOLINT(*-misplaced-const)
+    LPCVOID const source, SIZE_T const size)
 {
     CMessBox::FetchStore()(ecx, source, size);
     if (size != 2) return;
@@ -1015,13 +1040,13 @@ void CObjectProxy::HookCharacterStore(
 }
 
 void CObjectProxy::HookCharacterLoad(
-    LPVOID const ecx, LPVOID const target, SIZE_T const size) // NOLINT(*-misplaced-const)
+    LPVOID const ecx, LPVOID const target, // NOLINT(*-misplaced-const)
+    SIZE_T const size)
 {
     CMessBox::FetchLoad()(ecx, target, size);
 }
 
-int CObjectProxy::HookCharacterByteSize(
-    CRio* const ecx, LPCSTR const text)
+int CObjectProxy::CharacterByteSize(LPCSTR const text)
 {
     // GB18030
     if ((text[0x0000] & 0x80u) == 0x00u) return 1;

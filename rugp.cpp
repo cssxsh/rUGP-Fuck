@@ -351,10 +351,10 @@ const CRuntimeClass* CS5i::GetClassCS5i()
     return nullptr;
 }
 
-CS5i::LPDrawFont& CS5i::FetchDrawFont()
+CS5i::LPDrawFont1& CS5i::FetchDrawFont1()
 {
     const auto name = "?DrawFont@CS5i@@QAEHFFPBUtagRBDY@@PAUSQRBDY@@IPBVCFontContext@@@Z";
-    auto& address = reinterpret_cast<LPDrawFont&>(cache[name]);
+    auto& address = reinterpret_cast<LPDrawFont1&>(cache[name]);
     if (address != nullptr) return address;
     const auto mfc = GetMfc();
     switch (mfc.version)
@@ -362,7 +362,7 @@ CS5i::LPDrawFont& CS5i::FetchDrawFont()
     case 0x0600:
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<LPDrawFont>(GetProcAddress(UnivUI, name));
+            address = reinterpret_cast<LPDrawFont1>(GetProcAddress(UnivUI, name));
             if (address != nullptr) return address;
             const auto start = reinterpret_cast<LPBYTE const*>(GetVisualTable());
             if (start == nullptr) break;
@@ -372,11 +372,33 @@ CS5i::LPDrawFont& CS5i::FetchDrawFont()
                 // push    0FFFFFFFFh
                 if (proc[0x00] != 0x6Au) continue;
                 if (proc[0x01] != 0xFFu) continue;
-                address = reinterpret_cast<LPDrawFont>(proc);
+                address = reinterpret_cast<LPDrawFont1>(proc);
                 break;
             }
             if (address != nullptr) return address;
         }
+        break;
+    case 0x0C00:
+        // @see FetchDrawFont2
+    case 0x0E00:
+        // TODO public: int __thiscall CS5i::DrawFont(short, short, struct tagRBDY const *, struct SQRBDY *, unsigned int, class CFontContext const *)
+    default:
+        break;
+    }
+
+    return address;
+}
+
+CS5i::LPDrawFont2& CS5i::FetchDrawFont2()
+{
+    const auto name = "?DrawFont@CS5i@@QAEXPAHFFPBUtagRBDY@@PAUSQRBDY@@IPBVCFontContext@@@Z";
+    auto& address = reinterpret_cast<LPDrawFont2&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+        // @see FetchDrawFont1
         break;
     case 0x0C00:
         {
@@ -396,19 +418,33 @@ CS5i::LPDrawFont& CS5i::FetchDrawFont()
                 // push    0FFFFFFFFh
                 if (proc[0x03] != 0x6Au) continue;
                 if (proc[0x04] != 0xFFu) continue;
-                address = reinterpret_cast<LPDrawFont>(proc);
+                address = reinterpret_cast<LPDrawFont2>(proc);
                 break;
             }
             if (address != nullptr) return address;
         }
         break;
     case 0x0E00:
-        // TODO public: int __thiscall CS5i::DrawFont(short, short, struct tagRBDY const *, struct SQRBDY *, unsigned int, class CFontContext const *)
+        // TODO public: void __thiscall CS5i::DrawFont(int *, short, short, struct tagRBDY const *, struct SQRBDY *, unsigned int, class CFontContext const *)
     default:
         break;
     }
 
     return address;
+}
+
+CS5i* CS5i::Match(LPVOID const part) // NOLINT(*-misplaced-const)
+{
+    const auto vtbl = GetVisualTable();
+    const auto start = static_cast<CRio_vtbl**>(part);
+    for (auto offset = start; start - offset < 0x0400; offset--)
+    {
+        if (IsBadReadPtr(part, sizeof(CRio_vtbl*))) break;
+        if (*offset != vtbl) continue;
+        return reinterpret_cast<CS5i*>(offset);
+    }
+
+    return nullptr;
 }
 
 const CRio_vtbl* CS5i::GetVisualTable()
@@ -669,16 +705,17 @@ CMessBox::LPStore& CMessBox::FetchStore()
     auto& address = reinterpret_cast<LPStore&>(cache[name]);
     if (address != nullptr) return address;
     const auto Vm60 = GetModuleHandleA("Vm60");
+    if (Vm60 == nullptr) return address;
     address = reinterpret_cast<LPStore>(GetProcAddress(Vm60, name));
     if (address != nullptr) return address;
-    const auto pfn_AttachTextCore = FetchAttachTextCore();
-    if (pfn_AttachTextCore == nullptr) return address;
     const auto clazz = GetClassCMessBox();
     switch (clazz->m_wSchema)
     {
     case 0xE000000Au:
     case 0xE000000Cu:
         {
+            const auto pfn_AttachTextCore = FetchAttachTextCore();
+            if (pfn_AttachTextCore == nullptr) return address;
             auto start = reinterpret_cast<LPBYTE>(pfn_AttachTextCore);
             // push    esi
             // call    ...
@@ -704,6 +741,8 @@ CMessBox::LPStore& CMessBox::FetchStore()
         break;
     case 0xE000000Fu:
         {
+            const auto pfn_AttachTextCore = FetchAttachTextCore();
+            if (pfn_AttachTextCore == nullptr) return address;
             auto start = reinterpret_cast<LPBYTE>(pfn_AttachTextCore);
             // mov     al, bl
             // xor     al, 20h
@@ -730,6 +769,8 @@ CMessBox::LPStore& CMessBox::FetchStore()
         }
         break;
     case 0xE0000011u:
+        // No Impl
+        return address;
     default:
         break;
     }
@@ -743,6 +784,7 @@ CMessBox::LPLoad& CMessBox::FetchLoad()
     auto& address = reinterpret_cast<LPLoad&>(cache[name]);
     if (address != nullptr) return address;
     const auto Vm60 = GetModuleHandleA("Vm60");
+    if (Vm60 == nullptr) return address;
     address = reinterpret_cast<LPLoad>(GetProcAddress(Vm60, name));
     if (address != nullptr) return address;
     const auto pfn_Store = FetchStore();

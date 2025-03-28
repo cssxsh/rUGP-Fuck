@@ -97,9 +97,13 @@ class CS5i : public CVisual
 public:
     DECLARE_DYNAMIC_RIO(CS5i)
 
-    using LPDrawFont = int (__thiscall *)(LPVOID, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
+    using LPDrawFont1 = int (__thiscall *)(LPVOID, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
+    using LPDrawFont2 = void (__thiscall *)(LPVOID, LPINT, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
 
-    static LPDrawFont& FetchDrawFont();
+    static LPDrawFont1& FetchDrawFont1();
+    static LPDrawFont2& FetchDrawFont2();
+
+    static CS5i* Match(LPVOID part);
 
 protected:
     static const CRio_vtbl* GetVisualTable();
