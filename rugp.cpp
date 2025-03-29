@@ -948,6 +948,8 @@ CUuiGlobals* CUuiGlobals::GetGlobal()
             const auto UnivUI = GetModuleHandleA("UnivUI");
             global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, name));
             if (global != nullptr) return global;
+            const auto rio = GetProcAddress(UnivUI, "?classCRio@CRio@@2UCRioRTC@@A");
+            if (rio != nullptr) break;
             global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(901)));
             if (global != nullptr) return global;
         }

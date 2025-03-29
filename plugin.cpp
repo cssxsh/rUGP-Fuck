@@ -1025,18 +1025,19 @@ int CObjectProxy::HookDrawFont1(
 {
     // const auto s5i = CS5i::Match(ecx);
     if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];
-    if (uChar == '\0') return 0;
-    return CS5i::FetchDrawFont1()(ecx, x, y, rect, out, uChar, context);
+    if (uChar != '\0') return CS5i::FetchDrawFont1()(ecx, x, y, rect, out, uChar, context);
+    return 0;
 }
 
-void CObjectProxy::HookDrawFont2(
+LPINT CObjectProxy::HookDrawFont2(
     LPVOID const ecx, LPINT const width, // NOLINT(*-misplaced-const)
     DWORD const x, DWORD const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
 {
     // const auto s5i = CS5i::Match(ecx);
     if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];
-    if (uChar == '\0') return void(*width = 0);
-    return CS5i::FetchDrawFont2()(ecx, width, x, y, rect, out, uChar, context);
+    if (uChar != '\0') return CS5i::FetchDrawFont2()(ecx, width, x, y, rect, out, uChar, context);
+    *width = 0;
+    return width;
 }
 
 LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT uChar, COceanNode* const node)

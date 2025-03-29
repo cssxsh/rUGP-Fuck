@@ -100,7 +100,7 @@ public:
     DECLARE_DYNAMIC_RIO(CS5i)
 
     using LPDrawFont1 = int (__thiscall *)(LPVOID, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
-    using LPDrawFont2 = void (__thiscall *)(LPVOID, LPINT, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
+    using LPDrawFont2 = LPINT (__thiscall *)(LPVOID, LPINT, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
 
     static LPDrawFont1& FetchDrawFont1();
     static LPDrawFont2& FetchDrawFont2();
