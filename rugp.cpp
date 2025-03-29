@@ -153,42 +153,6 @@ BOOL CObject::IsKindOf(const CRuntimeClass* pClass) const
     return FALSE;
 }
 
-LPCSTR GetRugpVersion()
-{
-    const auto name = "?_GLOBAL_rUGP@@3VCrUGP@@A";
-    auto& version = reinterpret_cast<LPCSTR&>(reinterpret_cast<DWORD&>(cache[name]));
-    if (version != nullptr) return version;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-        {
-            const auto rvmm = GetModuleHandleA("rvmm");
-            version = reinterpret_cast<LPCSTR>(GetProcAddress(rvmm, name));
-            if (version != nullptr) return version;
-            version = reinterpret_cast<LPCSTR>(GetProcAddress(rvmm, MAKEINTRESOURCE(596)));
-            if (version != nullptr) return version;
-        }
-        break;
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            version = reinterpret_cast<LPCSTR>(GetProcAddress(UnivUI, name));
-            if (version != nullptr) return version;
-            version = reinterpret_cast<LPCSTR>(GetProcAddress(UnivUI, MAKEINTRESOURCE(1100)));
-            if (version != nullptr) return version;
-        }
-        break;
-    case 0x0E00:
-        // TODO class CrUGP _GLOBAL_rUGP
-        return nullptr;
-    default:
-        break;
-    }
-
-    return nullptr;
-}
-
 const CRuntimeClass* CObjectEx::GetClassCObjectEx()
 {
     const auto name = "?classCObjEx@CObjEx@@2UCRtcEx@@A";
@@ -209,7 +173,6 @@ const CRuntimeClass* CObjectEx::GetClassCObjectEx()
         break;
     case 0x0E00:
         // TODO public: static struct CRtcEx CObjEx::classCObjEx
-        return nullptr;
     default:
         break;
     }
@@ -237,7 +200,6 @@ const CRuntimeClass* CRio::GetClassCRio()
         break;
     case 0x0E00:
         // TODO public: static struct CRioRTC CRio::classCRio
-        return nullptr;
     default:
         break;
     }
@@ -287,7 +249,6 @@ const CRuntimeClass* CVisual::GetClassCVisual()
         break;
     case 0x0E00:
         // TODO public: static struct CRioRTC CVisual::classCVisual
-        return nullptr;
     default:
         break;
     }
@@ -315,7 +276,6 @@ const CRuntimeClass* CRip::GetClassCRip()
         break;
     case 0x0E00:
         // TODO public: static struct CRioRTC CRip::classCRip
-        return nullptr;
     default:
         break;
     }
@@ -343,7 +303,6 @@ const CRuntimeClass* CS5i::GetClassCS5i()
         break;
     case 0x0E00:
         // TODO public: static struct CRioRTC CS5i::classCS5i
-        return nullptr;
     default:
         break;
     }
@@ -505,7 +464,6 @@ const CRuntimeClass* CS5RFont::GetClassCS5RFont()
         break;
     case 0x0E00:
         // TODO public: static struct CRioRTC CS5RFont::classCS5RFont
-        return nullptr;
     default:
         break;
     }
@@ -547,7 +505,6 @@ LPVOID CS5RFont::CreateNewFont(UINT const uChar, COceanNode* const node)
         break;
     case 0x0E00:
         // TODO protected: struct CS5RFontEntry * __thiscall CS5RFont::CreateNewFont(unsigned int, class CRef<class CFontAttr, class CFontAttr_ome, class TFontAttr>)
-        return nullptr;
     default:
         break;
     }
@@ -603,7 +560,6 @@ const CRuntimeClass* CUI::GetClassCUI()
         break;
     case 0x0E00:
         // TODO public: static struct CRioRTC CUI::classCUI
-        return nullptr;
     default:
         break;
     }
@@ -631,7 +587,6 @@ const CRuntimeClass* CImgBox::GetClassCImgBox()
         break;
     case 0x0E00:
         // TODO public: static struct CRioRTC CImgBox::classCImgBox
-        return nullptr;
     default:
         break;
     }
@@ -691,7 +646,6 @@ const CRuntimeClass* CMessBox::GetClassCMessBox()
         break;
     case 0x0E00:
         // TODO public: static struct CRioRTC CMessBox::classCMessBox
-        return nullptr;
     default:
         break;
     }
@@ -984,7 +938,6 @@ CPmArchive* CPmArchive::CreateLoadFilePmArchive(const LPCSTR path)
         break;
     case 0x0E00:
         // TODO public: static class CPmArchive * __cdecl CPmArchive::CreateLoadFilePmArchive(char const *)
-        return nullptr;
     default:
         break;
     }
@@ -1013,7 +966,6 @@ CPmArchive* CPmArchive::CreateSaveFilePmArchive(const LPCSTR path)
         break;
     case 0x0E00:
         // TODO public: static class CPmArchive * __cdecl CPmArchive::CreateSaveFilePmArchive(char const *, unsigned long)
-        return nullptr;
     default:
         break;
     }
@@ -1098,7 +1050,6 @@ CRio* COceanNode::FetchRef() const
         break;
     case 0x0E00:
         // TODO public: class CRio * __thiscall COceanNode::__GetPointer(void) const
-        return nullptr;
     default:
         break;
     }
@@ -1134,7 +1085,9 @@ void COceanNode::ReleaseRef()
 
 DWORD COceanNode::GetAddress() const
 {
-    return m_dwResAddr % 0xA2FB6AD1u;
+    const auto globals = CUuiGlobals::GetGlobal();
+    if (globals == nullptr) return m_dwResAddr;
+    return m_dwResAddr % globals->m_dwResOffset;
 }
 
 const COceanNode* COceanNode::GetRoot()
@@ -1164,7 +1117,6 @@ const COceanNode* COceanNode::GetRoot()
         break;
     case 0x0E00:
         // TODO public: static class COceanNode * __cdecl COceanNode::GetRoot(void)
-        return nullptr;
     default:
         break;
     }
@@ -1192,7 +1144,6 @@ const COceanNode* COceanNode::GetNull()
         break;
     case 0x0E00:
         // TODO class CNullEntry _GLOBAL_EnNull
-        return nullptr;
     default:
         break;
     }
@@ -1227,6 +1178,73 @@ COceanNode::LPGetMotherOcean& COceanNode::FetchGetMotherOcean()
     return address;
 }
 
+LPCSTR CrUGP::GetVersion() const
+{
+    return version;
+}
+
+CrUGP* CrUGP::GetGlobal()
+{
+    const auto name = "?_GLOBAL_rUGP@@3VCrUGP@@A";
+    auto& global = reinterpret_cast<CrUGP*&>(cache[name]);
+    if (global != nullptr) return global;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+        {
+            const auto rvmm = GetModuleHandleA("rvmm");
+            global = reinterpret_cast<CrUGP*>(GetProcAddress(rvmm, name));
+            if (global != nullptr) return global;
+            global = reinterpret_cast<CrUGP*>(GetProcAddress(rvmm, MAKEINTRESOURCE(596)));
+            if (global != nullptr) return global;
+        }
+        break;
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            global = reinterpret_cast<CrUGP*>(GetProcAddress(UnivUI, name));
+            if (global != nullptr) return global;
+            global = reinterpret_cast<CrUGP*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(1100)));
+            if (global != nullptr) return global;
+        }
+        break;
+    case 0x0E00:
+        // TODO class CrUGP _GLOBAL_rUGP
+    default:
+        break;
+    }
+
+    return nullptr;
+}
+
+CUuiGlobals* CUuiGlobals::GetGlobal()
+{
+    const auto name = "?eUuiGlbs@@3UCUuiGlobals@@A";
+    auto& global = reinterpret_cast<CUuiGlobals*&>(cache[name]);
+    if (global != nullptr) return global;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, name));
+            if (global != nullptr) return global;
+            global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(901)));
+            if (global != nullptr) return global;
+        }
+        break;
+    case 0x0E00:
+        // TODO struct CUuiGlobals eUuiGlbs
+    default:
+        break;
+    }
+
+    return nullptr;
+}
+
 const CRuntimeClass* CCommandRef::GetClassCCommandRef()
 {
     const auto name = "?classCCommandRef@CCommandRef@@2UCRioRTC@@A";
@@ -1247,7 +1265,6 @@ const CRuntimeClass* CCommandRef::GetClassCCommandRef()
         break;
     case 0x0E00:
         // TODO public: static struct CRioRTC CCommandRef::classCCommandRef
-        return nullptr;
     default:
         break;
     }
@@ -1330,7 +1347,6 @@ const CRuntimeClass* CVmMsg::GetClassCVmMsg()
         break;
     case 0x0E00:
         // TODO public: static struct CRtcEx CVmMsg::classCVmMsg
-        return nullptr;
     default:
         break;
     }

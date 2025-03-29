@@ -18,6 +18,8 @@ class CMessBox;
 
 class CPmArchive;
 class COceanNode;
+class CrUGP;
+class CUuiGlobals;
 class CFontContext;
 
 class CCommandRef;
@@ -39,7 +41,7 @@ MFC_MODULE GetMfc();
 
 LPCSTR GetMfcVersion();
 
-LPCSTR GetRugpVersion();
+LPCSTR GetCUuiGlobals();
 
 #define DECLARE_DYNAMIC_EX(class_name) \
 public: \
@@ -216,6 +218,40 @@ public:
     static const COceanNode* GetNull();
 
     static LPGetMotherOcean& FetchGetMotherOcean();
+};
+
+class CrUGP
+{
+public:
+    LPCSTR GetVersion() const;
+
+    static CrUGP* GetGlobal();
+
+protected:
+    CHAR version[];
+};
+
+class CUuiGlobals
+{
+public:
+    UINT m_dwSchema;
+    LPVOID field_0004;
+    CString field_0008;
+    CString m_strGameFolder;
+    DWORD field_0010;
+    DWORD field_0014;
+    DWORD field_0018;
+    DWORD field_001C;
+    CString m_strGameName;
+    DWORD m_dwFlags;
+    DWORD field_0028;
+    CNoTrackObject* field_002C; // CBootTracer
+    DWORD m_dwResOffset;
+    DWORD field_0034;
+    DWORD field_0038;
+    DWORD field_003C;
+
+    static CUuiGlobals* GetGlobal();
 };
 
 class CFontContext

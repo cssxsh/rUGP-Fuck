@@ -25,7 +25,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
         freopen("CON", "w", stdout);
 
         wprintf(L"MFC Version %hs\n", GetMfcVersion());
-        wprintf(L"rUGP System Version %hs\n", GetRugpVersion());
+        wprintf(L"rUGP System Version %hs\n", CrUGP::GetGlobal()->GetVersion());
         wprintf(L"cJSON Version %hs\n", cJSON_Version());
         wprintf(L"Detours Version %x\n", DETOURS_VERSION);
         wprintf(L"\n");
