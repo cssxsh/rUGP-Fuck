@@ -94,9 +94,6 @@ protected:
     static int __thiscall HookDrawFont1(LPVOID ecx, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
     static void __thiscall HookDrawFont2(LPVOID ecx, LPINT, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
     static LPVOID __thiscall HookGetCachedFont(CS5RFont* ecx, UINT, COceanNode*);
-
-    static void __thiscall HookCharacterStore(LPVOID, LPCVOID, SIZE_T);
-    static void __thiscall HookCharacterLoad(LPVOID, LPVOID, SIZE_T);
 };
 
 class COceanTree final

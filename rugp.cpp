@@ -213,9 +213,8 @@ CRio::REG& CRio::FetchLibrarySupport()
     auto& address = reinterpret_cast<REG&>(cache[name]);
     if (address != nullptr) return address;
     const auto UnivUI = GetModuleHandleA("UnivUI");
-    if (UnivUI == nullptr) return address;
-    address = reinterpret_cast<REG>(GetProcAddress(UnivUI, name));
-    return address;
+    if (UnivUI == nullptr) return address = nullptr;
+    return address = reinterpret_cast<REG>(GetProcAddress(UnivUI, name));
 }
 
 CRio::IS_MULTIPLE& CRio::FetchIsMultiple()
@@ -224,9 +223,8 @@ CRio::IS_MULTIPLE& CRio::FetchIsMultiple()
     auto& address = reinterpret_cast<IS_MULTIPLE&>(cache[name]);
     if (address != nullptr) return address;
     const auto GMfc = GetModuleHandleA("GMfc");
-    if (GMfc == nullptr) return address;
-    address = reinterpret_cast<IS_MULTIPLE>(GetProcAddress(GMfc, name));
-    return address;
+    if (GMfc == nullptr) return address = nullptr;
+    return address = reinterpret_cast<IS_MULTIPLE>(GetProcAddress(GMfc, name));
 }
 
 const CRuntimeClass* CVisual::GetClassCVisual()
@@ -344,7 +342,7 @@ CS5i::LPDrawFont1& CS5i::FetchDrawFont1()
         break;
     }
 
-    return address;
+    return address = nullptr;
 }
 
 CS5i::LPDrawFont2& CS5i::FetchDrawFont2()
@@ -388,7 +386,7 @@ CS5i::LPDrawFont2& CS5i::FetchDrawFont2()
         break;
     }
 
-    return address;
+    return address = nullptr;
 }
 
 CS5i* CS5i::Match(LPVOID const part) // NOLINT(*-misplaced-const)
@@ -437,10 +435,10 @@ const CRio_vtbl* CS5i::GetVisualTable()
         const auto rtc = *reinterpret_cast<const CRuntimeClass* const*>(get + 0x01);
         if (clazz != rtc) continue;
         address = vtbl;
-        break;
+        return address;
     }
 
-    return address;
+    return nullptr;
 }
 
 const CRuntimeClass* CS5RFont::GetClassCS5RFont()
@@ -539,7 +537,7 @@ CS5RFont::LPGetFont& CS5RFont::FetchGetCachedFont()
         break;
     }
 
-    return address;
+    return address = nullptr;
 }
 
 const CRuntimeClass* CUI::GetClassCUI()
@@ -625,291 +623,7 @@ CImgBox::LPDrawFont& CImgBox::FetchDrawFont()
         break;
     }
 
-    return address;
-}
-
-const CRuntimeClass* CMessBox::GetClassCMessBox()
-{
-    const auto name = "?classCMessBox@CMessBox@@2UCRioRTC@@A";
-    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
-    if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(173)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CMessBox::classCMessBox
-    default:
-        break;
-    }
-
-    return nullptr;
-}
-
-CMessBox::LPStore& CMessBox::FetchStore()
-{
-    const auto name = "?Store@CHeapHistoryPtr@@QAEXPBXK@Z";
-    auto& address = reinterpret_cast<LPStore&>(cache[name]);
-    if (address != nullptr) return address;
-    const auto Vm60 = GetModuleHandleA("Vm60");
-    if (Vm60 == nullptr) return address;
-    address = reinterpret_cast<LPStore>(GetProcAddress(Vm60, name));
-    if (address != nullptr) return address;
-    const auto clazz = GetClassCMessBox();
-    switch (clazz->m_wSchema)
-    {
-    case 0xE000000Au:
-    case 0xE000000Cu:
-        {
-            const auto pfn_AttachTextCore = FetchAttachTextCore();
-            if (pfn_AttachTextCore == nullptr) return address;
-            auto start = reinterpret_cast<LPBYTE>(pfn_AttachTextCore);
-            // push    esi
-            // call    ...
-            for (auto offset = start; offset - start < 0x1000; offset++)
-            {
-                if (offset[0x00] != 0x56u) continue;
-                if (offset[0x01] != 0xFFu) continue;
-                start = offset;
-                break;
-            }
-            if (start == reinterpret_cast<LPBYTE>(pfn_AttachTextCore)) break;
-            // jz      ...
-            start = start + 0x12 + *reinterpret_cast<int*>(start + 0x0E);
-            // call    ...
-            for (auto offset = start; offset - start < 0x1000; offset++)
-            {
-                if (offset[0x00] != 0xE8u) continue;
-                address = reinterpret_cast<LPStore>(offset + 0x05 + *reinterpret_cast<int*>(offset + 0x01));
-                break;
-            }
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0xE000000Fu:
-        {
-            const auto pfn_AttachTextCore = FetchAttachTextCore();
-            if (pfn_AttachTextCore == nullptr) return address;
-            auto start = reinterpret_cast<LPBYTE>(pfn_AttachTextCore);
-            // mov     al, bl
-            // xor     al, 20h
-            for (auto offset = start; offset - start < 0x1000; offset++)
-            {
-                if (offset[0x00] != 0x8Au) continue;
-                if (offset[0x01] != 0xC3u) continue;
-                if (offset[0x02] != 0x34u) continue;
-                if (offset[0x03] != 0x20u) continue;
-                start = offset;
-                break;
-            }
-            if (start == reinterpret_cast<LPBYTE>(pfn_AttachTextCore)) break;
-            // ja      ...
-            start = start + 0x0E + *reinterpret_cast<int*>(start + 0x0A);
-            // call    ...
-            for (auto offset = start; offset - start < 0x1000; offset++)
-            {
-                if (offset[0x00] != 0xE8u) continue;
-                address = reinterpret_cast<LPStore>(offset + 0x05 + *reinterpret_cast<int*>(offset + 0x01));
-                break;
-            }
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0xE0000011u:
-        // No Impl
-        return address;
-    default:
-        break;
-    }
-
-    return address;
-}
-
-CMessBox::LPLoad& CMessBox::FetchLoad()
-{
-    const auto name = "?Load@CHeapHistoryPtr@@QAEXPAXK@Z";
-    auto& address = reinterpret_cast<LPLoad&>(cache[name]);
-    if (address != nullptr) return address;
-    const auto Vm60 = GetModuleHandleA("Vm60");
-    if (Vm60 == nullptr) return address;
-    address = reinterpret_cast<LPLoad>(GetProcAddress(Vm60, name));
-    if (address != nullptr) return address;
-    const auto pfn_Store = FetchStore();
-    if (pfn_Store == nullptr) return address;
-    const auto start = reinterpret_cast<LPBYTE>(pfn_Store);
-    // push    ebx
-    // push    ebp
-    for (auto offset = start; start - offset < 0x1000; offset--)
-    {
-        if (offset[0x00] != 0x53u) continue;
-        if (offset[0x01] != 0x55u) continue;
-        address = reinterpret_cast<LPLoad>(offset);
-        break;
-    }
-
-    return address;
-}
-
-FARPROC& CMessBox::FetchAttachTextCore()
-{
-    const auto name = "?AttachTextCore@CMessBox@@QAEXPBD@Z";
-    auto& address = cache[name];
-    if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = GetProcAddress(Vm60, name);
-            if (address != nullptr) break;
-            const auto pfn_AttachInstructionText = FetchAttachInstructionText();
-            if (pfn_AttachInstructionText == nullptr) break;
-            auto start = reinterpret_cast<DWORD>(pfn_AttachInstructionText);
-            for (auto offset = start; offset - start < 0x1000; offset++)
-            {
-                // indirect table for switch statement
-                if (*reinterpret_cast<const DWORD*>(offset + 0x00) != 0x03020100u) continue;
-                start = offset;
-                break;
-            }
-            if (start == reinterpret_cast<DWORD>(pfn_AttachInstructionText)) break;
-            for (auto offset = start; start - offset < 0x1000; offset--)
-            {
-                // mov     large fs:0, esp
-                if (*reinterpret_cast<const DWORD*>(offset + 0x00) != 0x00258964u) continue;
-                address = reinterpret_cast<FARPROC>(offset - 0x000E);
-                break;
-            }
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0C00:
-        {
-            const auto pfn_AttachInstructionText = FetchAttachInstructionText();
-            if (pfn_AttachInstructionText == nullptr) break;
-            auto start = reinterpret_cast<DWORD>(pfn_AttachInstructionText);
-            for (auto offset = start; offset - start < 0x1000; offset++)
-            {
-                // indirect table for switch statement
-                if (*reinterpret_cast<const DWORD*>(offset + 0x00) != 0x03020100u) continue;
-                start = offset;
-                break;
-            }
-            if (start == reinterpret_cast<DWORD>(pfn_AttachInstructionText)) break;
-            for (auto offset = start; start - offset < 0x1000; offset--)
-            {
-                // mov     large fs:0, eax
-                if (*reinterpret_cast<const DWORD*>(offset + 0x00) != 0x0000A364u) continue;
-                address = reinterpret_cast<FARPROC>(offset - 0x0022);
-                break;
-            }
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: void __thiscall CMessBox::AttachTextCore(char const *)
-    default:
-        break;
-    }
-
-    return address;
-}
-
-FARPROC& CMessBox::FetchAttachInstructionText()
-{
-    const auto name = "?AttachInstructionText@CMessBox@@UAEXPBDVTRio@@1K@Z";
-    auto& address = cache[name];
-    if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = GetProcAddress(Vm60, name);
-            if (address != nullptr) return address;
-            const auto clazz = GetClassCMessBox();
-            const auto vtbl = GetVisualTable();
-            if (vtbl == nullptr) return address;
-            switch (clazz->m_wSchema)
-            {
-            case 0xE000000Au:
-                address = reinterpret_cast<const FARPROC*>(vtbl)[0x0060];
-                if (address != nullptr) return address;
-                break;
-            case 0xE000000Cu:
-                address = reinterpret_cast<const FARPROC*>(vtbl)[0x005E];
-                if (address != nullptr) return address;
-                break;
-            case 0xE000000Fu:
-                address = reinterpret_cast<const FARPROC*>(vtbl)[0x0064];
-                if (address != nullptr) return address;
-                break;
-            case 0xE0000011u:
-                address = reinterpret_cast<const FARPROC*>(vtbl)[0x0077];
-                if (address != nullptr) return address;
-                break;
-            default:
-                break;
-            }
-        }
-        break;
-    case 0x0E00:
-        // TODO public: virtual void __thiscall CMessBox::AttachInstructionText(char const *, class TRio, class TRio, unsigned long)
-    default:
-        break;
-    }
-
-    return address;
-}
-
-const CRio_vtbl* CMessBox::GetVisualTable()
-{
-    const auto name = "??_7CMessBox@@6B@";
-    auto& address = reinterpret_cast<CRio_vtbl*&>(cache[name]);
-    if (address != nullptr) return address;
-    const auto clazz = GetClassCMessBox();
-    if (clazz->m_pfnCreateObject == nullptr) return nullptr;
-    auto start = reinterpret_cast<LPBYTE>(clazz->m_pfnCreateObject);
-    auto ctor = static_cast<FARPROC>(nullptr);
-    for (auto offset = start; offset - start < 0x0400; offset++)
-    {
-        // mov     ecx, ...
-        if (offset[0x00] != 0x8B) continue;
-        // call    ...
-        if (offset[0x02] != 0xE8) continue;
-        const auto jump = *reinterpret_cast<int*>(offset + 0x03);
-        ctor = reinterpret_cast<FARPROC>(offset + 0x07 + jump);
-        break;
-    }
-    start = reinterpret_cast<LPBYTE>(ctor);
-    for (auto offset = start; offset - start < 0x0400; offset++)
-    {
-        // mov     dword ptr [*], ...
-        if (offset[0x00] != 0xC7) continue;
-        const auto vtbl = *reinterpret_cast<CRio_vtbl**>(offset + 0x02);
-        if (IsBadReadPtr(vtbl, sizeof(CObject_vtbl))) continue;
-        if (IsBadCodePtr(reinterpret_cast<FARPROC>(vtbl->GetRuntimeClass))) continue;
-        const auto get = reinterpret_cast<LPBYTE>(vtbl->GetRuntimeClass);
-        // mov     eax, ...
-        const auto rtc = *reinterpret_cast<const CRuntimeClass* const*>(get + 0x01);
-        if (clazz != rtc) continue;
-        address = vtbl;
-        break;
-    }
-
-    return address;
+    return address = nullptr;
 }
 
 const CArchive* CPmArchive::GetNative()
@@ -1022,7 +736,7 @@ BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
         }
         break;
     case 0x0E00:
-        // TODO protected: int __thiscall COceanNode::IsDerivedFrom(struct CRioRTC const *)const
+        // TODO protected: int __thiscall COceanNode::IsDerivedFrom(struct CRioRTC const *) const
         return FALSE;
     default:
         break;
@@ -1031,9 +745,9 @@ BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
     return FALSE;
 }
 
-CRio* COceanNode::FetchRef() const
+CRio* COceanNode::FetchRef()
 {
-    using LPGetPointer = CRio* (__thiscall *)(const COceanNode*);
+    using LPGetPointer = CRio* (__thiscall *)(COceanNode*);
     const auto name = "?__GetPointer@COceanNode@@QBEPAVCRio@@XZ";
     auto& proc = reinterpret_cast<LPGetPointer&>(cache[name]);
     if (proc != nullptr) return proc(this);
@@ -1177,7 +891,7 @@ COceanNode::LPGetMotherOcean& COceanNode::FetchGetMotherOcean()
         break;
     }
 
-    return address;
+    return address = nullptr;
 }
 
 LPCSTR CrUGP::GetVersion() const
@@ -1277,8 +991,8 @@ const CRuntimeClass* CCommandRef::GetClassCCommandRef()
 CVmCommand* CCommandRef::GetNextCommand()
 {
     using LPGetNextCommand = CVmCommand*(__thiscall *)(CCommandRef*);
-    const auto name =
-        "?GetNextCommand@" + std::string(this->GetRuntimeClass()->m_lpszClassName) + "@@UBEPAVCVmCommand@@XZ";
+    const auto clazz = this->GetRuntimeClass();
+    const auto name = "?GetNextCommand@" + std::string(clazz->m_lpszClassName) + "@@UBEPAVCVmCommand@@XZ";
     auto& proc = reinterpret_cast<LPGetNextCommand&>(cache[name]);
     if (proc != nullptr) return proc(this);
     const auto vtbl = *reinterpret_cast<FARPROC* const*>(this);
@@ -1287,46 +1001,52 @@ CVmCommand* CCommandRef::GetNextCommand()
     {
     case 0x0600:
         proc = reinterpret_cast<LPGetNextCommand>(vtbl[0x000B]);
-        break;
+        return proc(this);
     case 0x0C00:
         proc = reinterpret_cast<LPGetNextCommand>(vtbl[0x000C]);
-        break;
+        return proc(this);
     default:
         // TODO ?GetNextCommand@CCommandRef@@UBEPAVCVmCommand@@XZ
-        return nullptr;
+        break;
     }
 
-    return proc(this);
+    return nullptr;
 }
 
 int CVmCommand::GetVariableAreaSize() const
 {
     using LPGetVariableAreaSize = int (__thiscall *)(const CVmCommand*);
-    const auto name =
-        "?GetValiableAreaSize@" + std::string(this->GetRuntimeClass()->m_lpszClassName) + "@@UAEHXZ";
+    const auto clazz = this->GetRuntimeClass();
+    const auto name = "?GetValiableAreaSize@" + std::string(clazz->m_lpszClassName) + "@@UAEHXZ";
     auto& proc = reinterpret_cast<LPGetVariableAreaSize&>(cache[name]);
     if (proc != nullptr) return proc(this);
     const auto vtbl = *reinterpret_cast<FARPROC* const*>(this);
-    switch (this->GetRuntimeClass()->m_wSchema)
+    switch (clazz->m_wSchema)
     {
     case 0xA000000Cu:
     case 0xA000000Du:
     case 0xA000000Eu:
         proc = reinterpret_cast<LPGetVariableAreaSize>(vtbl[0x0007]);
-        break;
+        return proc(this);
     case 0xA0000011u:
     case 0xA0000012u:
     case 0xA0000013u:
     case 0xA0000014u:
     case 0xA0000015u:
         proc = reinterpret_cast<LPGetVariableAreaSize>(vtbl[0x0009]);
-        break;
+        return proc(this);
     default:
         // TODO ?GetValiableAreaSize@CVmCommand@@UAEHXZ
-        return 0;
+        break;
     }
 
-    return proc(this);
+    if (m_pNext != nullptr)
+    {
+        // The memory is continuous by CHeap.
+        return reinterpret_cast<int>(m_pNext) - reinterpret_cast<int>(this) - clazz->m_nObjectSize;
+    }
+
+    return 0;
 }
 
 const CRuntimeClass* CVmMsg::GetClassCVmMsg()

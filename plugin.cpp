@@ -312,11 +312,6 @@ void CObjectProxy::AttachHook()
         wprintf(L"DetourAttach: CS5RFont::GetCachedFont\n");
         DetourAttach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
     }
-    if (CMessBox::FetchStore())
-    {
-        wprintf(L"DetourAttach: CHeapHistoryPtr::Store\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(CMessBox::FetchStore()), HookCharacterStore);
-    }
     if (CRio::FetchIsMultiple())
     {
         wprintf(L"DetourAttach: IsDBCS\n");
@@ -355,15 +350,15 @@ void CObjectProxy::DetachHook()
         wprintf(L"DetourDetach: CS5i::DrawFont\n");
         DetourDetach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont1()), HookDrawFont1);
     }
+    if (CS5i::FetchDrawFont2())
+    {
+        wprintf(L"DetourDetach: CS5i::DrawFont\n");
+        DetourDetach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont2()), HookDrawFont2);
+    }
     if (CS5RFont::FetchGetCachedFont())
     {
         wprintf(L"DetourDetach: CS5RFont::GetCachedFont\n");
         DetourDetach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
-    }
-    if (CMessBox::FetchStore())
-    {
-        wprintf(L"DetourDetach: CHeapHistoryPtr::Store\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(CMessBox::FetchStore()), HookCharacterStore);
     }
     if (CRio::FetchIsMultiple())
     {
@@ -733,8 +728,8 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     // mov     [...], ..
     // inc     ...
     case 0x05:
-        // 6.23.02 Vm60 .text:10016BBB
-        // 6.23.02 Vm60 .text:10016BD4
+    // 6.23.02 Vm60 .text:10016BBB
+    // 6.23.02 Vm60 .text:10016BD4
     // mov     .., [...+1]
     // mov     .., [...+1]
     // cmp     .., ..
@@ -762,6 +757,8 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         // 5.80.20EC Vm60 .text:100146B6
         if (end[-0x04] != 0x08u) return;
         {
+            const auto offset = 0x10000000u - reinterpret_cast<DWORD>(module);
+            wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
             const auto codes = static_cast<LPBYTE>(VirtualAlloc(
                 nullptr,
                 0x0040,
@@ -1049,24 +1046,6 @@ LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT uChar, COceanNode* co
     auto& font = FONT_CACHE[uChar];
     if (font == nullptr) font = ecx->CreateNewFont(uChar, node);
     return font;
-}
-
-void CObjectProxy::HookCharacterStore(
-    LPVOID const ecx, // NOLINT(*-misplaced-const)
-    LPCVOID const source, SIZE_T const size)
-{
-    CMessBox::FetchStore()(ecx, source, size);
-    if (size != 2) return;
-    const auto key = *static_cast<const WORD*>(source);
-    if ((key & 0xFF00) == 0x0000 || (key & 0x00FF) >= 0x0040) return;
-    CHARACTER_MAP[key] = *static_cast<const UINT*>(source);
-}
-
-void CObjectProxy::HookCharacterLoad(
-    LPVOID const ecx, LPVOID const target, // NOLINT(*-misplaced-const)
-    SIZE_T const size)
-{
-    CMessBox::FetchLoad()(ecx, target, size);
 }
 
 std::map<std::wstring, CObjectProxy*> CObjectProxy::REF_MAP;

@@ -142,24 +142,6 @@ public:
     static LPDrawFont& FetchDrawFont();
 };
 
-class CMessBox : public CRio
-{
-public:
-    DECLARE_DYNAMIC_RIO(CMessBox)
-
-    using LPStore = void (__thiscall *)(LPVOID, LPCVOID, SIZE_T);
-    using LPLoad = void (__thiscall *)(LPVOID, LPVOID, SIZE_T);
-
-    static LPStore& FetchStore();
-    static LPLoad& FetchLoad();
-
-protected:
-    static FARPROC& FetchAttachTextCore();
-    static FARPROC& FetchAttachInstructionText();
-
-    static const CRio_vtbl* GetVisualTable();
-};
-
 class CPmArchive
 {
 protected:
@@ -210,7 +192,7 @@ public:
     using LPGetMotherOcean = COceanNode** (__cdecl *)(COceanNode**);
 
     BOOL IsDerivedFrom(const CRuntimeClass*) const;
-    CRio* FetchRef() const;
+    CRio* FetchRef();
     void ReleaseRef();
     DWORD GetAddress() const;
 
