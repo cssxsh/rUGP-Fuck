@@ -69,6 +69,7 @@ public:
     static BOOL LoadFromModule(LPCSTR lpszModuleName);
     static void AttachHook();
     static void DetachHook();
+    static void AttachCharacterPatch(LPCSTR lpszModuleName);
     static void Clear();
 
 protected:
@@ -80,9 +81,9 @@ protected:
     static std::map<UINT, LPVOID> FONT_CACHE;
 
     static const CObject_vtbl* __fastcall FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
-    static void __fastcall AttachCharacterPatch(LPCSTR lpszModuleName);
-    static void __fastcall DetachCharacterPatch(LPCSTR lpszModuleName);
-    static void __fastcall AttachCharacterHandle(LPBYTE address);
+    static void __fastcall AttachCharacterSplit(LPBYTE address, LPCSTR lpszModuleName);
+    static CVmCommand* __fastcall Merge(const CVmCommand* ecx, cJSON* edx); 
+    static int __stdcall CharacterByteSize(LPCSTR);
 
     static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE& module);
     static void __thiscall HookDestructor(CRio* ecx);
@@ -96,7 +97,6 @@ protected:
 
     static void __thiscall HookCharacterStore(LPVOID, LPCVOID, SIZE_T);
     static void __thiscall HookCharacterLoad(LPVOID, LPVOID, SIZE_T);
-    static int __stdcall CharacterByteSize(LPCSTR);
 };
 
 class COceanTree final

@@ -9,8 +9,6 @@
 
 static BOOL CreateMergeDirectory();
 
-static CVmCommand* __fastcall Merge(const CVmCommand* ecx, cJSON* edx);
-
 static AFX_EXTENSION_MODULE R514783_PLUGIN = {FALSE, nullptr};
 
 // ReSharper disable once CppParameterMayBeConst
@@ -36,10 +34,6 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
 
         AfxInitExtensionModule(R514783_PLUGIN, hInstance);
 
-        CObjectProxy::LoadFromModule("UnivUI");
-        CObjectProxy::LoadFromModule("rvmm");
-        CObjectProxy::LoadFromModule("Vm60");
-
         __try
         {
             CreateMergeDirectory();
@@ -58,6 +52,10 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
             wprintf(L"Win32Hook::AttachHook Fail: 0x%08X\n\n", GetExceptionCode());
         }
 
+        CObjectProxy::LoadFromModule("UnivUI");
+        CObjectProxy::LoadFromModule("rvmm");
+        CObjectProxy::LoadFromModule("Vm60");
+
         __try
         {
             CObjectProxy::AttachHook();
@@ -65,6 +63,18 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
         __except (EXCEPTION_EXECUTE_HANDLER)
         {
             wprintf(L"CObjectProxy::AttachHook Fail: 0x%08X\n\n", GetExceptionCode());
+        }
+
+        __try
+        {
+            // CObjectProxy::AttachCharacterPatch("GMfc");
+            CObjectProxy::AttachCharacterPatch("UnivUI");
+            CObjectProxy::AttachCharacterPatch("rvmm");
+            CObjectProxy::AttachCharacterPatch("Vm60");
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER)
+        {
+            wprintf(L"CObjectProxy::AttachCharacterPatch Fail: 0x%08X\n\n", GetExceptionCode());
         }
 
         __try
@@ -176,67 +186,6 @@ BOOL CreateMergeDirectory()
 {
     const auto name = GetGameName();
     return CreateDirectoryW(name.c_str(), nullptr);
-}
-
-CVmCommand* __fastcall Merge(const CVmCommand* const ecx, cJSON* const edx) // NOLINT(*-no-recursion)
-{
-    const auto pClassCVmMsg = CVmMsg::GetClassCVmMsg();
-    auto result = static_cast<CVmCommand*>(nullptr);
-    auto prev = static_cast<CVmCommand*>(nullptr);
-    auto next = static_cast<CVmCommand*>(nullptr);
-    for (auto command = ecx; command != nullptr; command = command->m_pNext)
-    {
-        char name[MAX_PATH];
-        sprintf(name, "%08X:%s", command->m_dwFlags & 0x000FFFFF, command->GetRuntimeClass()->m_lpszClassName);
-        switch (*reinterpret_cast<const DWORD*>(command->GetRuntimeClass()->m_lpszClassName))
-        {
-        case 0x4D6D5643u: // CVmMsg
-            if (command->GetRuntimeClass() != pClassCVmMsg) continue;
-            {
-                auto text = cJSON_GetObjectItem(edx, name);
-                if (cJSON_IsString(text))
-                {
-                    const auto value = cJSON_GetStringValue(text, CP_GB18030);
-                    const auto size = pClassCVmMsg->m_nObjectSize + ((strlen(value) + 0x04) & ~0x03);
-                    const auto clone = static_cast<CVmMsg*>(malloc(size));
-                    memcpy(clone, command, pClassCVmMsg->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-                    memcpy(clone->m_area, value, (strlen(value) + 0x04) & ~0x03);
-                    cJSON_free(value);
-                    next = clone;
-                }
-                else
-                {
-                    const auto message = reinterpret_cast<const CVmMsg*>(command);
-                    text = cJSON_CreateString(message->m_area, CP_SHIFT_JIS);
-                    cJSON_AddItemToObject(edx, name, text);
-                    const auto unicode = Unicode(message->m_area, CP_SHIFT_JIS);
-                    const auto ansi = Ansi(unicode, CP_GB18030);
-                    free(unicode);
-                    const auto size = pClassCVmMsg->m_nObjectSize + ((strlen(ansi) + 0x04) & ~0x03);
-                    const auto clone = static_cast<CVmMsg*>(malloc(size));
-                    memcpy(clone, command, pClassCVmMsg->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-                    memcpy(clone->m_area, ansi, (strlen(ansi) + 0x04) & ~0x03);
-                    free(ansi);
-                    next = clone;
-                }
-            }
-            break;
-        default:
-            {
-                cJSON_AddItemToObject(edx, name, cJSON_CreateNull());
-                const auto size = command->GetRuntimeClass()->m_nObjectSize + command->GetVariableAreaSize();
-                const auto clone = static_cast<CVmCommand*>(malloc(size));
-                memcpy(clone, command, size); // NOLINT(*-undefined-memory-manipulation)
-                next = clone;
-            }
-            break;
-        }
-
-        prev == nullptr ? (result = next) : (prev->m_pNext = next);
-        prev = next;
-    }
-
-    return result;
 }
 
 CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
@@ -374,10 +323,6 @@ void CObjectProxy::AttachHook()
         DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchIsMultiple()), HookIsMultiple);
     }
     DetourTransactionCommit();
-
-    AttachCharacterPatch("UnivUI");
-    AttachCharacterPatch("rvmm");
-    AttachCharacterPatch("Vm60");
 }
 
 void CObjectProxy::DetachHook()
@@ -426,10 +371,6 @@ void CObjectProxy::DetachHook()
         DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchIsMultiple()), HookIsMultiple);
     }
     DetourTransactionCommit();
-
-    DetachCharacterPatch("UnivUI");
-    DetachCharacterPatch("rvmm");
-    DetachCharacterPatch("Vm60");
 }
 
 void CObjectProxy::Clear()
@@ -454,6 +395,31 @@ void CObjectProxy::Clear()
         delete p;
     }
     REF_MAP.clear();
+    MODULE_MAP.clear();
+
+    for (auto& pair : PATCH_CACHE)
+    {
+        const auto address = pair.first;
+        const auto record = pair.second;
+        pair.second = nullptr;
+    
+        auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
+        VirtualProtect(address, record->block_size, protect, &protect);
+        memcpy(address, record->origin, record->block_size);
+        VirtualProtect(address, record->block_size, protect, &protect);
+        free(record);
+    }
+    PATCH_CACHE.clear();
+    CHARACTER_MAP.clear();
+    
+    for (auto& pair : FONT_CACHE)
+    {
+        const auto record = pair.second;
+        pair.second = nullptr;
+    
+        free(record);
+    }
+    FONT_CACHE.clear();
 }
 
 const CObject_vtbl* CObjectProxy::FindVirtualTable( // NOLINT(*-no-recursion)
@@ -495,10 +461,11 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
 {
     const auto hModule = GetModuleHandleA(lpszModuleName);
     if (hModule == nullptr) return;
-    const auto size = DetourGetModuleSize(hModule);
-    const auto start = reinterpret_cast<LPBYTE>(hModule);
-    for (auto offset = start; offset < start + size; offset++)
+    const auto start = reinterpret_cast<LPBYTE>(hModule) + 0x00001000;
+    const auto end = reinterpret_cast<LPBYTE>(hModule) + DetourGetModuleSize(hModule);
+    for (auto offset = start; offset < end; offset++)
     {
+        if (IsBadCodePtr(reinterpret_cast<FARPROC>(offset))) break;
         if (IsBadReadPtr(offset, sizeof(DWORD))) continue;
         switch (*reinterpret_cast<const DWORD*>(offset))
         {
@@ -507,7 +474,8 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         case 0x3B3C5F04u:
             {
                 const auto address = offset + 0x00;
-                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", address + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + 0x04));
                 record->block_size = 0x04;
                 memcpy(record->origin, address, record->block_size);
@@ -515,35 +483,37 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 VirtualProtect(address, record->block_size, protect, &protect);
                 address[0x00] = 0x34u;
                 address[0x01] = 0xA0u;
-                address[0x03] = 0x7Fu;
+                address[0x03] = 0x7Eu;
                 VirtualProtect(address, record->block_size, protect, &protect);
                 PATCH_CACHE[address] = record;
-                AttachCharacterHandle(address + record->block_size);
+                AttachCharacterSplit(address + record->block_size, lpszModuleName);
             }
             break;
-        // add     bl, 5Fh
-        // cmp     bl, 3Bh
-        case 0x3BFB805Fu:
         // add     cl, 5Fh
         // cmp     cl, 3Bh
         case 0x3BF9805Fu:
         // add     dl, 5Fh
         // cmp     dl, 3Bh
         case 0x3BFA805Fu:
+        // add     bl, 5Fh
+        // cmp     bl, 3Bh
+        case 0x3BFB805Fu:
             {
                 const auto address = offset - 0x02;
-                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                if (address[0x00] != 0x80u || (address[0x01] & 0xC0) != 0xC0u) continue;
+                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", address + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + 0x06));
                 record->block_size = 0x06;
                 memcpy(record->origin, address, record->block_size);
                 auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
                 VirtualProtect(address, record->block_size, protect, &protect);
-                address[0x01] = address[0x01] & 0x0Fu | 0xF0u;
+                address[0x01] = address[0x01] ^ 0x30u;
                 address[0x02] = 0xA0u;
-                address[0x05] = 0x7Fu;
+                address[0x05] = 0x7Eu;
                 VirtualProtect(address, record->block_size, protect, &protect);
                 PATCH_CACHE[address] = record;
-                AttachCharacterHandle(address + record->block_size);
+                AttachCharacterSplit(address + record->block_size, lpszModuleName);
             }
             break;
         // push    esi
@@ -560,15 +530,16 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 if (IsBadCodePtr(*reinterpret_cast<FARPROC*>(address + 0x03))) continue;
                 const auto proc = **reinterpret_cast<FARPROC**>(address + 0x03);
                 if (proc != is) continue;
-                AttachCharacterHandle(address + 0x0C);
+                AttachCharacterSplit(address + 0x0Cu, lpszModuleName);
             }
             break;
         // 0xA1A1
         case 0x00008140u:
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
-                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
+                if (offset[0x04] == 0x00u) continue;
+                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -583,8 +554,9 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         case 0x00008175u:
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
-                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
+                if (offset[0x04] == 0x00u) continue;
+                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -599,8 +571,9 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         case 0x00008176u:
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
-                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
+                if (offset[0x04] == 0x00u) continue;
+                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -615,8 +588,9 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         case 0x00008179u:
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
-                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
+                if (offset[0x04] == 0x00u) continue;
+                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -631,8 +605,9 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         case 0x0000817Au:
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
-                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
+                if (offset[0x04] == 0x00u) continue;
+                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -647,8 +622,9 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         case 0x0000815Cu:
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
-                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
+                if (offset[0x04] == 0x00u) continue;
+                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -663,8 +639,9 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         case 0x0000849Fu:
             {
                 const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
-                if (*(offset - 0x01) != 0x3Du && *(offset - 0x02) != 0x81u) continue;
+                if (offset[0x04] == 0x00u) continue;
+                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
                 record->block_size = sizeof(DWORD);
                 memcpy(record->origin, address, record->block_size);
@@ -681,30 +658,9 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
     }
 }
 
-void CObjectProxy::DetachCharacterPatch(LPCSTR const lpszModuleName)
-{
-    const auto hModule = GetModuleHandleA(lpszModuleName);
-    if (hModule == nullptr) return;
-    for (auto& pair : PATCH_CACHE)
-    {
-        if (DetourGetContainingModule(pair.first) != hModule) continue;
-        const auto address = pair.first;
-        const auto record = pair.second;
-        pair.second = nullptr;
-
-        auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
-        VirtualProtect(address, record->block_size, protect, &protect);
-        memcpy(address, record->origin, record->block_size);
-        VirtualProtect(address, record->block_size, protect, &protect);
-        free(record);
-    }
-}
-
-void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-misplaced-const)
+void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszModuleName) // NOLINT(*-misplaced-const)
 {
     const auto module = DetourGetContainingModule(address);
-    wchar_t name[MAX_PATH];
-    GetModuleFileNameW(module, name, MAX_PATH);
     auto start = static_cast<LPBYTE>(nullptr);
     auto end = static_cast<LPBYTE>(nullptr);
     switch (address[0x00])
@@ -724,11 +680,14 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
         end = start + *reinterpret_cast<char*>(address + 0x01);
         break;
     default:
-        wprintf(L"AttachCharacterHandle Error: 0x%p at %s\n", address, name);
+        {
+            const auto offset = 0x10000000u - reinterpret_cast<DWORD>(module);
+            wprintf(L"Attach CharacterSplit Error 0x%p at %hs\n", address + offset, lpszModuleName);
+        }
         return;
     }
-    // jmp     short ...
-    if (start[0x01] == 0xEBu) end = start + 0x01;
+    // jmp     ...
+    if (start[0x01] == 0xEBu || start[0x01] == 0xE9u) end = start + 0x01;
     else if (start[0x05] == 0xEBu) end = start + 0x05;
     // jz      ...
     if (start[0x08] == 0x74u) end = start + 0x08;
@@ -760,61 +719,20 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
     switch (const auto size = end - start)
     {
     case 0x00u:
-        break;
     // inc     ...
     case 0x01u:
-        {
-            const auto codes = static_cast<LPBYTE>(VirtualAlloc(
-                nullptr,
-                0x0020,
-                MEM_COMMIT | MEM_RESERVE,
-                PAGE_EXECUTE_READWRITE));
-            memset(codes, 0xCCu, 0x0020);
-            auto hook = end;
-            const auto diff = start[0x00] - 0x40u;
-            // DetourTransactionBegin();
-            // DetourUpdateThread(GetCurrentThread());
-            // DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
-            // DetourTransactionCommit();
-            auto index = 0x00;
-            // dec     ...
-            codes[index++] = 0x48 + diff;
-            // dec     ...
-            codes[index++] = 0x48 + diff;
-            // push    eax
-            codes[index++] = 0x50;
-            // push    ...
-            codes[index++] = 0x50 + diff;
-            // call    ...
-            codes[index++] = 0xE8;
-            *reinterpret_cast<int*>(codes + index) =
-                reinterpret_cast<int>(CharacterByteSize) - reinterpret_cast<int>(codes + index + 0x04);
-            index += 0x04;
-            // add     ..., eax
-            codes[index++] = 0x01, codes[index++] = 0xC0 + diff;
-            // pop     eax
-            codes[index++] = 0x58;
-            // jmp     ...
-            codes[index++] = 0xE9;
-            *reinterpret_cast<int*>(codes + index) =
-                reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
-            VirtualProtect(codes, 0x0020, PAGE_EXECUTE_READ, nullptr);
-        }
-        return;
     // movzx   ..., byte ptr [...]
     // inc     ...
     case 0x04:
-        break;
     // mov     .., [...]
     // mov     [...], ..
     // inc     ...
     case 0x05:
-        break;
     // mov     .., [...+1]
     // mov     .., [...+1]
     // cmp     .., ..
     case 0x08:
-        break;
+        return;
     // movzx   ..., byte ptr [...]
     // shl     ..., 8
     // or      ..., ...
@@ -890,7 +808,88 @@ void CObjectProxy::AttachCharacterHandle(LPBYTE const address) // NOLINT(*-mispl
     default:
         break;
     }
-    wprintf(L"AttachCharacterHandle 0x%p ~ 0x%p diff 0x%02X at %s\n", start, end, end - start, name);
+
+    const auto offset = 0x10000000u - reinterpret_cast<DWORD>(module);
+    wprintf(L"Attach CharacterSplit Fail 0x%p ~ 0x%p at %hs\n", start + offset, end + offset, lpszModuleName);
+}
+
+int CObjectProxy::CharacterByteSize(LPCSTR const text)
+{
+    // GB18030
+    if ((text[0x0000] & 0x80u) == 0x00u) return 1;
+    if ((text[0x0001] & 0xC0u) == 0x00u) return 4;
+    return 2;
+}
+
+CVmCommand* __fastcall CObjectProxy::Merge(const CVmCommand* const ecx, cJSON* const edx) // NOLINT(*-no-recursion)
+{
+    const auto pClassCVmMsg = CVmMsg::GetClassCVmMsg();
+    auto result = static_cast<CVmCommand*>(nullptr);
+    auto prev = static_cast<CVmCommand*>(nullptr);
+    auto next = static_cast<CVmCommand*>(nullptr);
+    for (auto command = ecx; command != nullptr; command = command->m_pNext)
+    {
+        char name[MAX_PATH];
+        sprintf(name, "%08X:%s", command->m_dwFlags & 0x000FFFFF, command->GetRuntimeClass()->m_lpszClassName);
+        switch (*reinterpret_cast<const DWORD*>(command->GetRuntimeClass()->m_lpszClassName))
+        {
+        case 0x4D6D5643u: // CVmMsg
+            if (command->GetRuntimeClass() != pClassCVmMsg) continue;
+            {
+                auto text = cJSON_GetObjectItem(edx, name);
+                if (cJSON_IsString(text))
+                {
+                    const auto value = cJSON_GetStringValue(text, CP_GB18030);
+                    const auto size = pClassCVmMsg->m_nObjectSize + ((strlen(value) + 0x04) & ~0x03);
+                    const auto clone = static_cast<CVmMsg*>(malloc(size));
+                    memcpy(clone, command, pClassCVmMsg->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
+                    memcpy(clone->m_area, value, (strlen(value) + 0x04) & ~0x03);
+                    cJSON_free(value);
+                    next = clone;
+                }
+                else
+                {
+                    const auto message = reinterpret_cast<const CVmMsg*>(command);
+                    text = cJSON_CreateString(message->m_area, CP_SHIFT_JIS);
+                    cJSON_AddItemToObject(edx, name, text);
+                    const auto unicode = Unicode(message->m_area, CP_SHIFT_JIS);
+                    const auto ansi = Ansi(unicode, CP_GB18030);
+                    free(unicode);
+                    const auto size = pClassCVmMsg->m_nObjectSize + ((strlen(ansi) + 0x04) & ~0x03);
+                    const auto clone = static_cast<CVmMsg*>(malloc(size));
+                    memcpy(clone, command, pClassCVmMsg->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
+                    memcpy(clone->m_area, ansi, (strlen(ansi) + 0x04) & ~0x03);
+                    free(ansi);
+                    next = clone;
+                }
+                {
+                    const auto message = reinterpret_cast<const CVmMsg*>(next);
+                    for (auto lpsz = message->m_area; *lpsz != '\0'; lpsz += CharacterByteSize(lpsz))
+                    {
+                        if (lpsz[0x00] < 0x81u || lpsz[0x01] > 0x39u) continue;
+                        const auto uChar =
+                            (lpsz[0x00] << 0x18) | (lpsz[0x01] << 0x10) | (lpsz[0x02] << 0x08) | (lpsz[0x03] << 0x00);
+                        CHARACTER_MAP[uChar & 0xFFFF] = uChar;
+                    }
+                }
+            }
+            break;
+        default:
+            {
+                cJSON_AddItemToObject(edx, name, cJSON_CreateNull());
+                const auto size = command->GetRuntimeClass()->m_nObjectSize + command->GetVariableAreaSize();
+                const auto clone = static_cast<CVmCommand*>(malloc(size));
+                memcpy(clone, command, size); // NOLINT(*-undefined-memory-manipulation)
+                next = clone;
+            }
+            break;
+        }
+
+        prev == nullptr ? (result = next) : (prev->m_pNext = next);
+        prev = next;
+    }
+
+    return result;
 }
 
 void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
@@ -1014,8 +1013,8 @@ int CObjectProxy::HookDrawFont1(
     LPVOID const ecx, // NOLINT(*-misplaced-const)
     DWORD const x, DWORD const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
 {
-    const auto s5i = CS5i::Match(ecx);
-    if ((uChar & 0xFF00) != 0x0000 && (uChar & 0x00FF) <= 0x0039) uChar = CHARACTER_MAP[uChar];
+    // const auto s5i = CS5i::Match(ecx);
+    if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];
     return CS5i::FetchDrawFont1()(ecx, x, y, rect, out, uChar, context);
 }
 
@@ -1023,14 +1022,15 @@ void CObjectProxy::HookDrawFont2(
     LPVOID const ecx, LPINT const width, // NOLINT(*-misplaced-const)
     DWORD const x, DWORD const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
 {
-    const auto s5i = CS5i::Match(ecx);
-    if ((uChar & 0xFF00) != 0x0000 && (uChar & 0x00FF) <= 0x0039) uChar = CHARACTER_MAP[uChar];
+    // const auto s5i = CS5i::Match(ecx);
+    if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];
     return CS5i::FetchDrawFont2()(ecx, width, x, y, rect, out, uChar, context);
 }
 
-LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT const uChar, COceanNode* const node)
+LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT uChar, COceanNode* const node)
 {
-    if (uChar <= 0xFFFF) return ecx->GetCachedFont(uChar, node);
+    if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];
+    if (uChar <= 0xFFFFu) return ecx->GetCachedFont(uChar, node);
     auto& font = FONT_CACHE[uChar];
     if (font == nullptr) font = ecx->CreateNewFont(uChar, node);
     return font;
@@ -1052,14 +1052,6 @@ void CObjectProxy::HookCharacterLoad(
     SIZE_T const size)
 {
     CMessBox::FetchLoad()(ecx, target, size);
-}
-
-int CObjectProxy::CharacterByteSize(LPCSTR const text)
-{
-    // GB18030
-    if ((text[0x0000] & 0x80u) == 0x00u) return 1;
-    if ((text[0x0001] & 0xC0u) == 0x00u) return 4;
-    return 2;
 }
 
 std::map<std::wstring, CObjectProxy*> CObjectProxy::REF_MAP;
