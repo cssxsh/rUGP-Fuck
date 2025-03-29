@@ -115,12 +115,12 @@ class CS5RFont : public CVisual
 {
 public:
     DECLARE_DYNAMIC_RIO(CS5RFont)
-    
+
     using LPGetFont = LPVOID (__thiscall *)(CS5RFont*, UINT, COceanNode*);
 
     LPVOID GetCachedFont(UINT, COceanNode*);
     LPVOID CreateNewFont(UINT, COceanNode*);
-    
+
     static LPGetFont& FetchGetCachedFont();
 };
 

@@ -82,7 +82,7 @@ protected:
 
     static const CObject_vtbl* __fastcall FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
     static void __fastcall AttachCharacterSplit(LPBYTE address, LPCSTR lpszModuleName);
-    static CVmCommand* __fastcall Merge(const CVmCommand* ecx, cJSON* edx); 
+    static CVmCommand* __fastcall Merge(const CVmCommand* ecx, cJSON* edx);
     static int __stdcall CharacterByteSize(LPCSTR);
 
     static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE& module);

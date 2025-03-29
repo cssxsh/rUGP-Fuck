@@ -327,7 +327,7 @@ CS5i::LPDrawFont1& CS5i::FetchDrawFont1()
             if (start == nullptr) break;
             for (auto offset = start; start - offset < 0x0400; offset--)
             {
-                 const auto proc = *offset;
+                const auto proc = *offset;
                 // push    0FFFFFFFFh
                 if (proc[0x00] != 0x6Au) continue;
                 if (proc[0x01] != 0xFFu) continue;
@@ -338,9 +338,8 @@ CS5i::LPDrawFont1& CS5i::FetchDrawFont1()
         }
         break;
     case 0x0C00:
-        // @see FetchDrawFont2
     case 0x0E00:
-        // TODO public: int __thiscall CS5i::DrawFont(short, short, struct tagRBDY const *, struct SQRBDY *, unsigned int, class CFontContext const *)
+        // @see FetchDrawFont2
     default:
         break;
     }
@@ -491,13 +490,16 @@ LPVOID CS5RFont::CreateNewFont(UINT const uChar, COceanNode* const node)
             const auto UnivUI = GetModuleHandleA("UnivUI");
             proc = reinterpret_cast<LPGetFont>(GetProcAddress(UnivUI, name));
             if (proc != nullptr) return proc(this, uChar, node);
-            const auto start = reinterpret_cast<LPBYTE>(GetProcAddress(UnivUI, MAKEINTRESOURCE(472)));
-            for (auto offset = start; offset - start < 0x00010000; offset++)
+            const auto pfn_GetCachedFont = reinterpret_cast<LPBYTE>(GetProcAddress(UnivUI, MAKEINTRESOURCE(472)));
+            const auto pfn_GetPointer = reinterpret_cast<LPBYTE>(GetProcAddress(UnivUI, MAKEINTRESOURCE(75)));
+            for (auto offset = pfn_GetCachedFont; offset - pfn_GetCachedFont < 0x0400; offset++)
             {
-                // push    0FFFFFFFFh
-                if (offset[0x00] != 0x6Au) continue;
-                if (offset[0x01] != 0xFFu) continue;
-                proc = reinterpret_cast<LPGetFont>(offset);
+                // call    ...
+                if (offset[0x00] != 0xE8u) continue;
+                const auto address = offset + 0x05 + *reinterpret_cast<int*>(offset + 0x01);
+                if (address == pfn_GetPointer) continue;
+                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+                proc = reinterpret_cast<LPGetFont>(address);
                 break;
             }
             if (proc != nullptr) return proc(this, uChar, node);

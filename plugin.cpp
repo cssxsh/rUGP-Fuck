@@ -402,7 +402,7 @@ void CObjectProxy::Clear()
         const auto address = pair.first;
         const auto record = pair.second;
         pair.second = nullptr;
-    
+
         auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
         VirtualProtect(address, record->block_size, protect, &protect);
         memcpy(address, record->origin, record->block_size);
@@ -411,12 +411,12 @@ void CObjectProxy::Clear()
     }
     PATCH_CACHE.clear();
     CHARACTER_MAP.clear();
-    
+
     for (auto& pair : FONT_CACHE)
     {
         const auto record = pair.second;
         pair.second = nullptr;
-    
+
         free(record);
     }
     FONT_CACHE.clear();
@@ -690,7 +690,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     if (start[0x01] == 0xEBu || start[0x01] == 0xE9u) end = start + 0x01;
     else if (start[0x05] == 0xEBu) end = start + 0x05;
     // jz      ...
-    if (start[0x08] == 0x74u) end = start + 0x08;
+    if (start + 0x08 < end && start[0x08] == 0x74u) end = start + 0x08;
     // cmp     ..., ...
     for (auto offset = start; offset < end; offset++)
     {
@@ -715,6 +715,11 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     {
         end = start + 0x00;
     }
+    // cmp     ...
+    if (start[0x00] == 0x83u)
+    {
+        end = start + 0x00;
+    }
 
     switch (const auto size = end - start)
     {
@@ -728,10 +733,13 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     // mov     [...], ..
     // inc     ...
     case 0x05:
+        // 6.23.02 Vm60 .text:10016BBB
+        // 6.23.02 Vm60 .text:10016BD4
     // mov     .., [...+1]
     // mov     .., [...+1]
     // cmp     .., ..
     case 0x08:
+        // 5.80.20EC Vm60 .text:10014806
         return;
     // movzx   ..., byte ptr [...]
     // shl     ..., 8
@@ -744,12 +752,14 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     // or      ..., ...
     // inc     ...
     case 0x0A:
+    // 6.23.02 Vm60 .text:10014D1F
     // xor     ..., ...
     // mov     .., [...+0]
     // shl     ..., 8
     // or      ..., ...
     // inc     ...
     case 0x0B:
+        // 5.80.20EC Vm60 .text:100146B6
         if (end[-0x04] != 0x08u) return;
         {
             const auto codes = static_cast<LPBYTE>(VirtualAlloc(
@@ -866,10 +876,13 @@ CVmCommand* __fastcall CObjectProxy::Merge(const CVmCommand* const ecx, cJSON* c
                     const auto message = reinterpret_cast<const CVmMsg*>(next);
                     for (auto lpsz = message->m_area; *lpsz != '\0'; lpsz += CharacterByteSize(lpsz))
                     {
-                        if (lpsz[0x00] < 0x81u || lpsz[0x01] > 0x39u) continue;
-                        const auto uChar =
-                            (lpsz[0x00] << 0x18) | (lpsz[0x01] << 0x10) | (lpsz[0x02] << 0x08) | (lpsz[0x03] << 0x00);
-                        CHARACTER_MAP[uChar & 0xFFFF] = uChar;
+                        if (static_cast<BYTE>(lpsz[0x00]) < 0x81u || static_cast<BYTE>(lpsz[0x01]) > 0x39u) continue;
+                        const auto uChar = 0u
+                            | static_cast<BYTE>(lpsz[0x00]) << 0x18
+                            | static_cast<BYTE>(lpsz[0x01]) << 0x10
+                            | static_cast<BYTE>(lpsz[0x02]) << 0x08
+                            | static_cast<BYTE>(lpsz[0x03]) << 0x00;
+                        CHARACTER_MAP[uChar & 0x0000FFFFu] = uChar;
                     }
                 }
             }
@@ -1015,6 +1028,7 @@ int CObjectProxy::HookDrawFont1(
 {
     // const auto s5i = CS5i::Match(ecx);
     if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];
+    if (uChar == '\0') return 0;
     return CS5i::FetchDrawFont1()(ecx, x, y, rect, out, uChar, context);
 }
 
@@ -1024,6 +1038,7 @@ void CObjectProxy::HookDrawFont2(
 {
     // const auto s5i = CS5i::Match(ecx);
     if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];
+    if (uChar == '\0') return void(*width = 0);
     return CS5i::FetchDrawFont2()(ecx, width, x, y, rect, out, uChar, context);
 }
 
