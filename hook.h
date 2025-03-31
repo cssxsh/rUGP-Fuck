@@ -5,7 +5,7 @@
 
 #ifdef _PRSHT_H_
 #pragma comment(lib, "comctl32.lib")
-#endif
+#endif // _PRSHT_H_
 
 class Win32Hook final
 {

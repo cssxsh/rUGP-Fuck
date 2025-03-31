@@ -474,7 +474,17 @@ HFONT WINAPI Win32Hook::HookCreateFontA(const int cHeight,
                                         const DWORD iPitchAndFamily,
                                         const LPCSTR pszFaceName)
 {
-    const auto unicode = Unicode(pszFaceName, CP_SHIFT_JIS);
+    auto cp = CP_ACP;
+    switch (*reinterpret_cast<const DWORD*>(pszFaceName))
+    {
+    case 0x72826C82u:
+    case 0x2D544F46u:
+        cp = CP_SHIFT_JIS;
+        break;
+    default:
+        break;
+    }
+    const auto unicode = Unicode(pszFaceName, cp);
     wprintf(L"Hook CreateFontA(iCharSet=0x%X, pszFaceName=%s)\n", iCharSet, unicode);
     const auto result = CreateFontW(
         cHeight, cWidth, cEscapement, cOrientation, cWeight,
@@ -503,7 +513,17 @@ HFONT WINAPI Win32Hook::HookCreateFontIndirectA(const LOGFONTA* lpLogFont)
         lpLogFont->lfQuality,
         lpLogFont->lfPitchAndFamily
     };
-    const auto unicode = Unicode(lpLogFont->lfFaceName, CP_SHIFT_JIS);
+    auto cp = CP_ACP;
+    switch (*reinterpret_cast<const DWORD*>(lpLogFont->lfFaceName))
+    {
+    case 0x72826C82u:
+    case 0x2D544F46u:
+        cp = CP_SHIFT_JIS;
+        break;
+    default:
+        break;
+    }
+    const auto unicode = Unicode(lpLogFont->lfFaceName, cp);
     wcscpy(font.lfFaceName, unicode);
     free(unicode);
     wprintf(L"Hook CreateFontIndirectA(lfCharSet=0x%X, lfFaceName=%s)\n", font.lfCharSet, font.lfFaceName);
