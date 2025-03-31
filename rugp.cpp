@@ -381,7 +381,7 @@ CS5i::LPDrawFont2& CS5i::FetchDrawFont2()
         }
         break;
     case 0x0E00:
-        // TODO public: void __thiscall CS5i::DrawFont(int *, short, short, struct tagRBDY const *, struct SQRBDY *, unsigned int, class CFontContext const *)
+        // TODO public: int * __thiscall CS5i::DrawFont(int *, short, short, struct tagRBDY const *, struct SQRBDY *, unsigned int, class CFontContext const *)
     default:
         break;
     }
@@ -594,9 +594,19 @@ const CRuntimeClass* CImgBox::GetClassCImgBox()
     return nullptr;
 }
 
-int CImgBox::DrawFont(const DWORD x, const DWORD y, const UINT uChar, CFontContext* const context)
+int CImgBox::DrawFont(const SHORT x, const SHORT y, const UINT uChar, CFontContext* const context)
 {
     return FetchDrawFont()(this, x, y, uChar, context);
+}
+
+LPCSTR CImgBox::DrawSingleLineText(const SHORT x, const SHORT y, const LPCSTR text, CFontContext* const context)
+{
+    return FetchDrawSingleLineText()(this, x, y, text, context);
+}
+
+void CImgBox::DrawSzText(const SHORT x, const SHORT y, const LPCSTR text, CFontContext* const context)
+{
+    return FetchDrawSzText()(this, x, y, text, context);
 }
 
 CImgBox::LPDrawFont& CImgBox::FetchDrawFont()
@@ -619,6 +629,60 @@ CImgBox::LPDrawFont& CImgBox::FetchDrawFont()
         break;
     case 0x0E00:
         // TODO public: int __thiscall CImgBox::DrawFont(short, short, unsigned int, class CFontContext *)
+    default:
+        break;
+    }
+
+    return address = nullptr;
+}
+
+CImgBox::LPDrawSingleLineText& CImgBox::FetchDrawSingleLineText()
+{
+    const auto name = "?DrawSingleLineText@CImgBox@@QAEPBDFFPBDPAVCFontContext@@@Z";
+    auto& address = reinterpret_cast<LPDrawSingleLineText&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto rvmm = GetModuleHandleA("rvmm");
+            address = reinterpret_cast<LPDrawSingleLineText>(GetProcAddress(rvmm, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<LPDrawSingleLineText>(GetProcAddress(rvmm, MAKEINTRESOURCE(264)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: char const * __thiscall CImgBox::DrawSingleLineText(short, short, char const *, class CFontContext *)
+    default:
+        break;
+    }
+
+    return address = nullptr;
+}
+
+CImgBox::LPDrawSzText& CImgBox::FetchDrawSzText()
+{
+    const auto name = "?DrawSzText@CImgBox@@QAEXFFPBDPAVCFontContext@@@Z";
+    auto& address = reinterpret_cast<LPDrawSzText&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto rvmm = GetModuleHandleA("rvmm");
+            address = reinterpret_cast<LPDrawSzText>(GetProcAddress(rvmm, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<LPDrawSzText>(GetProcAddress(rvmm, MAKEINTRESOURCE(265)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: void __thiscall CImgBox::DrawSzText(short, short, char const *, class CFontContext *)
     default:
         break;
     }
@@ -1026,14 +1090,10 @@ int CVmCommand::GetVariableAreaSize() const
     switch (clazz->m_wSchema)
     {
     case 0xA000000Cu:
-    case 0xA000000Du:
     case 0xA000000Eu:
         proc = reinterpret_cast<LPGetVariableAreaSize>(vtbl[0x0007]);
         return proc(this);
     case 0xA0000011u:
-    case 0xA0000012u:
-    case 0xA0000013u:
-    case 0xA0000014u:
     case 0xA0000015u:
         proc = reinterpret_cast<LPGetVariableAreaSize>(vtbl[0x0009]);
         return proc(this);

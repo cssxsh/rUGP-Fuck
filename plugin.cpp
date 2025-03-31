@@ -994,7 +994,7 @@ BOOL CObjectProxy::HookIsMultiple(CHAR const c)
 
 int CObjectProxy::HookDrawFont1(
     LPVOID const ecx, // NOLINT(*-misplaced-const)
-    DWORD const x, DWORD const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
+    SHORT const x, SHORT const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
 {
     // const auto s5i = CS5i::Match(ecx);
     if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];
@@ -1004,7 +1004,7 @@ int CObjectProxy::HookDrawFont1(
 
 LPINT CObjectProxy::HookDrawFont2(
     LPVOID const ecx, LPINT const width, // NOLINT(*-misplaced-const)
-    DWORD const x, DWORD const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
+    SHORT const x, SHORT const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
 {
     // const auto s5i = CS5i::Match(ecx);
     if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];

@@ -91,8 +91,8 @@ protected:
     static CVmCommand* __thiscall HookGetNextCommand(CCommandRef* ecx);
 
     static BOOL __cdecl HookIsMultiple(CHAR);
-    static int __thiscall HookDrawFont1(LPVOID ecx, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
-    static LPINT __thiscall HookDrawFont2(LPVOID ecx, LPINT, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
+    static int __thiscall HookDrawFont1(LPVOID ecx, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
+    static LPINT __thiscall HookDrawFont2(LPVOID ecx, LPINT, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
     static LPVOID __thiscall HookGetCachedFont(CS5RFont* ecx, UINT, COceanNode*);
 };
 

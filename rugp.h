@@ -11,10 +11,10 @@ class CRio;
 class CVisual;
 class CRip;
 class CS5i;
+class CS5RFont;
 
 class CUI;
 class CImgBox;
-class CMessBox;
 
 class CPmArchive;
 class COceanNode;
@@ -40,8 +40,6 @@ struct MFC_MODULE
 MFC_MODULE GetMfc();
 
 LPCSTR GetMfcVersion();
-
-LPCSTR GetCUuiGlobals();
 
 #define DECLARE_DYNAMIC_EX(class_name) \
 public: \
@@ -76,7 +74,7 @@ public:
     // virtual void SerializeUserCondition(CPmArchive&) = 0;
 
     using REG = void (__cdecl *)(AFX_EXTENSION_MODULE&);
-    using IS_MULTIPLE = BOOL (__cdecl *)(char);
+    using IS_MULTIPLE = BOOL (__cdecl *)(CHAR);
 
     static REG& FetchLibrarySupport();
     static IS_MULTIPLE& FetchIsMultiple();
@@ -99,8 +97,8 @@ class CS5i : public CVisual
 public:
     DECLARE_DYNAMIC_RIO(CS5i)
 
-    using LPDrawFont1 = int (__thiscall *)(LPVOID, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
-    using LPDrawFont2 = LPINT (__thiscall *)(LPVOID, LPINT, DWORD, DWORD, WORD*, WORD*, UINT, CFontContext*);
+    using LPDrawFont1 = int (__thiscall *)(LPVOID, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
+    using LPDrawFont2 = LPINT (__thiscall *)(LPVOID, LPINT, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
 
     static LPDrawFont1& FetchDrawFont1();
     static LPDrawFont2& FetchDrawFont2();
@@ -135,11 +133,17 @@ class CImgBox : public CUI
 public:
     DECLARE_DYNAMIC_RIO(CImgBox)
 
-    using LPDrawFont = int (__thiscall *)(CImgBox*, DWORD, DWORD, UINT, CFontContext*);
+    using LPDrawFont = int (__thiscall *)(CImgBox*, SHORT, SHORT, UINT, CFontContext*);
+    using LPDrawSingleLineText = LPCSTR (__thiscall *)(CImgBox*, SHORT, SHORT, LPCSTR, CFontContext*);
+    using LPDrawSzText = void (__thiscall *)(CImgBox*, SHORT, SHORT, LPCSTR, CFontContext*);
 
-    int DrawFont(DWORD, DWORD, UINT, CFontContext*);
+    int DrawFont(SHORT, SHORT, UINT, CFontContext*);
+    LPCSTR DrawSingleLineText(SHORT, SHORT, LPCSTR, CFontContext*);
+    void DrawSzText(SHORT, SHORT, LPCSTR, CFontContext*);
 
     static LPDrawFont& FetchDrawFont();
+    static LPDrawSingleLineText& FetchDrawSingleLineText();
+    static LPDrawSzText& FetchDrawSzText();
 };
 
 class CPmArchive
@@ -218,12 +222,12 @@ class CUuiGlobals
 public:
     UINT m_dwSchema;
     LPVOID field_0004;
-    CString field_0008;
+    CString m_strInstallDriver;
     CString m_strGameFolder;
     DWORD field_0010;
     DWORD field_0014;
     DWORD field_0018;
-    DWORD field_001C;
+    LPVOID field_001C;
     CString m_strGameName;
     DWORD m_dwFlags;
     DWORD field_0028;
