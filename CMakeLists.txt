@@ -6,7 +6,7 @@ set(CMAKE_MFC_FLAG 2)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
-add_compile_options(/utf-8)
+add_compile_options(/source-charset:utf-8)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 add_definitions(-D_AFX_NOFORCE_LIBS)
 
