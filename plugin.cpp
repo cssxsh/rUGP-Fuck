@@ -684,78 +684,50 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     // jmp     ...
     if (start[0x01] == 0xEBu || start[0x01] == 0xE9u) end = start + 0x01;
     else if (start[0x05] == 0xEBu) end = start + 0x05;
-    // jz      ...
-    if (start + 0x08 < end && start[0x08] == 0x74u) end = start + 0x08;
     // cmp     ..., ...
     for (auto offset = start; offset < end; offset++)
     {
-        if (offset[0x00] != 0x81u) continue;
-        if (offset[0x04] != 0x00u) continue;
-        if (offset[0x05] != 0x00u) continue;
+        switch (offset[0x00])
+        {
+        case 0x3Du:
+            if (offset[0x04] != 0x00u) continue;
+            if (offset[0x05] != 0x00u) continue;
+            break;
+        case 0x81u:
+            if (offset[0x03] != 0x00u) continue;
+            if (offset[0x04] != 0x00u) continue;
+            break;
+        default:
+            break;
+        }
         end = offset;
         break;
     }
+    if (start > end && start[0x0B] == 0x81u) end = start + 0x0B;
+    // mov     ..., [esp+...]
+    if (start[0x00] == 0x8Bu && start[0x02] == 0x24u) start -= 4;
     // mov     [esp+...], ...
-    if (end - start == 0x0E && start[0x0A] == 0x89u)
-    {
-        end = start + 0x0A;
-    }
-    // inc     ...
-    if (start[0x00] == 0x0Fu && start[0x03] != 0xC1u)
-    {
-        end = start + 0x04;
-    }
-    // test     ...
-    if (start[0x00] == 0x85u)
-    {
-        end = start + 0x00;
-    }
-    // cmp     ...
-    if (start[0x00] == 0x83u)
-    {
-        end = start + 0x00;
-    }
+    if (end - start == 0x0E && start[0x0A] == 0x89u) end = start + 0x0A;
+    // test    ..., ...
+    if (start[0x00] == 0x85u) end = start + 0x00;
+    else if (start[0x04] == 0x85u) end = start + 0x04;
 
     switch (const auto size = end - start)
     {
-    case 0x00u:
-    // inc     ...
-    case 0x01u:
-    // movzx   ..., byte ptr [...]
-    // inc     ...
-    case 0x04:
-    // mov     .., [...]
-    // mov     [...], ..
-    // inc     ...
-    case 0x05:
-    // 6.23.02 Vm60 .text:10016BBB
-    // 6.23.02 Vm60 .text:10016BD4
-    // mov     .., [...+1]
-    // mov     .., [...+1]
-    // cmp     .., ..
-    case 0x08:
-        // 5.80.20EC Vm60 .text:10014806
+    case 0x00:
         return;
-    // movzx   ..., byte ptr [...]
-    // shl     ..., 8
-    // or      ..., ...
-    // inc     ...
+    case 0x01:
+    case 0x04:
+        // inc     ...
+        if ((end[-0x01] & 0xF8u) == 0x40u) return;
+        break;
     case 0x09:
-    // xor     ..., ...
-    // mov     .., [...]
-    // shl     ..., 8
-    // or      ..., ...
-    // inc     ...
     case 0x0A:
-    // 6.23.02 Vm60 .text:10014D1F
-    // xor     ..., ...
-    // mov     .., [...+0]
-    // shl     ..., 8
-    // or      ..., ...
-    // inc     ...
     case 0x0B:
-        // 5.80.20EC Vm60 .text:100146B6
-        if (end[-0x04] != 0x08u) return;
+        // shl     ..., 8
+        // or      ..., ...
+        // inc     ...
+        if (end[-0x04] == 0x08u)
         {
             const auto offset = 0x10000000u - reinterpret_cast<DWORD>(module);
             wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
@@ -810,8 +782,9 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
             *reinterpret_cast<int*>(codes + index) =
                 reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
             VirtualProtect(codes, 0x0040, PAGE_EXECUTE_READ, nullptr);
+            return;
         }
-        return;
+        break;
     default:
         break;
     }
