@@ -257,10 +257,7 @@ class CRioMsg
 {
 public:
     CMsgRTC* m_pRTC;
-    DWORD field_0004;
-    CPmArchive* m_pArchive;
-    COceanNode* m_pNode;
-    DWORD field_0010;
+    CObjectEx* m_pObj;
 
     std::string ToMsgString();
 
