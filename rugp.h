@@ -21,10 +21,14 @@ class COceanNode;
 class CrUGP;
 class CUuiGlobals;
 class CFontContext;
+class CRioMsg;
 
 class CCommandRef;
 class CVmCommand;
 class CVmMsg;
+
+struct CMemberInfo;
+struct CMsgRTC;
 
 struct CObject_vtbl;
 struct CRio_vtbl;
@@ -249,6 +253,20 @@ public:
     DWORD field_000C;
 };
 
+class CRioMsg
+{
+public:
+    CMsgRTC* m_pRTC;
+    DWORD field_0004;
+    CPmArchive* m_pArchive;
+    COceanNode* m_pNode;
+    DWORD field_0010;
+
+    std::string ToMsgString();
+
+    static CRioMsg* FromMsgString(LPCSTR);
+};
+
 class CCommandRef : public CRio
 {
 public:
@@ -275,7 +293,41 @@ public:
 
     COceanNode* m_pMessBoxNode; // CMessBox
     COceanNode* m_pCRioNode; // COptimizedObs
-    CHAR m_area[];
+    CHAR m_arrVariableArea[];
+};
+
+class CVmGenericMsg : public CVmCommand
+{
+public:
+    struct Param
+    {
+        CMemberInfo* m_pMemberInfo;
+        COceanNode* m_pNode;
+    };
+
+    DECLARE_DYNAMIC_EX(CVmGenericMsg)
+
+    CRioMsg* m_pMsg;
+    DWORD field_0010; // CVmVar
+    DWORD field_0014;
+    DWORD m_nCount;
+    Param m_arrVariableArea[];
+};
+
+struct CMemberInfo
+{
+    LPCSTR m_lpszName;
+    CRuntimeClass* m_pRTC;
+    DWORD m_dwOffset;
+};
+
+struct CMsgRTC
+{
+    LPCSTR m_lpszClassName;
+    CMemberInfo* m_pParams;
+    short m_nObjectSize;
+    WORD m_wSchema;
+    CMsgRTC* m_pNextClass;
 };
 
 struct CObject_vtbl

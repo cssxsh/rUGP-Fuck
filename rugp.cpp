@@ -1034,6 +1034,73 @@ CUuiGlobals* CUuiGlobals::GetGlobal()
     return nullptr;
 }
 
+std::string CRioMsg::ToMsgString()
+{
+    using LPToMsgString = LPVOID (__thiscall *)(CRioMsg*, LPVOID);
+    const auto name = "?ToMsgString@CRioMsg@@QAE?AVCProfile@@XZ";
+    auto& proc = reinterpret_cast<LPToMsgString&>(cache[name]);
+    const auto build = [&proc, this]
+    {
+        LPCSTR buffer[0x02];
+        proc(this, buffer);
+        const auto result = std::string(*buffer);
+        using LPDestructor = void (__thiscall *)(LPVOID);
+        const auto GMfc = GetModuleHandleA("GMfc");
+        const auto destructor = reinterpret_cast<LPDestructor>(GetProcAddress(GMfc, "??1CProfile@@QAE@XZ"));
+        destructor(buffer);
+        return result;
+    };
+    if (proc != nullptr) return build();
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return build();
+            proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(750)));
+            if (proc != nullptr) return build();
+        }
+        break;
+    case 0x0E00:
+        // TODO public: class CProfile __thiscall CRioMsg::ToMsgString(void)
+    default:
+        break;
+    }
+
+    return "";
+}
+
+CRioMsg* CRioMsg::FromMsgString(LPCSTR const text)
+{
+    using LPFromMsgString = CRioMsg* (__cdecl *)(LPCSTR);
+    const auto name = "?FromMsgString@CRioMsg@@SAPAV1@PBD@Z";
+    auto& proc = reinterpret_cast<LPFromMsgString&>(cache[name]);
+    if (proc != nullptr) return proc(text);
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            proc = reinterpret_cast<LPFromMsgString>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return proc(text);
+            proc = reinterpret_cast<LPFromMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(458)));
+            if (proc != nullptr) return proc(text);
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static class CRioMsg * __cdecl CRioMsg::FromMsgString(char const *)
+    default:
+        break;
+    }
+
+    return nullptr;
+}
+
 const CRuntimeClass* CCommandRef::GetClassCCommandRef()
 {
     const auto name = "?classCCommandRef@CCommandRef@@2UCRioRTC@@A";
@@ -1138,6 +1205,33 @@ const CRuntimeClass* CVmMsg::GetClassCVmMsg()
         break;
     case 0x0E00:
         // TODO public: static struct CRtcEx CVmMsg::classCVmMsg
+    default:
+        break;
+    }
+
+    return nullptr;
+}
+
+const CRuntimeClass* CVmGenericMsg::GetClassCVmGenericMsg()
+{
+    const auto name = "?classCVmGenericMsg@CVmGenericMsg@@2UCRtcEx@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto Vm60 = GetModuleHandleA("Vm60");
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(189)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static struct CRtcEx CVmGenericMsg::classCVmMsg
     default:
         break;
     }
