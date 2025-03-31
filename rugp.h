@@ -154,7 +154,7 @@ protected:
 public:
     virtual LONG Seek(LONG, UINT) = 0;
 
-    const CArchive* GetNative();
+    const CArchive* GetNative() const;
 
     static CPmArchive* CreateLoadFilePmArchive(LPCSTR path);
     static CPmArchive* CreateSaveFilePmArchive(LPCSTR path);

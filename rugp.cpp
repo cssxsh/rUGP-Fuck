@@ -690,11 +690,18 @@ CImgBox::LPDrawSzText& CImgBox::FetchDrawSzText()
     return address = nullptr;
 }
 
-const CArchive* CPmArchive::GetNative()
+const CArchive* CPmArchive::GetNative() const
 {
-    const auto seek = (*reinterpret_cast<FARPROC**>(this))[0x0000];
-    // lea     edi, [esi+4]
-    return reinterpret_cast<CArchive*>(reinterpret_cast<DWORD>(this) + reinterpret_cast<BYTE*>(seek)[0x0006]);
+    const auto vtbl = *reinterpret_cast<FARPROC* const*>(this);
+    const auto start = reinterpret_cast<LPBYTE>(vtbl[0x0000]);
+    for (auto offset = start; offset - start< 0x0400; offset++)
+    {
+        // lea     edi, [esi+4]
+        if (offset[0x00] != 0x8Du) continue;
+        if (offset[0x01] != 0x7Eu) continue;
+        return reinterpret_cast<CArchive*>(reinterpret_cast<DWORD>(this) + offset[0x02]);
+    }
+    return reinterpret_cast<CArchive*>(reinterpret_cast<DWORD>(this) + 0x08);
 }
 
 CPmArchive* CPmArchive::CreateLoadFilePmArchive(const LPCSTR path)
