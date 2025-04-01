@@ -17,6 +17,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
     switch (dwReason)
     {
     case DLL_PROCESS_ATTACH:
+        _set_se_translator(StructuredException::Trans);
         AllocConsole();
         SetConsoleTitleA("r514783 Plugin Debug Console");
         SetConsoleCP(CP_UTF8);
@@ -34,94 +35,101 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
 
         AfxInitExtensionModule(R514783_PLUGIN, hInstance);
 
-        __try
+        try
         {
             CreateMergeDirectory();
         }
-        __except (EXCEPTION_EXECUTE_HANDLER)
+        catch (StructuredException& se)
         {
-            wprintf(L"CreateMergeDirectory Fail: 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"CreateMergeDirectory Fail: %hs\n", se.what());
         }
 
-        __try
+        try
         {
             Win32Hook::AttachHook();
         }
-        __except (EXCEPTION_EXECUTE_HANDLER)
+        catch (StructuredException& se)
         {
-            wprintf(L"Win32Hook::AttachHook Fail: 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"Win32Hook::AttachHook Fail: %hs\n", se.what());
         }
 
-        CObjectProxy::LoadFromModule("UnivUI");
-        CObjectProxy::LoadFromModule("rvmm");
-        CObjectProxy::LoadFromModule("Vm60");
+        try
+        {
+            CObjectProxy::LoadFromModule("UnivUI");
+            CObjectProxy::LoadFromModule("rvmm");
+            CObjectProxy::LoadFromModule("Vm60");
+        }
+        catch (StructuredException& se)
+        {
+            wprintf(L"CObjectProxy::LoadFromModule Fail: %hs\n", se.what());
+        }
 
-        __try
+        try
         {
             CObjectProxy::AttachHook();
         }
-        __except (EXCEPTION_EXECUTE_HANDLER)
+        catch (StructuredException& se)
         {
-            wprintf(L"CObjectProxy::AttachHook Fail: 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"CObjectProxy::AttachHook Fail: %hs\n", se.what());
         }
 
-        __try
+        try
         {
             // CObjectProxy::AttachCharacterPatch("GMfc");
             CObjectProxy::AttachCharacterPatch("UnivUI");
             CObjectProxy::AttachCharacterPatch("rvmm");
             CObjectProxy::AttachCharacterPatch("Vm60");
         }
-        __except (EXCEPTION_EXECUTE_HANDLER)
+        catch (StructuredException& se)
         {
-            wprintf(L"CObjectProxy::AttachCharacterPatch Fail: 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"CObjectProxy::AttachCharacterPatch Fail: %hs\n", se.what());
         }
 
-        __try
+        try
         {
             COceanTree::AttachHook();
         }
-        __except (EXCEPTION_EXECUTE_HANDLER)
+        catch (StructuredException& se)
         {
-            wprintf(L"COceanTree::AttachHook Fail: 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"COceanTree::AttachHook Fail: %hs\n", se.what());
         }
 
         break;
     case DLL_PROCESS_DETACH:
-        __try
+        try
         {
             COceanTree::DetachHook();
         }
-        __except (EXCEPTION_EXECUTE_HANDLER)
+        catch (StructuredException& se)
         {
-            wprintf(L"COceanTree::DetachHook Fail: 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"COceanTree::DetachHook Fail: %hs\n", se.what());
         }
 
-        __try
+        try
         {
             CObjectProxy::DetachHook();
         }
-        __except (EXCEPTION_EXECUTE_HANDLER)
+        catch (StructuredException& se)
         {
-            wprintf(L"CObjectProxy::DetachHook 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"CObjectProxy::DetachHook Fail: %hs\n", se.what());
         }
 
-        __try
+        try
         {
             CObjectProxy::Clear();
         }
-        __except (EXCEPTION_EXECUTE_HANDLER)
+        catch (StructuredException& se)
         {
-            wprintf(L"CObjectProxy::Clear 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"CObjectProxy::Clear %hs\n", se.what());
         }
 
-        __try
+        try
         {
             Win32Hook::DetachHook();
         }
-        __except (EXCEPTION_EXECUTE_HANDLER)
+        catch (StructuredException& se)
         {
-            wprintf(L"Win32Hook::DetachHook Fail: 0x%08X\n\n", GetExceptionCode());
+            wprintf(L"Win32Hook::DetachHook Fail: %hs\n", se.what());
         }
 
         FreeConsole();
@@ -186,6 +194,33 @@ BOOL CreateMergeDirectory()
 {
     const auto name = GetGameName();
     return CreateDirectoryW(name.c_str(), nullptr);
+}
+
+StructuredException::StructuredException(
+    const UINT u, const EXCEPTION_POINTERS* pExp) : Code(u), ExceptionPointers(pExp)
+{
+    // ...
+}
+
+LPCSTR StructuredException::what() const
+{
+    const auto data = reinterpret_cast<__std_exception_data*>(reinterpret_cast<DWORD>(this) + 0x04);
+    if (data->_What != nullptr) return data->_What;
+
+    const auto module = DetourGetContainingModule(ExceptionPointers->ExceptionRecord->ExceptionAddress);
+    char filename[MAX_PATH];
+    GetModuleFileNameA(module, filename, MAX_PATH);
+    const auto buffer = static_cast<LPSTR>(malloc(0x0100));
+    sprintf(buffer, "StructuredException 0x%08X at address 0x%p module %s",
+        Code, ExceptionPointers->ExceptionRecord->ExceptionAddress, strrchr(filename, '\\') + 1);
+    data->_What = buffer;
+    data->_DoFree = true;
+    return buffer;
+}
+
+void StructuredException::Trans(UINT const u, PEXCEPTION_POINTERS const pExp) // NOLINT(*-misplaced-const)
+{
+    throw StructuredException(u, pExp);
 }
 
 CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)

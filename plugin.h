@@ -54,6 +54,19 @@ struct CodePatchRecord
     BYTE origin[];
 };
 
+class StructuredException final : std::exception
+{
+public:
+    const UINT Code;
+    const EXCEPTION_POINTERS* ExceptionPointers;
+
+    StructuredException(UINT u, const EXCEPTION_POINTERS* pExp);
+
+    LPCSTR what() const override;
+
+    static void __cdecl Trans(UINT, EXCEPTION_POINTERS*);
+};
+
 class CObjectProxy final
 {
 public:
