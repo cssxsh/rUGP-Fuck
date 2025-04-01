@@ -45,4 +45,13 @@ inline LPSTR WINAPI Ansi(const LPCWSTR lpText, const UINT nCodePage)
     return ansi;
 }
 
+inline LPSTR WINAPI AnsiTrans(const LPCSTR lpText, const UINT from, const UINT to)
+{
+    if (lpText == nullptr) return nullptr;
+    const auto unicode = Unicode(lpText, from);
+    const auto ansi = Ansi(unicode, to);
+    free(unicode);
+    return ansi;
+}
+
 #endif // _STDAFX_H_

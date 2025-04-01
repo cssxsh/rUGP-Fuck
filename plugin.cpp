@@ -844,42 +844,45 @@ CVmCommand* __fastcall CObjectProxy::Merge(const CVmCommand* const ecx, cJSON* c
     auto next = static_cast<CVmCommand*>(nullptr);
     for (auto command = ecx; command != nullptr; command = command->m_pNext)
     {
+        const auto pClass = command->GetRuntimeClass();
         char name[MAX_PATH];
-        sprintf(name, "%08X:%s", command->m_dwFlags & 0x000FFFFF, command->GetRuntimeClass()->m_lpszClassName);
-        switch (*reinterpret_cast<const DWORD*>(command->GetRuntimeClass()->m_lpszClassName))
+        sprintf(name, "%08X:%s", command->m_dwFlags & 0x000FFFFF, pClass->m_lpszClassName);
+        switch (*reinterpret_cast<const DWORD*>(pClass->m_lpszClassName + 0x03))
         {
-        case 0x4D6D5643u: // CVmMsg
-            if (command->GetRuntimeClass() != pClassCVmMsg) continue;
+        // CVmMsg
+        case 0x0067734Du:
             {
                 auto text = cJSON_GetObjectItem(edx, name);
                 if (cJSON_IsString(text))
                 {
-                    const auto value = cJSON_GetStringValue(text, CP_GB18030);
-                    const auto size = pClassCVmMsg->m_nObjectSize + ((strlen(value) + 0x04) & ~0x03);
+                    const auto value = AnsiTrans(cJSON_GetStringValue(text), CP_UTF8, CP_GB18030);
+                    const auto size = pClass->m_nObjectSize + ((strlen(value) + 0x04) & ~0x03);
                     const auto clone = static_cast<CVmMsg*>(malloc(size));
-                    memcpy(clone, command, pClassCVmMsg->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-                    memcpy(clone->m_area, value, (strlen(value) + 0x04) & ~0x03);
-                    cJSON_free(value);
+                    memcpy(clone, command, pClass->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
+                    memcpy(clone->m_arrVariableArea, value, (strlen(value) + 0x04) & ~0x03);
+                    free(value);
                     next = clone;
                 }
                 else
                 {
                     const auto message = reinterpret_cast<const CVmMsg*>(command);
-                    text = cJSON_CreateString(message->m_area, CP_SHIFT_JIS);
+                    text = cJSON_CreateString(AnsiTrans(message->m_arrVariableArea, CP_SHIFT_JIS, CP_UTF8));
                     cJSON_AddItemToObject(edx, name, text);
                     const auto unicode = Unicode(message->m_area, CP_SHIFT_JIS);
                     const auto ansi = Ansi(unicode, CP_GB18030);
                     free(unicode);
                     const auto size = pClassCVmMsg->m_nObjectSize + ((strlen(ansi) + 0x04) & ~0x03);
+                    const auto ansi = AnsiTrans(message->m_arrVariableArea, CP_SHIFT_JIS, CP_GB18030);
+                    const auto size = pClass->m_nObjectSize + ((strlen(ansi) + 0x04) & ~0x03);
                     const auto clone = static_cast<CVmMsg*>(malloc(size));
-                    memcpy(clone, command, pClassCVmMsg->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-                    memcpy(clone->m_area, ansi, (strlen(ansi) + 0x04) & ~0x03);
+                    memcpy(clone, command, pClass->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
+                    memcpy(clone->m_arrVariableArea, ansi, (strlen(ansi) + 0x04) & ~0x03);
                     free(ansi);
                     next = clone;
                 }
                 {
                     const auto message = reinterpret_cast<const CVmMsg*>(next);
-                    for (auto lpsz = message->m_area; *lpsz != '\0'; lpsz += CharacterByteSize(lpsz))
+                    for (auto lpsz = message->m_arrVariableArea; *lpsz != '\0'; lpsz += CharacterByteSize(lpsz))
                     {
                         if (static_cast<BYTE>(lpsz[0x00]) < 0x81u || static_cast<BYTE>(lpsz[0x01]) > 0x39u) continue;
                         const auto uChar = 0u
