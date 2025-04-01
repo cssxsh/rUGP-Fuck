@@ -1,0 +1,12 @@
+{
+  "dependencies" : [ {
+    "name" : "spdlog",
+    "version>=" : "1.15.2"
+  }, {
+    "name" : "detours",
+    "version>=" : "4.0.1#8"
+  }, {
+    "name" : "jsoncpp",
+    "version>=" : "1.9.6"
+  } ]
+}

@@ -1,5 +1,5 @@
-#include <stdafx.h>
-#include <detours.h>
+#include "stdafx.h"
+#include <detours/detours.h>
 #include "hook.h"
 
 void Win32Hook::AttachHook()

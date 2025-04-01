@@ -1,6 +1,7 @@
-#include <stdafx.h>
-#include <detours.h>
-#include <cJSON.h>
+#include "stdafx.h"
+#include <detours/detours.h>
+#include <json/json.h>
+#include <spdlog/spdlog.h>
 #include <clocale>
 #include <fstream>
 #include "plugin.h"
@@ -27,7 +28,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
 
         wprintf(L"MFC Version %hs\n", GetMfcVersion());
         wprintf(L"rUGP System Version %hs\n", CrUGP::GetGlobal()->GetVersion());
-        wprintf(L"cJSON Version %hs\n", cJSON_Version());
+        wprintf(L"JsonCpp Version %hs\n", JSONCPP_VERSION_STRING);
         wprintf(L"Detours Version %x\n", DETOURS_VERSION);
         wprintf(L"\n");
         wprintf(L"CommandLine %s\n", GetCommandLineW());
@@ -162,23 +163,51 @@ LPCSTR WINAPIV GetPluginString(const DWORD /*param1*/, const DWORD /*param2*/)
         "\r\n";
 }
 
+std::wstring WINAPI UnicodeX(const LPCSTR lpText, const UINT nCodePage)
+{
+    const auto native = Unicode(lpText, nCodePage);
+    if (native == nullptr) return L"(null)";
+    const auto result = std::wstring(native);
+    free(native);
+    return result;
+}
+
+std::string WINAPI AnsiX(const LPCWSTR lpText, const UINT nCodePage)
+{
+    const auto native = Ansi(lpText, nCodePage);
+    if (native == nullptr) return "(null)";
+    const auto result = std::string(native);
+    free(native);
+    return result;
+}
+
+std::string WINAPI AnsiX(const LPCSTR lpText, const UINT from, const UINT to)
+{
+    const auto unicode = Unicode(lpText, from);
+    if (unicode == nullptr) return "(null)";
+    const auto native = Ansi(unicode, to);
+    free(unicode);
+    if (native == nullptr) return "(null)";
+    const auto result = std::string(native);
+    free(native);
+    return native;
+}
+
 std::wstring GetUUID(const COceanNode* const node)
 {
     wchar_t buffer[MAX_PATH];
-    const auto name = Unicode(node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, CP_SHIFT_JIS);
-    swprintf(buffer, MAX_PATH, L"%s@%08X", name, node->GetAddress());
-    free(name);
+    const auto name = UnicodeX(node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, CP_SHIFT_JIS);
+    swprintf(buffer, MAX_PATH, L"%s@%08X", name.c_str(), node->GetAddress());
     return buffer;
 }
 
 std::wstring GetFilePath(const COceanNode* const node)
 {
     wchar_t buffer[MAX_PATH];
-    const auto format = Unicode(node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin", CP_SHIFT_JIS);
-    const auto suffix = format[0] == L'C' ? format + 1 : format;
-    for (auto c = suffix; *c != L'\0'; c++) *c = towlower(*c);
-    swprintf(buffer, MAX_PATH, L"./%s/%08X.%s", GetGameName().c_str(), node->GetAddress(), suffix);
-    free(format);
+    auto format = UnicodeX(node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin", CP_SHIFT_JIS);
+    if (format[0] == L'C') format.erase(0, 1);
+    for (auto& ch : format) ch = towlower(ch);
+    swprintf(buffer, MAX_PATH, L"./%s/%08X.%s", GetGameName().c_str(), node->GetAddress(), format.c_str());
     return buffer;
 }
 
@@ -212,7 +241,7 @@ LPCSTR StructuredException::what() const
     GetModuleFileNameA(module, filename, MAX_PATH);
     const auto buffer = static_cast<LPSTR>(malloc(0x0100));
     sprintf(buffer, "StructuredException 0x%08X at address 0x%p module %s",
-        Code, ExceptionPointers->ExceptionRecord->ExceptionAddress, strrchr(filename, '\\') + 1);
+            Code, ExceptionPointers->ExceptionRecord->ExceptionAddress, strrchr(filename, '\\') + 1);
     data->_What = buffer;
     data->_DoFree = true;
     return buffer;
@@ -299,9 +328,8 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     const auto module = MODULE_MAP[hModule];
     for (auto clazz = module->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
     {
-        const auto name = Unicode(clazz->m_lpszClassName, CP_SHIFT_JIS);
+        const auto name = UnicodeX(clazz->m_lpszClassName, CP_SHIFT_JIS);
         REF_MAP[name] = new CObjectProxy(clazz);
-        free(name);
     }
 
     return TRUE;
@@ -314,23 +342,21 @@ void CObjectProxy::AttachHook()
     for (const auto& pair : REF_MAP)
     {
         const auto ref = pair.second;
-        const auto name = Unicode(ref->m_pClass->m_lpszClassName, CP_SHIFT_JIS);
+        const auto name = UnicodeX(ref->m_pClass->m_lpszClassName, CP_SHIFT_JIS);
 
         if (ref->m_pfnGetNextCommand != nullptr)
         {
-            wprintf(L"DetourAttach: %s::GetNextCommand\n", name);
+            wprintf(L"DetourAttach: %s::GetNextCommand\n", name.c_str());
             DetourAttach(&reinterpret_cast<PVOID&>(ref->m_pfnGetNextCommand), HookGetNextCommand);
-            wprintf(L"DetourAttach: %s::~%s\n", name, name);
+            wprintf(L"DetourAttach: %s::~%s\n", name.c_str(), name.c_str());
             DetourAttach(&reinterpret_cast<PVOID&>(ref->m_pfnDestructor), HookDestructor);
         }
 
         if (ref->m_pfnSerialize != nullptr)
         {
-            wprintf(L"DetourAttach: %s::Serialize\n", name);
+            wprintf(L"DetourAttach: %s::Serialize\n", name.c_str());
             DetourAttach(&reinterpret_cast<PVOID&>(ref->m_pfnSerialize), HookSerialize);
         }
-
-        free(name);
     }
     if (CS5i::FetchDrawFont1())
     {
@@ -347,6 +373,11 @@ void CObjectProxy::AttachHook()
         wprintf(L"DetourAttach: CS5RFont::GetCachedFont\n");
         DetourAttach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
     }
+    if (CImgBox::FetchDrawSingleLineText())
+    {
+        wprintf(L"DetourAttach: CImgBox::DrawSingleLineText\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(CImgBox::FetchDrawSingleLineText()), HookDrawSingleLineText);
+    }
     if (CRio::FetchIsMultiple())
     {
         wprintf(L"DetourAttach: IsDBCS\n");
@@ -362,23 +393,21 @@ void CObjectProxy::DetachHook()
     for (const auto& pair : REF_MAP)
     {
         const auto ref = pair.second;
-        const auto name = Unicode(ref->m_pClass->m_lpszClassName, CP_SHIFT_JIS);
+        const auto name = UnicodeX(ref->m_pClass->m_lpszClassName, CP_SHIFT_JIS);
 
         if (ref->m_pfnGetNextCommand != nullptr)
         {
-            wprintf(L"DetourDetach: %s::GetNextCommand\n", name);
+            wprintf(L"DetourDetach: %s::GetNextCommand\n", name.c_str());
             DetourDetach(&reinterpret_cast<PVOID&>(ref->m_pfnGetNextCommand), HookGetNextCommand);
-            wprintf(L"DetourDetach: %s::~%s\n", name, name);
+            wprintf(L"DetourDetach: %s::~%s\n", name.c_str(), name.c_str());
             DetourDetach(&reinterpret_cast<PVOID&>(ref->m_pfnDestructor), HookDestructor);
         }
 
         if (ref->m_pfnSerialize != nullptr)
         {
-            wprintf(L"DetourDetach: %s::Serialize\n", name);
+            wprintf(L"DetourDetach: %s::Serialize\n", name.c_str());
             DetourDetach(&reinterpret_cast<PVOID&>(ref->m_pfnSerialize), HookSerialize);
         }
-
-        free(name);
     }
     if (CS5i::FetchDrawFont1())
     {
@@ -825,6 +854,8 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     }
 
     const auto offset = 0x10000000u - reinterpret_cast<DWORD>(module);
+    // TODO 5.95.05 UnivUI .text:1002BA4E
+    // TODO 6.23.02 UnivUI .text:100363F6
     wprintf(L"Attach CharacterSplit Fail 0x%p ~ 0x%p at %hs\n", start + offset, end + offset, lpszModuleName);
 }
 
@@ -836,9 +867,8 @@ int CObjectProxy::CharacterByteSize(LPCSTR const text)
     return 2;
 }
 
-CVmCommand* __fastcall CObjectProxy::Merge(const CVmCommand* const ecx, cJSON* const edx) // NOLINT(*-no-recursion)
+CVmCommand* __fastcall CObjectProxy::Merge(const CVmCommand* const ecx, Json::Value& edx)
 {
-    const auto pClassCVmMsg = CVmMsg::GetClassCVmMsg();
     auto result = static_cast<CVmCommand*>(nullptr);
     auto prev = static_cast<CVmCommand*>(nullptr);
     auto next = static_cast<CVmCommand*>(nullptr);
@@ -852,32 +882,25 @@ CVmCommand* __fastcall CObjectProxy::Merge(const CVmCommand* const ecx, cJSON* c
         // CVmMsg
         case 0x0067734Du:
             {
-                auto text = cJSON_GetObjectItem(edx, name);
-                if (cJSON_IsString(text))
+                auto& text = edx[name];
+                if (text.isString())
                 {
-                    const auto value = AnsiTrans(cJSON_GetStringValue(text), CP_UTF8, CP_GB18030);
-                    const auto size = pClass->m_nObjectSize + ((strlen(value) + 0x04) & ~0x03);
+                    const auto value = AnsiX(text.asCString(), CP_UTF8, CP_GB18030);
+                    const auto size = pClass->m_nObjectSize + (value.length() + 0x04 & ~0x03);
                     const auto clone = static_cast<CVmMsg*>(malloc(size));
                     memcpy(clone, command, pClass->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-                    memcpy(clone->m_arrVariableArea, value, (strlen(value) + 0x04) & ~0x03);
-                    free(value);
+                    memcpy(clone->m_arrVariableArea, value.c_str(), value.length() + 0x04 & ~0x03);
                     next = clone;
                 }
                 else
                 {
                     const auto message = reinterpret_cast<const CVmMsg*>(command);
-                    text = cJSON_CreateString(AnsiTrans(message->m_arrVariableArea, CP_SHIFT_JIS, CP_UTF8));
-                    cJSON_AddItemToObject(edx, name, text);
-                    const auto unicode = Unicode(message->m_area, CP_SHIFT_JIS);
-                    const auto ansi = Ansi(unicode, CP_GB18030);
-                    free(unicode);
-                    const auto size = pClassCVmMsg->m_nObjectSize + ((strlen(ansi) + 0x04) & ~0x03);
-                    const auto ansi = AnsiTrans(message->m_arrVariableArea, CP_SHIFT_JIS, CP_GB18030);
-                    const auto size = pClass->m_nObjectSize + ((strlen(ansi) + 0x04) & ~0x03);
+                    text = AnsiX(message->m_arrVariableArea, CP_SHIFT_JIS, CP_UTF8);
+                    const auto ansi = AnsiX(message->m_arrVariableArea, CP_SHIFT_JIS, CP_GB18030);
+                    const auto size = pClass->m_nObjectSize + (ansi.length() + 0x04 & ~0x03);
                     const auto clone = static_cast<CVmMsg*>(malloc(size));
                     memcpy(clone, command, pClass->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-                    memcpy(clone->m_arrVariableArea, ansi, (strlen(ansi) + 0x04) & ~0x03);
-                    free(ansi);
+                    memcpy(clone->m_arrVariableArea, ansi.c_str(), ansi.length() + 0x04 & ~0x03);
                     next = clone;
                 }
                 {
@@ -895,10 +918,55 @@ CVmCommand* __fastcall CObjectProxy::Merge(const CVmCommand* const ecx, cJSON* c
                 }
             }
             break;
+        // CVmGenericMsg
+        case 0x656E6547:
+            {
+                const auto generic = reinterpret_cast<const CVmGenericMsg*>(command);
+                auto& om = edx[name];
+                if (!om.isObject()) om = Json::Value(Json::objectValue);
+                om["#type"] = AnsiX(generic->m_pMsg->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
+                for (auto member = generic->m_pMsg->m_pRTC->m_pParams;
+                     member != nullptr && member->m_lpszName != nullptr;
+                     member++)
+                {
+                    const auto key = AnsiX(member->m_lpszName, CP_SHIFT_JIS, CP_UTF8) + ":" +
+                        AnsiX(member->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
+                    switch (*reinterpret_cast<const DWORD*>(member->m_pRTC->m_lpszClassName))
+                    {
+                    // 文字列
+                    case 0x9A8EB695u:
+                        {
+                            const auto content = reinterpret_cast<CStringX*>(
+                                reinterpret_cast<LPBYTE>(generic->m_pMsg) + member->m_dwOffset);
+                            om[key] = AnsiX(*content, CP_SHIFT_JIS, CP_UTF8);
+                        }
+                        break;
+                    // CRio
+                    case 0x6F695243u:
+                        {
+                            const auto node = *reinterpret_cast<COceanNode**>(
+                                reinterpret_cast<LPBYTE>(generic->m_pMsg) + member->m_dwOffset);
+                            om[key] = AnsiX(GetUUID(node).c_str(), CP_UTF8);
+                            // TODO expand
+                            // om[key] = Json::Value(Json::objectValue);
+                            // om[key]["#type"] = AnsiX(node->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
+                        }
+                        break;
+                    default:
+                        break;
+                    }
+                }
+
+                const auto size = pClass->m_nObjectSize + command->GetVariableAreaSize();
+                const auto clone = static_cast<CVmGenericMsg*>(malloc(size));
+                memcpy(clone, command, size); // NOLINT(*-undefined-memory-manipulation)
+                next = clone;
+            }
+            break;
         default:
             {
-                cJSON_AddItemToObject(edx, name, cJSON_CreateNull());
-                const auto size = command->GetRuntimeClass()->m_nObjectSize + command->GetVariableAreaSize();
+                edx[name] = Json::Value(Json::nullValue);
+                const auto size = pClass->m_nObjectSize + command->GetVariableAreaSize();
                 const auto clone = static_cast<CVmCommand*>(malloc(size));
                 memcpy(clone, command, size); // NOLINT(*-undefined-memory-manipulation)
                 next = clone;
@@ -922,10 +990,9 @@ void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
 void CObjectProxy::HookDestructor(CRio* const ecx)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
-    const auto name = Unicode(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
+    const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
     const auto ref = REF_MAP[name];
-    wprintf(L"Hook %s::~%s(this=%s)\n", name, name, uuid.c_str());
-    free(name);
+    wprintf(L"Hook %s::~%s(this=%s)\n", name.c_str(), name.c_str(), uuid.c_str());
 
     auto cache = COMMAND_MAP[uuid];
     COMMAND_MAP[uuid] = nullptr;
@@ -942,10 +1009,9 @@ void CObjectProxy::HookDestructor(CRio* const ecx)
 void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
-    const auto name = Unicode(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
+    const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
     const auto ref = REF_MAP[name];
-    wprintf(L"Hook %s::Serialize(this=%s)\n", name, uuid.c_str());
-    free(name);
+    wprintf(L"Hook %s::Serialize(this=%s)\n", name.c_str(), uuid.c_str());
     if (ecx->m_pNode->m_dwResAddr == 0x00000000) return ref->m_pfnSerialize(ecx, archive);
 
     const auto path = GetFilePath(ecx->m_pNode);
@@ -982,10 +1048,9 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
     const auto uuid = GetUUID(ecx->m_pNode);
     const auto cache = COMMAND_MAP[uuid];
     if (cache != nullptr) return cache;
-    const auto name = Unicode(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
+    const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
     const auto ref = REF_MAP[name];
-    wprintf(L"Hook %s::GetNextCommand(this=%s)\n", name, uuid.c_str());
-    free(name);
+    wprintf(L"Hook %s::GetNextCommand(this=%s)\n", name.c_str(), uuid.c_str());
     auto value = ref->m_pfnGetNextCommand(ecx);
 
     const auto path = GetFilePath(ecx->m_pNode) + L".json";
@@ -1004,20 +1069,21 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
         const auto buffer = static_cast<char*>(malloc(size));
         ReadFile(hFile, buffer, size, nullptr, nullptr);
         CloseHandle(hFile);
-        const auto patch = cJSON_ParseWithLength(buffer, size);
-        value = Merge(value, patch);
+        const auto document = std::string(buffer);
         free(buffer);
-        cJSON_free(patch);
+        auto reader = Json::Reader();
+        auto patch = Json::Value(Json::objectValue);
+        reader.parse(std::string(), patch, false);
+        value = Merge(value, patch);
     }
     else
     {
-        const auto patch = cJSON_CreateObject();
+        auto patch = Json::Value(Json::objectValue);
         value = Merge(value, patch);
-        const auto buffer = cJSON_Print(patch);
-        WriteFile(hFile, buffer, strlen(buffer), nullptr, nullptr);
+        auto writer = Json::FastWriter();
+        const auto text = writer.write(patch);
+        WriteFile(hFile, text.c_str(), text.length(), nullptr, nullptr);
         CloseHandle(hFile);
-        cJSON_free(buffer);
-        cJSON_free(patch);
     }
 
     COMMAND_MAP[uuid] = value;
@@ -1060,6 +1126,18 @@ LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT uChar, COceanNode* co
     return font;
 }
 
+LPCSTR CObjectProxy::HookDrawSingleLineText(
+    CImgBox* const ecx, SHORT const x, SHORT const y, LPCSTR const text, CFontContext* const context)
+{
+    const auto uuid = GetUUID(ecx->m_pNode);
+    wprintf(L"Hook CImgBox::DrawSingleLineText(this=%s)\n", uuid.c_str());
+    // const auto ansi = AnsiTrans(text, CP_SHIFT_JIS, CP_GB18030);
+    const auto result = ecx->DrawSingleLineText(x, y, text, context);
+    // const auto result = ecx->DrawSingleLineText(x, y, ansi, context);
+    // free(ansi);
+    return result;
+}
+
 std::map<std::wstring, CObjectProxy*> CObjectProxy::REF_MAP;
 
 std::map<std::wstring, CVmCommand*> CObjectProxy::COMMAND_MAP;
@@ -1094,6 +1172,10 @@ COceanNode** COceanTree::HookGetMotherOcean(COceanNode** const pNode)
 {
     wprintf(L"Hook GetMotherOcean()\n");
     *pNode = *COceanNode::FetchGetMotherOcean()(pNode);
+
+    const auto uui = CUuiGlobals::GetGlobal();
+    if (uui != nullptr) uui->field_003C = 0x02;
+
     const auto root = *pNode;
     auto iterator = Iterator(root);
     for (auto node = iterator.Next(); node != nullptr; node = iterator.Next())

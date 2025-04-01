@@ -1,9 +1,11 @@
 #ifndef RUGP_H
 #define RUGP_H
 
-#include <stdafx.h>
+#include "stdafx.h"
 
 struct MFC_MODULE;
+
+class CStringX;
 
 class CObjectEx;
 class CRio;
@@ -44,6 +46,12 @@ struct MFC_MODULE
 MFC_MODULE GetMfc();
 
 LPCSTR GetMfcVersion();
+
+class CStringX : public CStringA
+{
+public:
+    CStringX& operator=(LPCSTR);
+};
 
 #define DECLARE_DYNAMIC_EX(class_name) \
 public: \

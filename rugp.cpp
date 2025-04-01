@@ -1,4 +1,4 @@
-#include <stdafx.h>
+#include "stdafx.h"
 #include <string>
 #include <map>
 #include "rugp.h"
@@ -95,6 +95,32 @@ void AFXAPI AfxTermExtensionModule(AFX_EXTENSION_MODULE& extension, const BOOL b
     default:
         break;
     }
+}
+
+CStringX& CStringX::operator=(const LPCSTR pszSrc)
+{
+    using LPSet = CStringX& (__thiscall *)(CStringX*, LPCSTR);
+    const auto mfc = GetMfc();
+    auto proc = static_cast<LPSet>(nullptr);
+    switch (mfc.version)
+    {
+    case 0x0600:
+        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(860)));
+        if (proc != nullptr) proc(this, pszSrc);
+        break;
+    case 0x0C00:
+        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1517)));
+        if (proc != nullptr) proc(this, pszSrc);
+        break;
+    case 0x0E00:
+        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1526)));
+        if (proc != nullptr) proc(this, pszSrc);
+        break;
+    default:
+        break;
+    }
+
+    return *this;
 }
 
 BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
@@ -694,7 +720,7 @@ const CArchive* CPmArchive::GetNative() const
 {
     const auto vtbl = *reinterpret_cast<FARPROC* const*>(this);
     const auto start = reinterpret_cast<LPBYTE>(vtbl[0x0000]);
-    for (auto offset = start; offset - start< 0x0400; offset++)
+    for (auto offset = start; offset - start < 0x0400; offset++)
     {
         // lea     edi, [esi+4]
         if (offset[0x00] != 0x8Du) continue;
@@ -808,7 +834,6 @@ BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
         break;
     case 0x0E00:
         // TODO protected: int __thiscall COceanNode::IsDerivedFrom(struct CRioRTC const *) const
-        return FALSE;
     default:
         break;
     }
@@ -895,7 +920,8 @@ const COceanNode* COceanNode::GetRoot()
             const auto is_root = GetProcAddress(UnivUI, "?IsRoot@COceanNode@@QBE_NXZ");
             if (is_root != nullptr)
             {
-                const auto address = reinterpret_cast<DWORD>(is_root);
+                const auto address = reinterpret_cast<LPBYTE>(is_root);
+                // cmp     ecx, offset ...
                 return *reinterpret_cast<const COceanNode**>(address + 0x04);
             }
             proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, MAKEINTRESOURCE(500)));

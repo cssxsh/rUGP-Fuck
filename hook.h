@@ -1,7 +1,7 @@
 #ifndef HOOK_H
 #define HOOK_H
 
-#include <stdafx.h>
+#include "stdafx.h"
 
 #ifdef _PRSHT_H_
 #pragma comment(lib, "comctl32.lib")
