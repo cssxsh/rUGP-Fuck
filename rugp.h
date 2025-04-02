@@ -35,6 +35,8 @@ struct CMsgRTC;
 struct CObject_vtbl;
 struct CRio_vtbl;
 
+template<typename T, int SIZE = 0x11>
+struct HashBucket;
 
 struct MFC_MODULE
 {
@@ -185,7 +187,7 @@ public:
     struct Children
     {
         UINT m_nCount;
-        COceanNode* m_pBucket[0x0C];
+        COceanNode* m_arrBucket[0x0C];
     };
 
     CRio* m_pObject;
@@ -333,6 +335,8 @@ struct CMsgRTC
     short m_nObjectSize;
     WORD m_wSchema;
     CMsgRTC* m_pNextClass;
+
+    static const HashBucket<CMsgRTC>* GetRegister();
 };
 
 struct CObject_vtbl
@@ -347,6 +351,12 @@ struct CObject_vtbl
 struct CRio_vtbl : CObject_vtbl
 {
     void (__thiscall *Serialize)(CRio*, CPmArchive*);
+};
+
+template<class T, int SIZE>
+struct HashBucket
+{
+    const T* m_arr[SIZE];
 };
 
 #endif // RUGP_H

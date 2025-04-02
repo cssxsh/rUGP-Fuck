@@ -1207,7 +1207,7 @@ const COceanNode* COceanTree::Iterator::Next()
         const auto visited = m_pVisited[root];
 
         mask = static_cast<WORD>(0x0001);
-        for (const auto child : (root->m_pChildren ? root->m_pChildren : &empty)->m_pBucket)
+        for (const auto child : (root->m_pChildren ? root->m_pChildren : &empty)->m_arrBucket)
         {
             if (child == nullptr) continue;
             if (child == null) continue;

@@ -1264,3 +1264,31 @@ const CRuntimeClass* CVmGenericMsg::GetClassCVmGenericMsg()
 
     return nullptr;
 }
+
+const HashBucket<CMsgRTC>* CMsgRTC::GetRegister()
+{
+    using LPGetTheMsgRtcRegister = const HashBucket<CMsgRTC>*(__cdecl *)();
+    const auto name = "?GetTheMsgRtcRegister@@YAPBVCMsgRTCRegister@@XZ";
+    auto& proc = reinterpret_cast<LPGetTheMsgRtcRegister&>(cache[name]);
+    if (proc != nullptr) return proc();
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            proc = reinterpret_cast<LPGetTheMsgRtcRegister>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return proc();
+            proc = reinterpret_cast<LPGetTheMsgRtcRegister>(GetProcAddress(UnivUI, MAKEINTRESOURCE(556)));
+            if (proc != nullptr) return proc();
+        }
+        break;
+    case 0x0E00:
+        // TODO class CMsgRTCRegister const * __cdecl GetTheMsgRtcRegister(void)
+    default:
+        break;
+    }
+
+    return nullptr;
+}
