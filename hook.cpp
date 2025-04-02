@@ -8,109 +8,109 @@ void Win32Hook::AttachHook()
     DetourUpdateThread(GetCurrentThread());
     if (pfnCreateWindowExA == nullptr)
     {
-        pfnCreateWindowExA = CreateWindowExA;
+        pfnCreateWindowExA = &CreateWindowExA;
         wprintf(L"DetourAttach: CreateWindowExA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateWindowExA), HookCreateWindowExA);
     }
     if (pfnCreateMDIWindowA == nullptr)
     {
-        pfnCreateMDIWindowA = CreateMDIWindowA;
+        pfnCreateMDIWindowA = &CreateMDIWindowA;
         wprintf(L"DetourAttach: CreateMDIWindowA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateMDIWindowA), HookCreateMDIWindowA);
     }
     if (pfnSetWindowTextA == nullptr)
     {
-        pfnSetWindowTextA = SetWindowTextA;
+        pfnSetWindowTextA = &SetWindowTextA;
         wprintf(L"DetourAttach: SetWindowTextA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnSetWindowTextA), HookSetWindowTextA);
     }
     if (pfnCreatePropertySheetPageA == nullptr)
     {
-        pfnCreatePropertySheetPageA = CreatePropertySheetPageA;
+        pfnCreatePropertySheetPageA = &CreatePropertySheetPageA;
         wprintf(L"DetourAttach: CreatePropertySheetPageA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnCreatePropertySheetPageA), HookCreatePropertySheetPageA);
     }
     if (pfnPropertySheetA == nullptr)
     {
-        pfnPropertySheetA = PropertySheetA;
+        pfnPropertySheetA = &PropertySheetA;
         wprintf(L"DetourAttach: PropertySheetA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnPropertySheetA), HookPropertySheetA);
     }
     if (pfnCreateDialogParamA == nullptr)
     {
-        pfnCreateDialogParamA = CreateDialogParamA;
+        pfnCreateDialogParamA = &CreateDialogParamA;
         wprintf(L"DetourAttach: CreateDialogParamA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateDialogParamA), HookCreateDialogParamA);
     }
     if (pfnCreateDialogIndirectParamA == nullptr)
     {
-        pfnCreateDialogIndirectParamA = CreateDialogIndirectParamA;
+        pfnCreateDialogIndirectParamA = &CreateDialogIndirectParamA;
         wprintf(L"DetourAttach: CreateDialogIndirectParamA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateDialogIndirectParamA), HookCreateDialogIndirectParamA);
     }
     if (pfnDialogBoxParamA == nullptr)
     {
-        pfnDialogBoxParamA = DialogBoxParamA;
+        pfnDialogBoxParamA = &DialogBoxParamA;
         wprintf(L"DetourAttach: DialogBoxParamA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnDialogBoxParamA), HookDialogBoxParamA);
     }
     if (pfnDialogBoxIndirectParamA == nullptr)
     {
-        pfnDialogBoxIndirectParamA = DialogBoxIndirectParamA;
+        pfnDialogBoxIndirectParamA = &DialogBoxIndirectParamA;
         wprintf(L"DetourAttach: DialogBoxIndirectParamA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnDialogBoxIndirectParamA), HookDialogBoxIndirectParamA);
     }
     if (pfnSetDlgItemTextA == nullptr)
     {
-        pfnSetDlgItemTextA = SetDlgItemTextA;
+        pfnSetDlgItemTextA = &SetDlgItemTextA;
         wprintf(L"DetourAttach: SetDlgItemTextA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnSetDlgItemTextA), HookSetDlgItemTextA);
     }
     if (pfnMessageBoxA == nullptr)
     {
-        pfnMessageBoxA = MessageBoxA;
+        pfnMessageBoxA = &MessageBoxA;
         wprintf(L"DetourAttach: MessageBoxA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnMessageBoxA), HookMessageBoxA);
     }
     if (pfnMessageBoxExA == nullptr)
     {
-        pfnMessageBoxExA = MessageBoxExA;
+        pfnMessageBoxExA = &MessageBoxExA;
         wprintf(L"DetourAttach: MessageBoxExA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnMessageBoxExA), HookMessageBoxExA);
     }
     if (pfnCreateFontA == nullptr)
     {
-        pfnCreateFontA = CreateFontA;
+        pfnCreateFontA = &CreateFontA;
         wprintf(L"DetourAttach: CreateFontA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateFontA), HookCreateFontA);
     }
     if (pfnCreateFontIndirectA == nullptr)
     {
-        pfnCreateFontIndirectA = CreateFontIndirectA;
+        pfnCreateFontIndirectA = &CreateFontIndirectA;
         wprintf(L"DetourAttach: CreateFontIndirectA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateFontIndirectA), HookCreateFontIndirectA);
     }
     if (pfnEnumFontFamiliesExA == nullptr)
     {
-        pfnEnumFontFamiliesExA = EnumFontFamiliesExA;
+        pfnEnumFontFamiliesExA = &EnumFontFamiliesExA;
         wprintf(L"DetourAttach: EnumFontFamiliesExA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesExA), HookEnumFontFamiliesExA);
     }
     if (pfnEnumFontFamiliesA == nullptr)
     {
-        pfnEnumFontFamiliesA = EnumFontFamiliesA;
+        pfnEnumFontFamiliesA = &EnumFontFamiliesA;
         wprintf(L"DetourAttach: EnumFontFamiliesA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesA), HookEnumFontFamiliesA);
     }
     if (pfnEnumFontsA == nullptr)
     {
-        pfnEnumFontsA = EnumFontsA;
+        pfnEnumFontsA = &EnumFontsA;
         wprintf(L"DetourAttach: EnumFontsA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontsA), HookEnumFontsA);
     }
     if (pfnGetGlyphOutlineA == nullptr)
     {
-        pfnGetGlyphOutlineA = GetGlyphOutlineA;
+        pfnGetGlyphOutlineA = &GetGlyphOutlineA;
         wprintf(L"DetourAttach: GetGlyphOutlineA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnGetGlyphOutlineA), HookGetGlyphOutlineA);
     }
@@ -235,54 +235,55 @@ void Win32Hook::DetachHook()
     DetourTransactionCommit();
 }
 
-Win32Hook::LPCreateWindowExA Win32Hook::pfnCreateWindowExA = nullptr;
+decltype(CreateWindowExA)* Win32Hook::pfnCreateWindowExA = nullptr;
 
-Win32Hook::LPCreateMDIWindowA Win32Hook::pfnCreateMDIWindowA = nullptr;
+decltype(CreateMDIWindowA)* Win32Hook::pfnCreateMDIWindowA = nullptr;
 
-Win32Hook::LPSetWindowTextA Win32Hook::pfnSetWindowTextA = nullptr;
+decltype(SetWindowTextA)* Win32Hook::pfnSetWindowTextA = nullptr;
 
-Win32Hook::LPCreatePropertySheetPageA Win32Hook::pfnCreatePropertySheetPageA = nullptr;
+decltype(CreatePropertySheetPageA)* Win32Hook::pfnCreatePropertySheetPageA = nullptr;
 
-Win32Hook::LPPropertySheetA Win32Hook::pfnPropertySheetA = nullptr;
+decltype(PropertySheetA)* Win32Hook::pfnPropertySheetA = nullptr;
 
-Win32Hook::LPCreateDialogParamA Win32Hook::pfnCreateDialogParamA = nullptr;
+decltype(CreateDialogParamA)* Win32Hook::pfnCreateDialogParamA = nullptr;
 
-Win32Hook::LPCreateDialogIndirectParamA Win32Hook::pfnCreateDialogIndirectParamA = nullptr;
+decltype(CreateDialogIndirectParamA)* Win32Hook::pfnCreateDialogIndirectParamA = nullptr;
 
-Win32Hook::LPDialogBoxParamA Win32Hook::pfnDialogBoxParamA = nullptr;
+decltype(DialogBoxParamA)* Win32Hook::pfnDialogBoxParamA = nullptr;
 
-Win32Hook::LPDialogBoxIndirectParamA Win32Hook::pfnDialogBoxIndirectParamA = nullptr;
+decltype(DialogBoxIndirectParamA)* Win32Hook::pfnDialogBoxIndirectParamA = nullptr;
 
-Win32Hook::LPSetDlgItemTextA Win32Hook::pfnSetDlgItemTextA = nullptr;
+decltype(SetDlgItemTextA)* Win32Hook::pfnSetDlgItemTextA = nullptr;
 
-Win32Hook::LPMessageBoxA Win32Hook::pfnMessageBoxA = nullptr;
+decltype(MessageBoxA)* Win32Hook::pfnMessageBoxA = nullptr;
 
-Win32Hook::LPMessageBoxExA Win32Hook::pfnMessageBoxExA = nullptr;
+decltype(MessageBoxExA)* Win32Hook::pfnMessageBoxExA = nullptr;
 
-Win32Hook::LPCreateFontA Win32Hook::pfnCreateFontA = nullptr;
+decltype(CreateFontA)* Win32Hook::pfnCreateFontA = nullptr;
 
-Win32Hook::LPCreateFontIndirectA Win32Hook::pfnCreateFontIndirectA = nullptr;
+decltype(CreateFontIndirectA)* Win32Hook::pfnCreateFontIndirectA = nullptr;
 
-Win32Hook::LPEnumFontFamiliesExA Win32Hook::pfnEnumFontFamiliesExA = nullptr;
+decltype(EnumFontFamiliesExA)* Win32Hook::pfnEnumFontFamiliesExA = nullptr;
 
-Win32Hook::LPEnumFontFamiliesA Win32Hook::pfnEnumFontFamiliesA = nullptr;
+decltype(EnumFontFamiliesA)* Win32Hook::pfnEnumFontFamiliesA = nullptr;
 
-Win32Hook::LPEnumFontsA Win32Hook::pfnEnumFontsA = nullptr;
+decltype(EnumFontsA)* Win32Hook::pfnEnumFontsA = nullptr;
 
-Win32Hook::LPGetGlyphOutlineA Win32Hook::pfnGetGlyphOutlineA = nullptr;
+decltype(GetGlyphOutlineA)* Win32Hook::pfnGetGlyphOutlineA = nullptr;
 
-HWND WINAPI Win32Hook::HookCreateWindowExA(const DWORD dwExStyle,
-                                           const LPCSTR lpClassName,
-                                           const LPCSTR lpWindowName,
-                                           const DWORD dwStyle,
-                                           const int X,
-                                           const int Y,
-                                           const int nWidth,
-                                           const int nHeight,
-                                           const HWND hWndParent, // NOLINT(*-misplaced-const)
-                                           const HMENU hMenu, // NOLINT(*-misplaced-const)
-                                           const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
-                                           const LPVOID lpParam) // NOLINT(*-misplaced-const)
+HWND WINAPI Win32Hook::HookCreateWindowExA(
+    const DWORD dwExStyle,
+    const LPCSTR lpClassName,
+    const LPCSTR lpWindowName,
+    const DWORD dwStyle,
+    const int X,
+    const int Y,
+    const int nWidth,
+    const int nHeight,
+    const HWND hWndParent, // NOLINT(*-misplaced-const)
+    const HMENU hMenu, // NOLINT(*-misplaced-const)
+    const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
+    const LPVOID lpParam) // NOLINT(*-misplaced-const)
 {
     const auto uuid = Unicode(lpClassName, CP_SHIFT_JIS);
     const auto title = Unicode(lpWindowName, CP_SHIFT_JIS);
@@ -297,16 +298,17 @@ HWND WINAPI Win32Hook::HookCreateWindowExA(const DWORD dwExStyle,
     return result;
 }
 
-HWND Win32Hook::HookCreateMDIWindowA(const LPSTR lpClassName, // NOLINT(*-misplaced-const)
-                                     const LPSTR lpWindowName, // NOLINT(*-misplaced-const)
-                                     const DWORD dwStyle,
-                                     const int X,
-                                     const int Y,
-                                     const int nWidth,
-                                     const int nHeight,
-                                     const HWND hWndParent, // NOLINT(*-misplaced-const)
-                                     const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
-                                     const LPARAM lParam)
+HWND WINAPI Win32Hook::HookCreateMDIWindowA(
+    const LPCSTR lpClassName,
+    const LPCSTR lpWindowName,
+    const DWORD dwStyle,
+    const int X,
+    const int Y,
+    const int nWidth,
+    const int nHeight,
+    const HWND hWndParent, // NOLINT(*-misplaced-const)
+    const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
+    const LPARAM lParam)
 {
     const auto uuid = Unicode(lpClassName, CP_SHIFT_JIS);
     const auto title = Unicode(lpWindowName, CP_SHIFT_JIS);
@@ -321,8 +323,9 @@ HWND Win32Hook::HookCreateMDIWindowA(const LPSTR lpClassName, // NOLINT(*-mispla
     return result;
 }
 
-BOOL WINAPI Win32Hook::HookSetWindowTextA(const HWND hWnd, // NOLINT(*-misplaced-const)
-                                          const LPCSTR lpString)
+BOOL WINAPI Win32Hook::HookSetWindowTextA(
+    const HWND hWnd, // NOLINT(*-misplaced-const)
+    const LPCSTR lpString)
 {
     const auto unicode = Unicode(lpString, CP_SHIFT_JIS);
     wprintf(L"Hook SetWindowTextA(hWnd=0x%p, lpString=%s)\n", hWnd, unicode);
@@ -331,44 +334,39 @@ BOOL WINAPI Win32Hook::HookSetWindowTextA(const HWND hWnd, // NOLINT(*-misplaced
     return result;
 }
 
-HPROPSHEETPAGE Win32Hook::HookCreatePropertySheetPageA(const LPCPROPSHEETPAGEA lpPropSheetPage)
+HPROPSHEETPAGE WINAPI Win32Hook::HookCreatePropertySheetPageA(
+    const LPCPROPSHEETPAGEA lpPropSheetPage)
 {
-    const auto title = lpPropSheetPage->pszTitle;
-    const auto unicode = Unicode(title, CP_SHIFT_JIS);
-    wprintf(L"Hook CreatePropertySheetPageA(pszTitle=%s)\n", unicode);
-    const_cast<LPSTR&>(lpPropSheetPage->pszTitle) = Ansi(unicode, CP_ACP);
-    free(unicode);
-    // TODO: CreatePropertySheetPageA -> CreatePropertySheetPageW
-    const auto result = pfnCreatePropertySheetPageA(lpPropSheetPage);
-    free(const_cast<LPSTR&>(lpPropSheetPage->pszTitle));
-    const_cast<LPCSTR&>(lpPropSheetPage->pszTitle) = title;
+    auto header = PROPSHEETPAGEW{};
+    memcpy(&header, lpPropSheetPage, lpPropSheetPage->dwSize);
+    header.pszTitle = Unicode(lpPropSheetPage->pszTitle, CP_SHIFT_JIS);
+    const auto result = CreatePropertySheetPageW(&header);
+    free(const_cast<LPWSTR&>(header.pszTitle));
     return result;
 }
 
-int Win32Hook::HookPropertySheetA(const LPCPROPSHEETHEADERA lpPropSheetHeader)
+INT_PTR WINAPI Win32Hook::HookPropertySheetA(
+    const LPCPROPSHEETHEADERA lpPropSheetHeader)
 {
-    const auto caption = lpPropSheetHeader->pszCaption;
-    const auto unicode = Unicode(caption, CP_SHIFT_JIS);
-    wprintf(L"Hook PropertySheetA(pszCaption=%s)\n", unicode);
-    const_cast<LPSTR&>(lpPropSheetHeader->pszCaption) = Ansi(unicode, CP_ACP);
-    free(unicode);
-    // TODO: PropertySheetA -> PropertySheetW
-    const auto result = pfnPropertySheetA(lpPropSheetHeader);
-    free(const_cast<LPSTR&>(lpPropSheetHeader->pszCaption));
-    const_cast<LPCSTR&>(lpPropSheetHeader->pszCaption) = caption;
+    auto header = PROPSHEETHEADERW{};
+    memcpy(&header, lpPropSheetHeader, lpPropSheetHeader->dwSize);
+    header.pszCaption = Unicode(lpPropSheetHeader->pszCaption, CP_SHIFT_JIS);
+    const auto result = PropertySheetW(&header);
+    free(const_cast<LPWSTR&>(header.pszCaption));
     return result;
 }
 
-HWND WINAPI Win32Hook::HookCreateDialogParamA(const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
-                                              const LPCSTR lpTemplateName,
-                                              const HWND hWndParent, // NOLINT(*-misplaced-const)
-                                              const DLGPROC lpDialogFunc, // NOLINT(*-misplaced-const)
-                                              const LPARAM dwInitParam)
+HWND WINAPI Win32Hook::HookCreateDialogParamA(
+    const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
+    const LPCSTR lpTemplateName,
+    const HWND hWndParent, // NOLINT(*-misplaced-const)
+    const DLGPROC lpDialogFunc, // NOLINT(*-misplaced-const)
+    const LPARAM dwInitParam)
 {
     if (IS_INTRESOURCE(lpTemplateName))
     {
         const auto id = reinterpret_cast<DWORD>(lpTemplateName);
-        wprintf(L"Hook CreateDialogParamA(lpTemplateName=MAKEINTRESOURCEA(%d)\n", id);
+        wprintf(L"Hook CreateDialogParamA(lpTemplateName=MAKEINTRESOURCEA(%d), hWndParent=0x%p)\n", id, hWndParent);
         return CreateDialogParamW(hInstance, MAKEINTRESOURCEW(lpTemplateName), hWndParent, lpDialogFunc, dwInitParam);
     }
 
@@ -379,26 +377,28 @@ HWND WINAPI Win32Hook::HookCreateDialogParamA(const HINSTANCE hInstance, // NOLI
     return result;
 }
 
-HWND Win32Hook::HookCreateDialogIndirectParamA(const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
-                                               const LPCDLGTEMPLATEA lpTemplate,
-                                               const HWND hWndParent, // NOLINT(*-misplaced-const)
-                                               const DLGPROC lpDialogFunc, // NOLINT(*-misplaced-const)
-                                               const LPARAM dwInitParam)
+HWND WINAPI Win32Hook::HookCreateDialogIndirectParamA(
+    const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
+    const LPCDLGTEMPLATEA lpTemplate,
+    const HWND hWndParent, // NOLINT(*-misplaced-const)
+    const DLGPROC lpDialogFunc, // NOLINT(*-misplaced-const)
+    const LPARAM dwInitParam)
 {
     wprintf(L"Hook CreateDialogIndirectParamA(hWndParent=0x%p)\n", hWndParent);
     return CreateDialogIndirectParamW(hInstance, lpTemplate, hWndParent, lpDialogFunc, dwInitParam);
 }
 
-int Win32Hook::HookDialogBoxParamA(const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
-                                   const LPCSTR lpTemplateName,
-                                   const HWND hWndParent, // NOLINT(*-misplaced-const)
-                                   const DLGPROC lpDialogFunc, // NOLINT(*-misplaced-const)
-                                   const LPARAM dwInitParam)
+INT_PTR WINAPI Win32Hook::HookDialogBoxParamA(
+    const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
+    const LPCSTR lpTemplateName,
+    const HWND hWndParent, // NOLINT(*-misplaced-const)
+    const DLGPROC lpDialogFunc, // NOLINT(*-misplaced-const)
+    const LPARAM dwInitParam)
 {
     if (IS_INTRESOURCE(lpTemplateName))
     {
         const auto id = reinterpret_cast<DWORD>(lpTemplateName);
-        wprintf(L"Hook DialogBoxParamA(lpTemplateName=MAKEINTRESOURCEA(%d)\n", id);
+        wprintf(L"Hook DialogBoxParamA(lpTemplateName=MAKEINTRESOURCEA(%d), hWndParent=0x%p)\n", id, hWndParent);
         return DialogBoxParamW(hInstance, MAKEINTRESOURCEW(lpTemplateName), hWndParent, lpDialogFunc, dwInitParam);
     }
 
@@ -409,19 +409,21 @@ int Win32Hook::HookDialogBoxParamA(const HINSTANCE hInstance, // NOLINT(*-mispla
     return result;
 }
 
-int Win32Hook::HookDialogBoxIndirectParamA(const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
-                                           const LPCDLGTEMPLATEA hDialogTemplate, // NOLINT(*-misplaced-const)
-                                           const HWND hWndParent, // NOLINT(*-misplaced-const)
-                                           const DLGPROC lpDialogFunc, // NOLINT(*-misplaced-const)
-                                           const LPARAM dwInitParam)
+INT_PTR WINAPI Win32Hook::HookDialogBoxIndirectParamA(
+    const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
+    const LPCDLGTEMPLATEA hDialogTemplate, // NOLINT(*-misplaced-const)
+    const HWND hWndParent, // NOLINT(*-misplaced-const)
+    const DLGPROC lpDialogFunc, // NOLINT(*-misplaced-const)
+    const LPARAM dwInitParam)
 {
     wprintf(L"Hook DialogBoxIndirectParamA(hWndParent=0x%p)\n", hWndParent);
     return DialogBoxIndirectParamW(hInstance, hDialogTemplate, hWndParent, lpDialogFunc, dwInitParam);
 }
 
-BOOL Win32Hook::HookSetDlgItemTextA(const HWND hDlg, // NOLINT(*-misplaced-const)
-                                    const int nIDDlgItem,
-                                    const LPCSTR lpString)
+BOOL WINAPI Win32Hook::HookSetDlgItemTextA(
+    const HWND hDlg, // NOLINT(*-misplaced-const)
+    const int nIDDlgItem,
+    const LPCSTR lpString)
 {
     const auto unicode = Unicode(lpString, CP_SHIFT_JIS);
     wprintf(L"Hook SetDlgItemTextA(hDlg=0x%p, nIDDlgItem=%d, lpString=%s)\n", hDlg, nIDDlgItem, unicode);
@@ -430,10 +432,11 @@ BOOL Win32Hook::HookSetDlgItemTextA(const HWND hDlg, // NOLINT(*-misplaced-const
     return result;
 }
 
-int WINAPI Win32Hook::HookMessageBoxA(const HWND hWnd, // NOLINT(*-misplaced-const)
-                                      const LPCSTR lpText,
-                                      const LPCSTR lpCaption,
-                                      const UINT uType)
+int WINAPI Win32Hook::HookMessageBoxA(
+    const HWND hWnd, // NOLINT(*-misplaced-const)
+    const LPCSTR lpText,
+    const LPCSTR lpCaption,
+    const UINT uType)
 {
     const auto text = Unicode(lpText, CP_SHIFT_JIS);
     const auto caption = Unicode(lpCaption, CP_SHIFT_JIS);
@@ -444,11 +447,12 @@ int WINAPI Win32Hook::HookMessageBoxA(const HWND hWnd, // NOLINT(*-misplaced-con
     return result;
 }
 
-int WINAPI Win32Hook::HookMessageBoxExA(const HWND hWnd, // NOLINT(*-misplaced-const)
-                                        const LPCSTR lpText,
-                                        const LPCSTR lpCaption,
-                                        const UINT uType,
-                                        const WORD wLanguageId)
+int WINAPI Win32Hook::HookMessageBoxExA(
+    const HWND hWnd, // NOLINT(*-misplaced-const)
+    const LPCSTR lpText,
+    const LPCSTR lpCaption,
+    const UINT uType,
+    const WORD wLanguageId)
 {
     const auto text = Unicode(lpText, CP_SHIFT_JIS);
     const auto caption = Unicode(lpCaption, CP_SHIFT_JIS);
@@ -459,20 +463,21 @@ int WINAPI Win32Hook::HookMessageBoxExA(const HWND hWnd, // NOLINT(*-misplaced-c
     return result;
 }
 
-HFONT WINAPI Win32Hook::HookCreateFontA(const int cHeight,
-                                        const int cWidth,
-                                        const int cEscapement,
-                                        const int cOrientation,
-                                        const int cWeight,
-                                        const DWORD bItalic,
-                                        const DWORD bUnderline,
-                                        const DWORD bStrikeOut,
-                                        const DWORD iCharSet,
-                                        const DWORD iOutPrecision,
-                                        const DWORD iClipPrecision,
-                                        const DWORD iQuality,
-                                        const DWORD iPitchAndFamily,
-                                        const LPCSTR pszFaceName)
+HFONT WINAPI Win32Hook::HookCreateFontA(
+    const int cHeight,
+    const int cWidth,
+    const int cEscapement,
+    const int cOrientation,
+    const int cWeight,
+    const DWORD bItalic,
+    const DWORD bUnderline,
+    const DWORD bStrikeOut,
+    const DWORD iCharSet,
+    const DWORD iOutPrecision,
+    const DWORD iClipPrecision,
+    const DWORD iQuality,
+    const DWORD iPitchAndFamily,
+    const LPCSTR pszFaceName)
 {
     auto cp = CP_ACP;
     switch (*reinterpret_cast<const DWORD*>(pszFaceName))
@@ -495,7 +500,8 @@ HFONT WINAPI Win32Hook::HookCreateFontA(const int cHeight,
     return result;
 }
 
-HFONT WINAPI Win32Hook::HookCreateFontIndirectA(const LOGFONTA* lpLogFont)
+HFONT WINAPI Win32Hook::HookCreateFontIndirectA(
+    const LOGFONTA* lpLogFont)
 {
     auto font = LOGFONTW
     {
@@ -531,14 +537,14 @@ HFONT WINAPI Win32Hook::HookCreateFontIndirectA(const LOGFONTA* lpLogFont)
     return CreateFontIndirectW(&font);
 }
 
-int WINAPI Win32Hook::HookEnumFontFamiliesExA(const HDC hdc, // NOLINT(*-misplaced-const)
-                                              const LPLOGFONTA lpLogFont, // NOLINT(*-misplaced-const)
-                                              const FONTENUMPROCA lpProc,
-                                              const LPARAM lParam,
-                                              const DWORD dwFlags)
+int WINAPI Win32Hook::HookEnumFontFamiliesExA(
+    const HDC hdc, // NOLINT(*-misplaced-const)
+    const LPLOGFONTA lpLogFont, // NOLINT(*-misplaced-const)
+    const FONTENUMPROCA lpProc,
+    const LPARAM lParam,
+    const DWORD dwFlags)
 {
-    const auto callback = HookEnumFontCallback{lpProc, lParam};
-    const auto param = reinterpret_cast<LPARAM>(&callback);
+    const auto context = HookEnumFontContext{lpProc, lParam};
     auto font = LOGFONTW
     {
         lpLogFont->lfHeight,
@@ -559,43 +565,81 @@ int WINAPI Win32Hook::HookEnumFontFamiliesExA(const HDC hdc, // NOLINT(*-misplac
     wcscpy(font.lfFaceName, unicode);
     free(unicode);
     wprintf(L"Hook EnumFontFamiliesExA(lfCharSet=0x%X, lfFaceName=%s)\n", font.lfCharSet, font.lfFaceName);
-    return EnumFontFamiliesExW(hdc, &font, &HookEnumFontsCallback, param, dwFlags);
+    font.lfCharSet = GB2312_CHARSET;
+    return EnumFontFamiliesExW(hdc, &font, &HookEnumFontCallback, reinterpret_cast<LPARAM>(&context), dwFlags);
 }
 
-int Win32Hook::HookEnumFontFamiliesA(const HDC hdc, // NOLINT(*-misplaced-const)
-                                     const LPCSTR lpLogFont,
-                                     const FONTENUMPROCA lpProc,
-                                     const LPARAM lParam)
+int WINAPI Win32Hook::HookEnumFontFamiliesA(
+    const HDC hdc, // NOLINT(*-misplaced-const)
+    const LPCSTR lpLogFont,
+    const FONTENUMPROCA lpProc,
+    const LPARAM lParam)
 {
-    const auto callback = HookEnumFontCallback{lpProc, lParam};
-    const auto param = reinterpret_cast<LPARAM>(&callback);
+    const auto context = HookEnumFontContext{lpProc, lParam};
     const auto unicode = Unicode(lpLogFont, CP_SHIFT_JIS);
     wprintf(L"Hook EnumFontFamiliesA(lpLogFont=%s)\n", unicode);
-    const auto result = EnumFontFamiliesW(hdc, unicode, &HookEnumFontsCallback, param);
+    const auto result = EnumFontFamiliesW(hdc, unicode, &HookEnumFontCallback, reinterpret_cast<LPARAM>(&context));
     free(unicode);
     return result;
 }
 
-int Win32Hook::HookEnumFontsA(const HDC hdc, // NOLINT(*-misplaced-const)
-                              const LPCSTR lpLogFont,
-                              const FONTENUMPROCA lpProc,
-                              const LPARAM lParam)
+int WINAPI Win32Hook::HookEnumFontsA(
+    const HDC hdc, // NOLINT(*-misplaced-const)
+    const LPCSTR lpLogFont,
+    const FONTENUMPROCA lpProc,
+    const LPARAM lParam)
 {
-    const auto callback = HookEnumFontCallback{lpProc, lParam};
-    const auto param = reinterpret_cast<LPARAM>(&callback);
+    const auto context = HookEnumFontContext{lpProc, lParam};
     const auto unicode = Unicode(lpLogFont, CP_SHIFT_JIS);
     wprintf(L"Hook EnumFontsA(lpLogFont=%s)\n", unicode);
-    const auto result = EnumFontFamiliesW(hdc, unicode, &HookEnumFontsCallback, param);
+    const auto result = EnumFontFamiliesW(hdc, unicode, &HookEnumFontCallback, reinterpret_cast<LPARAM>(&context));
     free(unicode);
     return result;
 }
 
-int Win32Hook::HookEnumFontsCallback(const LOGFONTW* lpLogFont,
-                                     const TEXTMETRICW* lpTextMetric,
-                                     const DWORD dwFontType,
-                                     const LPARAM lParam)
+DWORD WINAPI Win32Hook::HookGetGlyphOutlineA(
+    const HDC hdc, // NOLINT(*-misplaced-const)
+    const UINT uChar,
+    const UINT fuFormat,
+    const LPGLYPHMETRICS lpgm, // NOLINT(*-misplaced-const)
+    const DWORD cjBuffer,
+    const LPVOID pvBuffer, // NOLINT(*-misplaced-const)
+    const MAT2* lpmat2)
 {
-    const auto callback = reinterpret_cast<HookEnumFontCallback*>(lParam);
+    wprintf(L"Hook GetGlyphOutlineA(hdc=0x%p, uChar=0x%08X)\n", hdc, uChar);
+    UINT unicode = uChar;
+    if (uChar <= 0x000000FF)
+    {
+        char buffer[1];
+        buffer[0] = static_cast<char>((uChar & 0x000000FFu) >> 0x00);
+        MultiByteToWideChar(CP_GB18030, 0, buffer, -1, reinterpret_cast<LPWSTR>(&unicode), 1);
+    }
+    else if (uChar <= 0x0000FFFF)
+    {
+        char buffer[2];
+        buffer[0] = static_cast<char>((uChar & 0x0000FF00u) >> 0x08);
+        buffer[1] = static_cast<char>((uChar & 0x000000FFu) >> 0x00);
+        MultiByteToWideChar(CP_GB18030, 0, buffer, -1, reinterpret_cast<LPWSTR>(&unicode), 1);
+    }
+    else
+    {
+        char buffer[4];
+        buffer[0] = static_cast<char>((uChar & 0xFF000000u) >> 0x18);
+        buffer[1] = static_cast<char>((uChar & 0x00FF0000u) >> 0x10);
+        buffer[2] = static_cast<char>((uChar & 0x0000FF00u) >> 0x08);
+        buffer[3] = static_cast<char>((uChar & 0x000000FFu) >> 0x00);
+        MultiByteToWideChar(CP_GB18030, 0, buffer, -1, reinterpret_cast<LPWSTR>(&unicode), 1);
+    }
+    return GetGlyphOutlineW(hdc, unicode, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
+}
+
+int CALLBACK Win32Hook::HookEnumFontCallback(
+    const LOGFONTW* lpLogFont,
+    const TEXTMETRICW* lpTextMetric,
+    const DWORD dwFontType,
+    const LPARAM lParam)
+{
+    const auto context = reinterpret_cast<HookEnumFontContext*>(lParam);
     auto font = LOGFONTA
     {
         lpLogFont->lfHeight,
@@ -628,50 +672,15 @@ int Win32Hook::HookEnumFontsCallback(const LOGFONTW* lpLogFont,
         lpTextMetric->tmOverhang,
         lpTextMetric->tmDigitizedAspectX,
         lpTextMetric->tmDigitizedAspectY,
-        0,
-        0,
-        0,
-        0,
+        '\0',
+        '\0',
+        '\0',
+        '\0',
         lpTextMetric->tmItalic,
         lpTextMetric->tmUnderlined,
         lpTextMetric->tmStruckOut,
         lpTextMetric->tmPitchAndFamily,
         lpTextMetric->tmCharSet
     };
-    return callback->lpProc(&font, &metric, dwFontType, callback->lParam);
-}
-
-DWORD Win32Hook::HookGetGlyphOutlineA(const HDC hdc, // NOLINT(*-misplaced-const)
-                                      const UINT uChar,
-                                      const UINT fuFormat,
-                                      const LPGLYPHMETRICS lpgm, // NOLINT(*-misplaced-const)
-                                      const DWORD cjBuffer,
-                                      const LPVOID pvBuffer, // NOLINT(*-misplaced-const)
-                                      const MAT2* lpmat2)
-{
-    wprintf(L"Hook GetGlyphOutlineA(hdc=0x%p, uChar=0x%08X)\n", hdc, uChar);
-    UINT unicode = uChar;
-    if (uChar <= 0x000000FF)
-    {
-        char buffer[1];
-        buffer[0] = static_cast<char>((uChar & 0x000000FFu) >> 0x00);
-        MultiByteToWideChar(CP_GB18030, 0, buffer, -1, reinterpret_cast<LPWSTR>(&unicode), 1);
-    }
-    else if (uChar <= 0x0000FFFF)
-    {
-        char buffer[2];
-        buffer[0] = static_cast<char>((uChar & 0x0000FF00u) >> 0x08);
-        buffer[1] = static_cast<char>((uChar & 0x000000FFu) >> 0x00);
-        MultiByteToWideChar(CP_GB18030, 0, buffer, -1, reinterpret_cast<LPWSTR>(&unicode), 1);
-    }
-    else
-    {
-        char buffer[4];
-        buffer[0] = static_cast<char>((uChar & 0xFF000000u) >> 0x18);
-        buffer[1] = static_cast<char>((uChar & 0x00FF0000u) >> 0x10);
-        buffer[2] = static_cast<char>((uChar & 0x0000FF00u) >> 0x08);
-        buffer[3] = static_cast<char>((uChar & 0x000000FFu) >> 0x00);
-        MultiByteToWideChar(CP_GB18030, 0, buffer, -1, reinterpret_cast<LPWSTR>(&unicode), 1);
-    }
-    return GetGlyphOutlineW(hdc, unicode, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
+    return context->lpProc(&font, &metric, dwFontType, context->lParam);
 }

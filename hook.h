@@ -15,134 +15,90 @@ public:
     static void DetachHook();
 
 protected:
-    using LPCreateWindowExA = HWND (WINAPI *)(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
-                                              int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu,
-                                              HINSTANCE hInstance, LPVOID lpParam);
-    static LPCreateWindowExA pfnCreateWindowExA;
+    static decltype(CreateWindowExA)* pfnCreateWindowExA;
 
-    using LPCreateMDIWindowA = HWND (WINAPI *)(LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
-                                               int X, int Y, int nWidth, int nHeight, HWND hWndParent,
-                                               HINSTANCE hInstance, LPARAM lParam);
-    static LPCreateMDIWindowA pfnCreateMDIWindowA;
+    static decltype(CreateMDIWindowA)* pfnCreateMDIWindowA;
 
-    using LPSetWindowTextA = BOOL (WINAPI *)(HWND hWnd, LPCSTR lpString);
-    static LPSetWindowTextA pfnSetWindowTextA;
+    static decltype(SetWindowTextA)* pfnSetWindowTextA;
 
-    using LPCreatePropertySheetPageA = HPROPSHEETPAGE (WINAPI *)(LPCPROPSHEETPAGEA lpPropSheetPage);
-    static LPCreatePropertySheetPageA pfnCreatePropertySheetPageA;
+    static decltype(CreatePropertySheetPageA)* pfnCreatePropertySheetPageA;
 
-    using LPPropertySheetA = int (WINAPI *)(LPCPROPSHEETHEADERA);
-    static LPPropertySheetA pfnPropertySheetA;
+    static decltype(PropertySheetA)* pfnPropertySheetA;
 
-    using LPCreateDialogParamA = HWND (WINAPI *)(HINSTANCE hInstance, LPCSTR lpTemplateName, HWND hWndParent,
-                                                 DLGPROC lpDialogFunc, LPARAM dwInitParam);
-    static LPCreateDialogParamA pfnCreateDialogParamA;
+    static decltype(CreateDialogParamA)* pfnCreateDialogParamA;
 
-    using LPCreateDialogIndirectParamA = HWND (WINAPI *)(HINSTANCE hInstance, LPCDLGTEMPLATEA lpTemplate,
-                                                         HWND hWndParent,
-                                                         DLGPROC lpDialogFunc, LPARAM dwInitParam);
-    static LPCreateDialogIndirectParamA pfnCreateDialogIndirectParamA;
+    static decltype(CreateDialogIndirectParamA)* pfnCreateDialogIndirectParamA;
 
-    using LPDialogBoxParamA = int (WINAPI *)(HINSTANCE hInstance, LPCSTR lpTemplateName, HWND hWndParent,
-                                             DLGPROC lpDialogFunc, LPARAM dwInitParam);
-    static LPDialogBoxParamA pfnDialogBoxParamA;
+    static decltype(DialogBoxParamA)* pfnDialogBoxParamA;
 
-    using LPDialogBoxIndirectParamA = int (WINAPI *)(HINSTANCE hInstance, LPCDLGTEMPLATEA hDialogTemplate,
-                                                     HWND hWndParent, DLGPROC lpDialogFunc, LPARAM dwInitParam);
-    static LPDialogBoxIndirectParamA pfnDialogBoxIndirectParamA;
+    static decltype(DialogBoxIndirectParamA)* pfnDialogBoxIndirectParamA;
 
-    using LPSetDlgItemTextA = int (WINAPI *)(HWND hDlg, int nIDDlgItem, LPCSTR lpString);
-    static LPSetDlgItemTextA pfnSetDlgItemTextA;
+    static decltype(SetDlgItemTextA)* pfnSetDlgItemTextA;
 
-    using LPMessageBoxA = int (WINAPI *)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType);
-    static LPMessageBoxA pfnMessageBoxA;
+    static decltype(MessageBoxA)* pfnMessageBoxA;
 
-    using LPMessageBoxExA = int (WINAPI *)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType, WORD wLanguageId);
-    static LPMessageBoxExA pfnMessageBoxExA;
+    static decltype(MessageBoxExA)* pfnMessageBoxExA;
 
-    using LPCreateFontA = HFONT (WINAPI *)(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight,
-                                           DWORD bItalic, DWORD bUnderline, DWORD bStrikeOut,
-                                           DWORD iCharSet, DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality,
-                                           DWORD iPitchAndFamily, LPCSTR pszFaceName);
-    static LPCreateFontA pfnCreateFontA;
+    static decltype(CreateFontA)* pfnCreateFontA;
 
-    using LPCreateFontIndirectA = HFONT (WINAPI *)(const LOGFONTA* lpLogFont);
-    static LPCreateFontIndirectA pfnCreateFontIndirectA;
+    static decltype(CreateFontIndirectA)* pfnCreateFontIndirectA;
 
-    using LPEnumFontFamiliesExA = int (WINAPI *)(HDC hdc, LPLOGFONTA lpLogFont, FONTENUMPROCA lpProc,
-                                                 LPARAM lParam, DWORD dwFlags);
-    static LPEnumFontFamiliesExA pfnEnumFontFamiliesExA;
+    static decltype(EnumFontFamiliesExA)* pfnEnumFontFamiliesExA;
 
-    using LPEnumFontFamiliesA = int (WINAPI *)(HDC hdc, LPCSTR lpLogFont, FONTENUMPROCA lpProc, LPARAM lParam);
-    static LPEnumFontFamiliesA pfnEnumFontFamiliesA;
+    static decltype(EnumFontFamiliesA)* pfnEnumFontFamiliesA;
 
-    using LPEnumFontsA = int (WINAPI *)(HDC hdc, LPCSTR lpLogFont, FONTENUMPROCA lpProc, LPARAM lParam);
-    static LPEnumFontsA pfnEnumFontsA;
+    static decltype(EnumFontsA)* pfnEnumFontsA;
 
-    using LPGetGlyphOutlineA = DWORD (WINAPI *)(HDC hdc, UINT uChar, UINT fuFormat,
-                                                LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer,
-                                                const MAT2* lpmat2);
-    static LPGetGlyphOutlineA pfnGetGlyphOutlineA;
+    static decltype(GetGlyphOutlineA)* pfnGetGlyphOutlineA;
 
-    static HWND WINAPI HookCreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
-                                           int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu,
-                                           HINSTANCE hInstance, LPVOID lpParam);
+    static decltype(CreateWindowExA) HookCreateWindowExA;
 
-    static HWND WINAPI HookCreateMDIWindowA(LPSTR lpClassName, LPSTR lpWindowName, DWORD dwStyle,
-                                            int X, int Y, int nWidth, int nHeight, HWND hWndParent,
-                                            HINSTANCE hInstance, LPARAM lParam);
+    static decltype(CreateMDIWindowA) HookCreateMDIWindowA;
 
-    static BOOL WINAPI HookSetWindowTextA(HWND hWnd, LPCSTR lpString);
+    static decltype(SetWindowTextA) HookSetWindowTextA;
 
-    static HPROPSHEETPAGE WINAPI HookCreatePropertySheetPageA(LPCPROPSHEETPAGEA lpPropSheetPage);
+    static decltype(CreatePropertySheetPageA) HookCreatePropertySheetPageA;
 
-    static int WINAPI HookPropertySheetA(LPCPROPSHEETHEADERA);
+    static decltype(PropertySheetA) HookPropertySheetA;
 
-    static HWND WINAPI HookCreateDialogParamA(HINSTANCE hInstance, LPCSTR lpTemplateName, HWND hWndParent,
-                                              DLGPROC lpDialogFunc, LPARAM dwInitParam);
+    static decltype(CreateDialogParamA) HookCreateDialogParamA;
 
-    static HWND WINAPI HookCreateDialogIndirectParamA(HINSTANCE hInstance, LPCDLGTEMPLATEA lpTemplate, HWND hWndParent,
-                                                      DLGPROC lpDialogFunc, LPARAM dwInitParam);
+    static decltype(CreateDialogIndirectParamA) HookCreateDialogIndirectParamA;
 
-    static int WINAPI HookDialogBoxParamA(HINSTANCE hInstance, LPCSTR lpTemplateName, HWND hWndParent,
-                                          DLGPROC lpDialogFunc, LPARAM dwInitParam);
+    static decltype(DialogBoxParamA) HookDialogBoxParamA;
 
-    static int WINAPI HookDialogBoxIndirectParamA(HINSTANCE hInstance, LPCDLGTEMPLATEA hDialogTemplate, HWND hWndParent,
-                                                  DLGPROC lpDialogFunc, LPARAM dwInitParam);
+    static decltype(DialogBoxIndirectParamA) HookDialogBoxIndirectParamA;
 
-    static BOOL WINAPI HookSetDlgItemTextA(HWND hDlg, int nIDDlgItem, LPCSTR lpString);
+    static decltype(SetDlgItemTextA) HookSetDlgItemTextA;
 
-    static int WINAPI HookMessageBoxA(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType);
+    static decltype(MessageBoxA) HookMessageBoxA;
 
-    static int WINAPI HookMessageBoxExA(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType, WORD wLanguageId);
+    static decltype(MessageBoxExA) HookMessageBoxExA;
 
-    static HFONT WINAPI HookCreateFontA(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight,
-                                        DWORD bItalic, DWORD bUnderline, DWORD bStrikeOut,
-                                        DWORD iCharSet, DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality,
-                                        DWORD iPitchAndFamily, LPCSTR pszFaceName);
+    static decltype(CreateFontA) HookCreateFontA;
 
-    static HFONT WINAPI HookCreateFontIndirectA(const LOGFONTA* lpLogFont);
+    static decltype(CreateFontIndirectA) HookCreateFontIndirectA;
 
-    struct HookEnumFontCallback
+    static decltype(EnumFontFamiliesExA) HookEnumFontFamiliesExA;
+
+    static decltype(EnumFontFamiliesA) HookEnumFontFamiliesA;
+
+    static decltype(EnumFontsA) HookEnumFontsA;
+
+    static decltype(GetGlyphOutlineA) HookGetGlyphOutlineA;
+
+private:
+    struct HookEnumFontContext
     {
         FONTENUMPROCA lpProc;
         LPARAM lParam;
     };
 
-    static int WINAPI HookEnumFontFamiliesExA(HDC hdc, LPLOGFONTA lpLogFont, FONTENUMPROCA lpProc, LPARAM lParam,
-                                              DWORD dwFlags);
-
-    static int WINAPI HookEnumFontFamiliesA(HDC hdc, LPCSTR lpLogFont, FONTENUMPROCA lpProc, LPARAM lParam);
-
-    static int WINAPI HookEnumFontsA(HDC hdc, LPCSTR lpLogFont, FONTENUMPROCA lpProc, LPARAM lParam);
-
-    static int CALLBACK HookEnumFontsCallback(const LOGFONTW* lpLogFont, const TEXTMETRICW* lpTextMetric,
-                                              DWORD dwFontType,
-                                              LPARAM lParam);
-
-    static DWORD WINAPI HookGetGlyphOutlineA(HDC hdc, UINT uChar, UINT fuFormat,
-                                             LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer,
-                                             const MAT2* lpmat2);
+    static int CALLBACK HookEnumFontCallback(
+        const LOGFONTW* lpLogFont,
+        const TEXTMETRICW* lpTextMetric,
+        DWORD dwFontType,
+        LPARAM lParam);
 };
 
 #endif // HOOK_H
