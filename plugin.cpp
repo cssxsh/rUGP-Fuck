@@ -519,6 +519,21 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
     if (hModule == nullptr) return;
     const auto start = reinterpret_cast<LPBYTE>(hModule) + 0x00001000;
     const auto end = reinterpret_cast<LPBYTE>(hModule) + DetourGetModuleSize(hModule);
+    const auto replace = [hModule, lpszModuleName](LPBYTE const offset, UINT const nChar) // NOLINT(*-misplaced-const)
+    {
+        const auto address = reinterpret_cast<LPDWORD>(offset);
+        if (offset[0x04] == 0x00u) return;
+        const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+        wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
+        const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
+        record->block_size = sizeof(DWORD);
+        memcpy(record->origin, address, record->block_size);
+        auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
+        VirtualProtect(address, record->block_size, protect, &protect);
+        *address = nChar;
+        VirtualProtect(address, record->block_size, protect, &protect);
+        PATCH_CACHE[address] = record;
+    };
     for (auto offset = start; offset < end; offset++)
     {
         if (IsBadCodePtr(reinterpret_cast<FARPROC>(offset))) break;
@@ -591,122 +606,31 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
             break;
         // 0xA1A1
         case 0x00008140u:
-            {
-                const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (offset[0x04] == 0x00u) continue;
-                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
-                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
-                const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
-                record->block_size = sizeof(DWORD);
-                memcpy(record->origin, address, record->block_size);
-                auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
-                VirtualProtect(address, record->block_size, protect, &protect);
-                *address = 0x0000A1A1u;
-                VirtualProtect(address, record->block_size, protect, &protect);
-                PATCH_CACHE[address] = record;
-            }
+            replace(offset, 0x0000A1A1u);
             break;
         // 0xA1B8
         case 0x00008175u:
-            {
-                const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (offset[0x04] == 0x00u) continue;
-                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
-                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
-                const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
-                record->block_size = sizeof(DWORD);
-                memcpy(record->origin, address, record->block_size);
-                auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
-                VirtualProtect(address, record->block_size, protect, &protect);
-                *address = 0x0000A1B8u;
-                VirtualProtect(address, record->block_size, protect, &protect);
-                PATCH_CACHE[address] = record;
-            }
+            replace(offset, 0x0000A1B8u);
             break;
         // 0xA1B9
         case 0x00008176u:
-            {
-                const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (offset[0x04] == 0x00u) continue;
-                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
-                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
-                const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
-                record->block_size = sizeof(DWORD);
-                memcpy(record->origin, address, record->block_size);
-                auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
-                VirtualProtect(address, record->block_size, protect, &protect);
-                *address = 0x0000A1B9u;
-                VirtualProtect(address, record->block_size, protect, &protect);
-                PATCH_CACHE[address] = record;
-            }
+            replace(offset, 0x0000A1B9u);
             break;
         // 0xA1BE
         case 0x00008179u:
-            {
-                const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (offset[0x04] == 0x00u) continue;
-                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
-                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
-                const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
-                record->block_size = sizeof(DWORD);
-                memcpy(record->origin, address, record->block_size);
-                auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
-                VirtualProtect(address, record->block_size, protect, &protect);
-                *address = 0x0000A1BEu;
-                VirtualProtect(address, record->block_size, protect, &protect);
-                PATCH_CACHE[address] = record;
-            }
+            replace(offset, 0x0000A1BEu);
             break;
         // 0xA1BF
         case 0x0000817Au:
-            {
-                const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (offset[0x04] == 0x00u) continue;
-                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
-                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
-                const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
-                record->block_size = sizeof(DWORD);
-                memcpy(record->origin, address, record->block_size);
-                auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
-                VirtualProtect(address, record->block_size, protect, &protect);
-                *address = 0x0000A1BFu;
-                VirtualProtect(address, record->block_size, protect, &protect);
-                PATCH_CACHE[address] = record;
-            }
+            replace(offset, 0x0000A1BFu);
             break;
         // 0xA844
         case 0x0000815Cu:
-            {
-                const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (offset[0x04] == 0x00u) continue;
-                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
-                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
-                const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
-                record->block_size = sizeof(DWORD);
-                memcpy(record->origin, address, record->block_size);
-                auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
-                VirtualProtect(address, record->block_size, protect, &protect);
-                *address = 0x0000A844u;
-                VirtualProtect(address, record->block_size, protect, &protect);
-                PATCH_CACHE[address] = record;
-            }
+            replace(offset, 0x0000A844u);
             break;
         // 0xA9A4
         case 0x0000849Fu:
-            {
-                const auto address = reinterpret_cast<LPDWORD>(offset);
-                if (offset[0x04] == 0x00u) continue;
-                const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
-                wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
-                const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
-                record->block_size = sizeof(DWORD);
-                memcpy(record->origin, address, record->block_size);
-                auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
-                VirtualProtect(address, record->block_size, protect, &protect);
-                *address = 0x0000A9A4u;
-                VirtualProtect(address, record->block_size, protect, &protect);
-                PATCH_CACHE[address] = record;
-            }
+            replace(offset, 0x0000A9A4u);
             break;
         default:
             break;
@@ -717,6 +641,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
 void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszModuleName) // NOLINT(*-misplaced-const)
 {
     const auto module = DetourGetContainingModule(address);
+    const auto offset = 0x10000000u - reinterpret_cast<DWORD>(module);
     auto start = static_cast<LPBYTE>(nullptr);
     auto end = static_cast<LPBYTE>(nullptr);
     switch (address[0x00])
@@ -737,7 +662,6 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         break;
     default:
         {
-            const auto offset = 0x10000000u - reinterpret_cast<DWORD>(module);
             wprintf(L"Attach CharacterSplit Error 0x%p at %hs\n", address + offset, lpszModuleName);
         }
         return;
@@ -746,22 +670,22 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     if (start[0x01] == 0xEBu || start[0x01] == 0xE9u) end = start + 0x01;
     else if (start[0x05] == 0xEBu) end = start + 0x05;
     // cmp     ..., ...
-    for (auto offset = start; offset < end; offset++)
+    for (auto pos = start; pos < end; pos++)
     {
-        switch (offset[0x00])
+        switch (pos[0x00])
         {
-        case 0x3Du:
-            if (offset[0x04] != 0x00u) continue;
-            if (offset[0x05] != 0x00u) continue;
-            break;
         case 0x81u:
-            if (offset[0x03] != 0x00u) continue;
-            if (offset[0x04] != 0x00u) continue;
+            if (pos[0x04] != 0x00u) continue;
+            if (pos[0x05] != 0x00u) continue;
+            break;
+        case 0x3Du:
+            if (pos[0x03] != 0x00u) continue;
+            if (pos[0x04] != 0x00u) continue;
             break;
         default:
-            break;
+            continue;
         }
-        end = offset;
+        end = pos;
         break;
     }
     if (start > end && start[0x0B] == 0x81u) end = start + 0x0B;
@@ -790,7 +714,6 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         // inc     ...
         if (end[-0x04] == 0x08u)
         {
-            const auto offset = 0x10000000u - reinterpret_cast<DWORD>(module);
             wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
             const auto codes = static_cast<LPBYTE>(VirtualAlloc(
                 nullptr,
@@ -845,14 +768,32 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
             VirtualProtect(codes, 0x0040, PAGE_EXECUTE_READ, nullptr);
             return;
         }
+    // shl     ..., 8
+    // or      ..., ...
+        if (end[-0x03] == 0x08u) return;
         break;
     default:
+        // TODO 5.95.05   Vm60   .text:1001B74E
+        // TODO 6.23.02   rvmm   .text:100328B4
+        // TODO 6.23.02   Vm60   .text:100212A3
+        // TODO 6.23.02   Vm60   .text:100212A3
+        // TODO 6.23.02   Vm60   .text:10024DF1
+        // TODO 6.23.02   Vm60   .text:10024E7A
+        // TODO 6.23.02   Vm60   .text:100251BF
+        // TODO 6.23.02   Vm60   .text:10025241
         break;
     }
 
-    const auto offset = 0x10000000u - reinterpret_cast<DWORD>(module);
-    // TODO 5.95.05 UnivUI .text:1002BA4E
-    // TODO 6.23.02 UnivUI .text:100363F6
+    // TODO 5.73.01   Vm60   .text:10013E36
+    // TODO 5.80.20EC UnivUI .text:10014806
+    // TODO 5.95.05   UnivUI .text:1002BA4E
+    // TODO 5.95.05   Vm60   .text:10016676
+    // TODO 6.23.02   UnivUI .text:10025C3C
+    // TODO 6.23.02   UnivUI .text:100363F6
+    // TODO 6.23.02   Vm60   .text:10014D1F
+    // TODO 6.23.02   Vm60   .text:10016BBB
+    // TODO 6.23.02   Vm60   .text:10016BD4
+    // TODO 6.23.02   Vm60   .text:10023300
     wprintf(L"Attach CharacterSplit Fail 0x%p ~ 0x%p at %hs\n", start + offset, end + offset, lpszModuleName);
 }
 
