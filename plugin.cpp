@@ -805,7 +805,7 @@ int CObjectProxy::CharacterByteSize(LPCSTR const text)
     return 2;
 }
 
-CVmCommand* __fastcall CObjectProxy::Merge(const CVmCommand* const ecx, Json::Value& edx)
+CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)
 {
     auto result = static_cast<CVmCommand*>(nullptr);
     auto prev = static_cast<CVmCommand*>(nullptr);
@@ -813,92 +813,33 @@ CVmCommand* __fastcall CObjectProxy::Merge(const CVmCommand* const ecx, Json::Va
     for (auto command = ecx; command != nullptr; command = command->m_pNext)
     {
         const auto pClass = command->GetRuntimeClass();
-        char name[MAX_PATH];
+        char name[0x20];
         sprintf(name, "%08X:%s", command->m_dwFlags & 0x000FFFFF, pClass->m_lpszClassName);
+        next = const_cast<CVmCommand*>(command);
         switch (*reinterpret_cast<const DWORD*>(pClass->m_lpszClassName + 0x03))
         {
         // CVmMsg
         case 0x0067734Du:
             {
-                auto& text = edx[name];
-                if (text.isString())
+                auto& message = reinterpret_cast<CVmMsg*&>(next);
+                Merge(message, edx[name]);
+                for (auto lpsz = message->m_arrVariableArea; *lpsz != '\0'; lpsz += CharacterByteSize(lpsz))
                 {
-                    const auto value = AnsiX(text.asCString(), CP_UTF8, CP_GB18030);
-                    const auto size = pClass->m_nObjectSize + (value.length() + 0x04 & ~0x03);
-                    const auto clone = static_cast<CVmMsg*>(malloc(size));
-                    memcpy(clone, command, pClass->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-                    memcpy(clone->m_arrVariableArea, value.c_str(), value.length() + 0x04 & ~0x03);
-                    next = clone;
-                }
-                else
-                {
-                    const auto message = reinterpret_cast<const CVmMsg*>(command);
-                    text = AnsiX(message->m_arrVariableArea, CP_SHIFT_JIS, CP_UTF8);
-                    const auto ansi = AnsiX(message->m_arrVariableArea, CP_SHIFT_JIS, CP_GB18030);
-                    const auto size = pClass->m_nObjectSize + (ansi.length() + 0x04 & ~0x03);
-                    const auto clone = static_cast<CVmMsg*>(malloc(size));
-                    memcpy(clone, command, pClass->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-                    memcpy(clone->m_arrVariableArea, ansi.c_str(), ansi.length() + 0x04 & ~0x03);
-                    next = clone;
-                }
-                {
-                    const auto message = reinterpret_cast<const CVmMsg*>(next);
-                    for (auto lpsz = message->m_arrVariableArea; *lpsz != '\0'; lpsz += CharacterByteSize(lpsz))
-                    {
-                        if (static_cast<BYTE>(lpsz[0x00]) < 0x81u || static_cast<BYTE>(lpsz[0x01]) > 0x39u) continue;
-                        const auto uChar = 0u
-                            | static_cast<BYTE>(lpsz[0x00]) << 0x18
-                            | static_cast<BYTE>(lpsz[0x01]) << 0x10
-                            | static_cast<BYTE>(lpsz[0x02]) << 0x08
-                            | static_cast<BYTE>(lpsz[0x03]) << 0x00;
-                        CHARACTER_MAP[uChar & 0x0000FFFFu] = uChar;
-                    }
+                    if (static_cast<BYTE>(lpsz[0x00]) < 0x81u || static_cast<BYTE>(lpsz[0x01]) > 0x39u) continue;
+                    const auto uChar = 0u
+                        | static_cast<BYTE>(lpsz[0x00]) << 0x18
+                        | static_cast<BYTE>(lpsz[0x01]) << 0x10
+                        | static_cast<BYTE>(lpsz[0x02]) << 0x08
+                        | static_cast<BYTE>(lpsz[0x03]) << 0x00;
+                    CHARACTER_MAP[uChar & 0x0000FFFFu] = uChar;
                 }
             }
             break;
         // CVmGenericMsg
         case 0x656E6547:
             {
-                const auto generic = reinterpret_cast<const CVmGenericMsg*>(command);
-                auto& om = edx[name];
-                if (!om.isObject()) om = Json::Value(Json::objectValue);
-                om["#type"] = AnsiX(generic->m_pMsg->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
-                for (auto member = generic->m_pMsg->m_pRTC->m_pParams;
-                     member != nullptr && member->m_lpszName != nullptr;
-                     member++)
-                {
-                    const auto key = AnsiX(member->m_lpszName, CP_SHIFT_JIS, CP_UTF8) + ":" +
-                        AnsiX(member->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
-                    switch (*reinterpret_cast<const DWORD*>(member->m_pRTC->m_lpszClassName))
-                    {
-                    // 文字列
-                    case 0x9A8EB695u:
-                        {
-                            const auto content = reinterpret_cast<CStringX*>(
-                                reinterpret_cast<LPBYTE>(generic->m_pMsg) + member->m_dwOffset);
-                            om[key] = AnsiX(*content, CP_SHIFT_JIS, CP_UTF8);
-                        }
-                        break;
-                    // CRio
-                    case 0x6F695243u:
-                        {
-                            const auto node = *reinterpret_cast<COceanNode**>(
-                                reinterpret_cast<LPBYTE>(generic->m_pMsg) + member->m_dwOffset);
-                            om[key] = AnsiX(GetUUID(node).c_str(), CP_UTF8);
-                            // TODO expand
-                            // om[key] = Json::Value(Json::objectValue);
-                            // om[key]["#type"] = AnsiX(node->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
-                        }
-                        break;
-                    default:
-                        break;
-                    }
-                }
-
-                const auto size = pClass->m_nObjectSize + command->GetVariableAreaSize();
-                const auto clone = static_cast<CVmGenericMsg*>(malloc(size));
-                memcpy(clone, command, size); // NOLINT(*-undefined-memory-manipulation)
-                next = clone;
+                auto& generic = reinterpret_cast<CVmGenericMsg*&>(next);
+                Merge(generic, edx[name]);
             }
             break;
         default:
@@ -917,6 +858,97 @@ CVmCommand* __fastcall CObjectProxy::Merge(const CVmCommand* const ecx, Json::Va
     }
 
     return result;
+}
+
+void CObjectProxy::Merge(CVmMsg*& message, Json::Value& text)
+{
+    const auto pClass = message->GetRuntimeClass();
+    if (!text.isString()) text = AnsiX(message->m_arrVariableArea, CP_SHIFT_JIS, CP_UTF8);
+    const auto ansi = AnsiX(text.asCString(), CP_UTF8, CP_GB18030);
+    const auto size = pClass->m_nObjectSize + (ansi.length() + 0x04 & ~0x03);
+    const auto clone = static_cast<CVmMsg*>(malloc(size));
+    memcpy(clone, message, pClass->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
+    memcpy(clone->m_arrVariableArea, ansi.c_str(), ansi.length() + 0x04 & ~0x03);
+    message = clone;
+}
+
+void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
+{
+    const auto pClass = generic->GetRuntimeClass();
+    if (!obj.isObject()) obj = Json::Value(Json::objectValue);
+    obj["#type"] = AnsiX(generic->m_pMsg->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
+    const auto params = generic->m_pMsg->m_pRTC->m_pParams;
+    for (auto member = params; member != nullptr && member->m_lpszName != nullptr; member++)
+    {
+        const auto key = AnsiX(member->m_lpszName, CP_SHIFT_JIS, CP_UTF8) + ":" +
+            AnsiX(member->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
+        const auto address = reinterpret_cast<DWORD>(generic->m_pMsg) + member->m_dwOffset;
+        switch (*reinterpret_cast<const DWORD*>(member->m_pRTC->m_lpszClassName))
+        {
+        // 文字列
+        case 0x9A8EB695u:
+            {
+                auto& content = *reinterpret_cast<CStringX*>(address);
+                obj[key] = AnsiX(content, CP_SHIFT_JIS, CP_UTF8);
+                content = AnsiX(content, CP_SHIFT_JIS, CP_GB18030).c_str();
+            }
+            break;
+        // フラグ
+        case 0x89837483u:
+            obj[key] = *reinterpret_cast<bool*>(address);
+            break;
+        // １文字
+        case 0xB6955082u:
+            obj[key] = *reinterpret_cast<char*>(address);
+            break;
+        // バイト
+        case 0x43836F83u:
+            obj[key] = *reinterpret_cast<BYTE*>(address);
+            break;
+        // 短整数
+        case 0xAE905A92u:
+            obj[key] = *reinterpret_cast<short*>(address);
+            break;
+        // 短正整数
+        case 0xB3905A92u:
+            obj[key] = *reinterpret_cast<WORD*>(address);
+            break;
+        // 整数
+        case 0x9490AE90u:
+            obj[key] = *reinterpret_cast<int*>(address);
+            break;
+        // 正整数
+        case 0xAE90B390u:
+            obj[key] = *reinterpret_cast<UINT*>(address);
+            break;
+        // 低精度実数
+        case 0xB890E192u:
+            obj[key] = *reinterpret_cast<float*>(address);
+            break;
+        // 倍精度実数
+        case 0xB8907B94u:
+            obj[key] = *reinterpret_cast<double*>(address);
+            break;
+        // CRio
+        case 0x6F695243u:
+            {
+                const auto node = *reinterpret_cast<COceanNode**>(address);
+                obj[key] = AnsiX(GetUUID(node).c_str(), CP_UTF8);
+                // TODO expand
+                // om[key] = Json::Value(Json::objectValue);
+                // om[key]["#type"] = AnsiX(node->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
+            }
+            break;
+        default:
+            obj[key] = Json::Value(Json::nullValue);
+            break;
+        }
+    }
+
+    const auto size = pClass->m_nObjectSize + generic->GetVariableAreaSize();
+    const auto clone = static_cast<CVmGenericMsg*>(malloc(size));
+    memcpy(clone, generic, size); // NOLINT(*-undefined-memory-manipulation)
+    generic = clone;
 }
 
 void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
@@ -1012,12 +1044,12 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
         auto reader = Json::Reader();
         auto patch = Json::Value(Json::objectValue);
         reader.parse(std::string(), patch, false);
-        value = Merge(value, patch);
+        value = Fetch(value, patch);
     }
     else
     {
         auto patch = Json::Value(Json::objectValue);
-        value = Merge(value, patch);
+        value = Fetch(value, patch);
         auto writer = Json::FastWriter();
         const auto text = writer.write(patch);
         WriteFile(hFile, text.c_str(), text.length(), nullptr, nullptr);
