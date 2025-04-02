@@ -225,25 +225,22 @@ BOOL CreateMergeDirectory()
     return CreateDirectoryW(name.c_str(), nullptr);
 }
 
-StructuredException::StructuredException(
-    const UINT u, const EXCEPTION_POINTERS* pExp) : Code(u), ExceptionPointers(pExp)
+StructuredException::StructuredException(const UINT u, const EXCEPTION_POINTERS* pExp)
+    : exception(message(pExp)), Code(u), ExceptionPointers(pExp)
 {
-    // ...
+    // ReSharper disable once CppDFAMemoryLeak
 }
 
-LPCSTR StructuredException::what() const
+LPCSTR StructuredException::message(const EXCEPTION_POINTERS* pExp)
 {
-    const auto data = reinterpret_cast<__std_exception_data*>(reinterpret_cast<DWORD>(this) + 0x04);
-    if (data->_What != nullptr) return data->_What;
-
-    const auto module = DetourGetContainingModule(ExceptionPointers->ExceptionRecord->ExceptionAddress);
+    const auto record = pExp->ExceptionRecord;
+    const auto module = DetourGetContainingModule(record->ExceptionAddress);
     char filename[MAX_PATH];
     GetModuleFileNameA(module, filename, MAX_PATH);
+    // ReSharper disable once CppDFAMemoryLeak
     const auto buffer = static_cast<LPSTR>(malloc(0x0100));
     sprintf(buffer, "StructuredException 0x%08X at address 0x%p module %s",
-            Code, ExceptionPointers->ExceptionRecord->ExceptionAddress, strrchr(filename, '\\') + 1);
-    data->_What = buffer;
-    data->_DoFree = true;
+            record->ExceptionCode, record->ExceptionAddress, strrchr(filename, '\\') + 1);
     return buffer;
 }
 
