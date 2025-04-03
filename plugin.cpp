@@ -190,7 +190,7 @@ std::string WINAPI AnsiX(const LPCSTR lpText, const UINT from, const UINT to)
     if (native == nullptr) return "(null)";
     const auto result = std::string(native);
     free(native);
-    return native;
+    return result;
 }
 
 std::wstring GetUUID(const COceanNode* const node)
