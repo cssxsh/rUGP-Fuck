@@ -701,6 +701,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     // test    ..., ...
     if (start[0x00] == 0x85u) end = start + 0x00;
     else if (start[0x04] == 0x85u) end = start + 0x04;
+    else if (start[0x09] == 0x85u) end = start + 0x09;
 
     switch (reinterpret_cast<DWORD>(start) + offset)
     {
