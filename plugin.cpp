@@ -762,7 +762,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         break;
     }
 
-    const auto attach = [end](BYTE const str, BYTE const chr, BYTE const tmp) -> LPVOID
+    const auto attach = [start, end](BYTE const tmp) -> LPVOID
     {
         const auto codes = static_cast<LPBYTE>(VirtualAlloc(
             nullptr,
@@ -776,36 +776,19 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
         DetourTransactionCommit();
         auto index = 0x00;
-        // dec     ...
-        codes[index++] = 0x48 + str;
-        // dec     ...
-        codes[index++] = 0x48 + str;
-        // push    eax
-        if (str != 0x00u && chr != 0x00u && tmp != 0x00u) codes[index++] = 0x50;
-        // mov     @tmp, eax
-        if (str == 0x00u) codes[index++] = 0x89, codes[index++] = 0xC0 + tmp;
-        // push    @str
-        codes[index++] = 0x50 + str;
-        // call    @CharacterFetch
-        codes[index++] = 0xE8;
+        // cmp     @tmp, 0x39
+        codes[index++] = 0x83, codes[index++] = 0xF8 | tmp, codes[index++] = 0x39;
+        // ja      ...
+        codes[index++] = 0x0F, codes[index++] = 0x87;
         *reinterpret_cast<int*>(codes + index) =
-            reinterpret_cast<int>(CharacterFetch) - reinterpret_cast<int>(codes + index + 0x04);
+            reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
         index += 0x04;
-        // mov     @tmp, eax
-        if (chr == 0x00u) codes[index++] = 0x89, codes[index++] = 0xC0 + tmp;
-        // push    @str
-        codes[index++] = 0x50 + (str == 0x00u ? tmp : str);
-        // call    @CharacterByteSize
-        codes[index++] = 0xE8;
-        *reinterpret_cast<int*>(codes + index) =
-            reinterpret_cast<int>(CharacterByteSize) - reinterpret_cast<int>(codes + index + 0x04);
-        index += 0x04;
-        // add     @str, eax
-        codes[index++] = 0x01, codes[index++] = 0xC0 + (str == 0x00u ? tmp : str);
-        // mov     eax, @tmp 
-        if (chr == 0x00u) codes[index++] = 0x89, codes[index++] = 0xC0 + (tmp << 0x03);
-        // pop     eax
-        if (str != 0x00u && chr != 0x00u && tmp != 0x00u) codes[index++] = 0x58;
+        // action
+        memcpy(codes + index, start, end - start);
+        index += end - start;
+        // action
+        memcpy(codes + index, start, end - start);
+        index += end - start;
         // jmp     ...
         codes[index++] = 0xE9;
         *reinterpret_cast<int*>(codes + index) =
@@ -814,7 +797,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         return hook;
     };
 
-    const auto attach_ = [end](BYTE const str, BYTE const chr, BYTE const arg) -> LPVOID
+    const auto attach_ = [start, end](BYTE const tmp) -> LPVOID
     {
         const auto codes = static_cast<LPBYTE>(VirtualAlloc(
             nullptr,
@@ -828,28 +811,20 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
         DetourTransactionCommit();
         auto index = 0x00;
-        // push    eax
-        codes[index++] = 0x50;
-        // push    ...
-        codes[index++] = 0x50 + str;
-        // call    ...
-        codes[index++] = 0xE8;
+        // cmp     @tmp, 0x39
+        codes[index++] = 0x83, codes[index++] = 0xF8 | tmp, codes[index++] = 0x39;
+        // ja      ...
+        codes[index++] = 0x0F, codes[index++] = 0x87;
         *reinterpret_cast<int*>(codes + index) =
-            reinterpret_cast<int>(CharacterByteSize) - reinterpret_cast<int>(codes + index + 0x04);
+            reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
         index += 0x04;
-        // mov [ebp+...], eax
-        codes[index++] = 0x89, codes[index++] = 0x45, codes[index++] = arg;
-        // push    ...
-        codes[index++] = 0x50 + str;
-        // call    ...
-        codes[index++] = 0xE8;
-        *reinterpret_cast<int*>(codes + index) =
-            reinterpret_cast<int>(CharacterFetch) - reinterpret_cast<int>(codes + index + 0x04);
-        index += 0x04;
-        // mov ..., eax
-        codes[index++] = 0x89, codes[index++] = 0xC0 + chr;
-        // pop     eax
-        codes[index++] = 0x58;
+        // action
+        memcpy(codes + index, start, end - start);
+        codes[index + 0x01] = 0xB7;
+        codes[index + 0x03] = 0x02;
+        codes[index + 0x06] = 0x10;
+        codes[index + 0x0C] = 0x04;
+        index += end - start;
         // jmp     ...
         codes[index++] = 0xE9;
         *reinterpret_cast<int*>(codes + index) =
@@ -877,7 +852,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
             // or      ..., ...
             // inc     ...
             wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
-            attach(end[-0x01] - 0x40u, end[-0x05] - 0xE0u, end[-0x02] - 0xC0u >> 3);
+            attach((end[-0x03] == 0x0B ? end[-0x02] : end[-0x02] >> 0x03) & 0x07);
             return;
         }
         if (end[-0x08] == 0xC1u && end[-0x06] == 0x08u &&
@@ -888,7 +863,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
             // or      ..., ...
             // inc     ...
             wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
-            attach(end[-0x01] - 0x40u, end[-0x07] - 0xE0u, end[-0x02] - 0xC0u >> 3);
+            attach((end[-0x03] == 0x0B ? end[-0x02] : end[-0x02] >> 0x03) & 0x07);
             return;
         }
         if (end[-0x05] == 0xC1u && end[-0x03] == 0x08u &&
@@ -899,19 +874,21 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
             // shl     ..., 8
             // or      ..., ...
             wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
-            attach(end[-0x06] - 0x40u, end[-0x04] - 0xE0u, end[-0x01] - 0xC0u >> 3);
+            attach((end[-0x02] == 0x0B ? end[-0x01] : end[-0x01] >> 0x03) & 0x07);
             return;
         }
         break;
     case 0x10:
-        if (start[0x03] == 0x01u && start[0x06] == 0x08u && start[0x0C] == 0x02u)
+        if (start[0x01] == 0xB6u && start[0x03] == 0x01u &&
+            start[0x06] == 0x08u &&
+            start[0x0C] == 0x02u)
         {
             // movzx   ..., byte ptr [...+1]
             // shl     ..., 8
             // or      ..., ...
             // mov     [ebp+...], 2
             wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
-            attach_(start[0x02] - 0x40u, start[0x05] - 0xE0u, start[0x0B]);
+            attach_((start[0x07] == 0x0B ? end[0x08] : end[0x08] >> 0x03) & 0x07);
             return;
         }
         break;
@@ -928,14 +905,6 @@ int CObjectProxy::CharacterByteSize(LPCSTR const text)
     if ((text[0x0000] & 0x80u) == 0x00u) return 1;
     if ((text[0x0001] & 0xC0u) == 0x00u) return 4;
     return 2;
-}
-
-UINT CObjectProxy::CharacterFetch(LPCSTR const text)
-{
-    const auto size = CharacterByteSize(text);
-    auto uChar = 0u;
-    for (auto i = 0; i < size; i++) uChar = uChar << 0x08 | static_cast<BYTE>(text[i]);
-    return uChar;
 }
 
 CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)

@@ -76,7 +76,6 @@ protected:
     static void __fastcall Merge(CVmMsg*& message, Json::Value& text);
     static void __fastcall Merge(CVmGenericMsg*& generic, Json::Value& obj);
     static int __stdcall CharacterByteSize(LPCSTR);
-    static UINT __stdcall Character(LPCSTR);
 
     static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE& module);
     static void __thiscall HookDestructor(CRio* ecx);
