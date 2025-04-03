@@ -4,9 +4,9 @@ name: Build Artifact
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "ci" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "ci" ]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
