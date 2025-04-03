@@ -34,7 +34,7 @@ jobs:
 
       - name: Build
         # Build your program with the given configuration
-        run: cmake --build --preset=default --config ${{env.BUILD_TYPE}} --target r514783
+        run: cmake --build --preset=default --target r514783
 
       - uses: actions/upload-artifact@v4
         with:

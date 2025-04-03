@@ -13,7 +13,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Build)
 add_compile_options(/utf-8)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 add_definitions(-D_AFX_NOFORCE_LIBS)
-add_definitions(-D_AFX_NO_DEBUG_CRT)
 add_definitions(-D_WIN32_WINNT=0x0A00)
 
 find_path(DETOURS_INCLUDE_DIRS "detours/detours.h")
