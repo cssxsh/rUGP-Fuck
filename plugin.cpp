@@ -2,8 +2,6 @@
 #include <detours/detours.h>
 #include <json/json.h>
 #include <spdlog/spdlog.h>
-#include <clocale>
-#include <fstream>
 #include "plugin.h"
 #include "rugp.h"
 #include "hook.h"
@@ -322,8 +320,7 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     {
         MODULE_MAP[hModule] = reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
     }
-    const auto module = MODULE_MAP[hModule];
-    for (auto clazz = module->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
+    for (auto clazz = MODULE_MAP[hModule]->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
     {
         const auto name = UnicodeX(clazz->m_lpszClassName, CP_SHIFT_JIS);
         REF_MAP[name] = new CObjectProxy(clazz);
@@ -1057,7 +1054,7 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
 void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
 {
     CRio::FetchLibrarySupport()(module);
-    MODULE_MAP[DetourGetContainingModule(&module)] = &module;
+    MODULE_MAP[module.hModule] = &module;
 }
 
 void CObjectProxy::HookDestructor(CRio* const ecx)

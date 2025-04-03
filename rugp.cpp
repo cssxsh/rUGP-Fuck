@@ -233,24 +233,24 @@ const CRuntimeClass* CRio::GetClassCRio()
     return nullptr;
 }
 
-CRio::REG& CRio::FetchLibrarySupport()
+CRio::LPLibrarySupport& CRio::FetchLibrarySupport()
 {
     const auto name = "?RegistLibrarySupportRio@@YAXAAUAFX_EXTENSION_MODULE@@@Z";
-    auto& address = reinterpret_cast<REG&>(cache[name]);
+    auto& address = reinterpret_cast<LPLibrarySupport&>(cache[name]);
     if (address != nullptr) return address;
     const auto UnivUI = GetModuleHandleA("UnivUI");
     if (UnivUI == nullptr) return address = nullptr;
-    return address = reinterpret_cast<REG>(GetProcAddress(UnivUI, name));
+    return address = reinterpret_cast<LPLibrarySupport>(GetProcAddress(UnivUI, name));
 }
 
-CRio::IS_MULTIPLE& CRio::FetchIsMultiple()
+CRio::LPIsMultiple& CRio::FetchIsMultiple()
 {
     const auto name = "?IsDBCS@@YAHD@Z";
-    auto& address = reinterpret_cast<IS_MULTIPLE&>(cache[name]);
+    auto& address = reinterpret_cast<LPIsMultiple&>(cache[name]);
     if (address != nullptr) return address;
     const auto GMfc = GetModuleHandleA("GMfc");
     if (GMfc == nullptr) return address = nullptr;
-    return address = reinterpret_cast<IS_MULTIPLE>(GetProcAddress(GMfc, name));
+    return address = reinterpret_cast<LPIsMultiple>(GetProcAddress(GMfc, name));
 }
 
 const CRuntimeClass* CVisual::GetClassCVisual()

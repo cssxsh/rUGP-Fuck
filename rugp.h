@@ -87,11 +87,11 @@ public:
     // virtual BOOL NewObjectConstruct(LPCSTR) = 0;
     // virtual void SerializeUserCondition(CPmArchive&) = 0;
 
-    using REG = void (__cdecl *)(AFX_EXTENSION_MODULE&);
-    using IS_MULTIPLE = BOOL (__cdecl *)(CHAR);
+    using LPLibrarySupport = void (__cdecl *)(AFX_EXTENSION_MODULE&);
+    using LPIsMultiple = BOOL (__cdecl *)(CHAR);
 
-    static REG& FetchLibrarySupport();
-    static IS_MULTIPLE& FetchIsMultiple();
+    static LPLibrarySupport& FetchLibrarySupport();
+    static LPIsMultiple& FetchIsMultiple();
 };
 
 class CVisual : public CRio
@@ -177,6 +177,7 @@ public:
 
 class COceanNode
 {
+    COceanNode();
 public:
     struct POS
     {
@@ -192,7 +193,7 @@ public:
 
     CRio* m_pObject;
     COceanNode* m_pNext;
-    CString m_strName;
+    CStringX m_strName;
     COceanNode* m_pParent;
     Children* m_pChildren;
     CRuntimeClass* m_pRTC;
@@ -233,16 +234,17 @@ protected:
 
 class CUuiGlobals
 {
+    CUuiGlobals();
 public:
     UINT m_dwSchema;
     LPVOID field_0004;
-    CString m_strInstallDriver;
-    CString m_strGameFolder;
+    CStringX m_strInstallDriver;
+    CStringX m_strGameFolder;
     DWORD field_0010;
     DWORD field_0014;
     DWORD field_0018;
     LPVOID field_001C;
-    CString m_strGameName;
+    CStringX m_strGameName;
     DWORD m_dwFlags;
     DWORD field_0028;
     CNoTrackObject* field_002C; // CBootTracer
