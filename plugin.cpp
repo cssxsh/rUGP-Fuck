@@ -653,17 +653,18 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         break;
     // jz      short ...
     case 0x74u:
-    // jbe     short ...
-    case 0x76u:
     // ja      short ...
     case 0x77u:
         start = address + 0x02;
         end = start + *reinterpret_cast<char*>(address + 0x01);
         break;
+    // jbe     short ...
+    case 0x76u:
+        end = address + 0x02;
+        start = end + *reinterpret_cast<char*>(address + 0x01);
+        break;
     default:
-        {
-            wprintf(L"Attach CharacterSplit Error 0x%p at %hs\n", address + offset, lpszModuleName);
-        }
+        wprintf(L"Attach CharacterSplit Error 0x%p at %hs\n", address + offset, lpszModuleName);
         return;
     }
     // jmp     ...
@@ -689,15 +690,178 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         break;
     }
     if (start > end && start[0x0B] == 0x81u) end = start + 0x0B;
+    // mov     ..., [ebp+...]
+    if (start[0x00] == 0x8Bu && (start[0x01] & 0x45u) == 0x45u) start += 0x03;
     // mov     ..., [esp+...]
-    if (start[0x00] == 0x8Bu && start[0x02] == 0x24u) start -= 4;
+    if (start[0x00] == 0x8Bu && start[0x02] == 0x24u) start += 0x04;
+    // mov     [ebp+...], ...
+    if (end - start == 0x0C && start[0x09] == 0x89u) end = start + 0x09;
     // mov     [esp+...], ...
     if (end - start == 0x0E && start[0x0A] == 0x89u) end = start + 0x0A;
     // test    ..., ...
     if (start[0x00] == 0x85u) end = start + 0x00;
     else if (start[0x04] == 0x85u) end = start + 0x04;
 
-    switch (const auto size = end - start)
+    switch (reinterpret_cast<DWORD>(start) + offset)
+    {
+    // 5.95.05   UnivUI .text:1002BA4E ?x2C@CUser@@UBE_NPBD@Z
+    case 0x1002BA4Eu:
+    // 6.23.02   UnivUI .text:10025C68 ?GetSwitch@CRioRTC@@QBEHPBD@Z
+    case 0x10025C68u:
+    // 6.23.02   UnivUI .text:100363F6 ?x2C@CUser@@UBE_NPBD@Z
+    case 0x100363F6u:
+        if (strcmp(lpszModuleName, "UnivUI") == 0) return;
+        break;
+    // 5.95.05   Vm60   .text:10011467 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+    case 0x10011467u:
+    // 5.73.01   Vm60   .text:10013CE6 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+    case 0x10013CE6u:
+    // 5.80.20EC Vm60   .text:100146B6 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+    case 0x100146B6u:
+    // 5.95.05   Vm60   .text:10016526 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+    case 0x10016526u:
+    // 6.23.02   Vm60   .text:1001C4D2 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+    case 0x1001C4D2u:
+    // 6.23.02   Vm60   .text:10023317 ?AttachInstructionText@CMessBox@@UAEXPBDVTRio@@1K@Z
+    case 0x10023317u:
+    // 6.23.02   Vm60   .text:100C0341 ?ExecCommand@CVmMsg@@UAEPAVCVmCommand@@XZ
+    case 0x100C0341u:
+    // 6.23.02   Vm60   .text:100C0375 ?ExecCommand@CVmMsg@@UAEPAVCVmCommand@@XZ
+    case 0x100C0375u:
+        if (strcmp(lpszModuleName, "Vm60") == 0) return;
+        break;
+    default:
+        if (start[0x00] == 0x8Au && start[0x02] == 0x01u &&
+            start[0x03] == 0x8Au && start[0x05] == 0x01u &&
+            start[0x06] == 0x3Au)
+        {
+            // mov     .., [...+1]
+            // mov     .., [...+1]
+            // cmp     .., ..
+            return;
+        }
+        if (start[0x00] == 0x8Au && start[0x02] == 0x01u &&
+            (start[0x03] & 0xF8u) == 0x40u &&
+            start[0x04] == 0x3Au && start[0x06] == 0x01u)
+        {
+            // mov     .., [...+1]
+            // inc     ...
+            // cmp     .., [...+1]
+            return;
+        }
+        if (start[0x00] == 0x8Au &&
+            start[0x02] == 0x88u &&
+            (start[0x04] & 0xF8u) == 0x40u)
+        {
+            // mov     .., [...]
+            // mov     [...], ..
+            // inc     ...
+            return;
+        }
+        break;
+    }
+
+    const auto attach = [start, end](BYTE const str, BYTE const ch)
+    {
+        const auto size = end - start;
+        const auto codes = static_cast<LPBYTE>(VirtualAlloc(
+            nullptr,
+            0x0040,
+            MEM_COMMIT | MEM_RESERVE,
+            PAGE_EXECUTE_READWRITE));
+        memset(codes, 0xCCu, 0x0040);
+        auto hook = end;
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
+        DetourTransactionCommit();
+        auto index = 0x00;
+        // dec     ...
+        codes[index++] = 0x48 + str;
+        // dec     ...
+        codes[index++] = 0x48 + str;
+        // shr     ..., 0x10
+        codes[index++] = 0xC1, codes[index++] = 0xE0 + ch, codes[index++] = 0x10;
+        // push    eax
+        codes[index++] = 0x50;
+        // push    ...
+        codes[index++] = 0x50 + str;
+        // call    ...
+        codes[index++] = 0xE8;
+        *reinterpret_cast<int*>(codes + index) =
+            reinterpret_cast<int>(CharacterByteSize) - reinterpret_cast<int>(codes + index + 0x04);
+        index += 0x04;
+        const auto loop = index;
+        // push    eax
+        codes[index++] = 0x50;
+        // action
+        memcpy(codes + index, start, size);
+        index += size;
+        // pop     eax
+        codes[index++] = 0x58;
+        // dec     eax
+        codes[index++] = 0x48;
+        // test    eax, eax
+        codes[index++] = 0x85, codes[index++] = 0xC0;
+        // jnz     loop
+        codes[index++] = 0x0F, codes[index++] = 0x85;
+        *reinterpret_cast<int*>(codes + index) = loop - (index + 0x04);
+        index += 0x04;
+        // pop     eax
+        codes[index++] = 0x58;
+        // jmp     ...
+        codes[index++] = 0xE9;
+        *reinterpret_cast<int*>(codes + index) =
+            reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
+        VirtualProtect(codes, 0x0040, PAGE_EXECUTE_READ, nullptr);
+        return hook;
+    };
+
+    const auto attach_ = [start, end](BYTE const str, BYTE const ch, BYTE const arg)
+    {
+        const auto size = end - start;
+        const auto codes = static_cast<LPBYTE>(VirtualAlloc(
+            nullptr,
+            0x0040,
+            MEM_COMMIT | MEM_RESERVE,
+            PAGE_EXECUTE_READWRITE));
+        memset(codes, 0xCCu, 0x0040);
+        auto hook = end;
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
+        DetourTransactionCommit();
+        auto index = 0x00;
+        // push    eax
+        codes[index++] = 0x50;
+        // push    ...
+        codes[index++] = 0x50 + str;
+        // call    ...
+        codes[index++] = 0xE8;
+        *reinterpret_cast<int*>(codes + index) =
+            reinterpret_cast<int>(CharacterByteSize) - reinterpret_cast<int>(codes + index + 0x04);
+        index += 0x04;
+        // mov [ebp+...], eax
+        codes[index++] = 0x89, codes[index++] = 0x45, codes[index++] = arg;
+        // push    ...
+        codes[index++] = 0x50 + str;
+        // call    ...
+        codes[index++] = 0xE8;
+        *reinterpret_cast<int*>(codes + index) =
+            reinterpret_cast<int>(Character) - reinterpret_cast<int>(codes + index + 0x04);
+        // mov ..., eax
+        codes[index++] = 0x89, codes[index++] = 0xC0 + ch;
+        // pop     eax
+        codes[index++] = 0x58;
+        // jmp     ...
+        codes[index++] = 0xE9;
+        *reinterpret_cast<int*>(codes + index) =
+            reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
+        VirtualProtect(codes, 0x0040, PAGE_EXECUTE_READ, nullptr);
+        return hook;
+    };
+
+    switch (end - start)
     {
     case 0x00:
         return;
@@ -709,91 +873,52 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     case 0x09:
     case 0x0A:
     case 0x0B:
-        // shl     ..., 8
-        // or      ..., ...
-        // inc     ...
-        if (end[-0x04] == 0x08u)
+        if (end[-0x04] == 0x08u && (end[-0x01] & 0xF8u) == 0x40u)
         {
+            // shl     ..., 8
+            // or      ..., ...
+            // inc     ...
             wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
-            const auto codes = static_cast<LPBYTE>(VirtualAlloc(
-                nullptr,
-                0x0040,
-                MEM_COMMIT | MEM_RESERVE,
-                PAGE_EXECUTE_READWRITE));
-            memset(codes, 0xCCu, 0x0040);
-            auto hook = end;
-            const auto diff = end[-0x01] - 0x40u;
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-            DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
-            DetourTransactionCommit();
-            auto index = 0x00;
-            // dec     ...
-            codes[index++] = 0x48 + diff;
-            // dec     ...
-            codes[index++] = 0x48 + diff;
-            // shr     ..., 0x10
-            codes[index++] = 0xC1, codes[index++] = end[-0x05], codes[index++] = 0x10;
-            // push    eax
-            codes[index++] = 0x50;
-            // push    ...
-            codes[index++] = 0x50 + diff;
-            // call    ...
-            codes[index++] = 0xE8;
-            *reinterpret_cast<int*>(codes + index) =
-                reinterpret_cast<int>(CharacterByteSize) - reinterpret_cast<int>(codes + index + 0x04);
-            index += 0x04;
-            const auto loop = index;
-            // push    eax
-            codes[index++] = 0x50;
-            // action
-            memcpy(codes + index, start, size);
-            index += size;
-            // pop     eax
-            codes[index++] = 0x58;
-            // dec     eax
-            codes[index++] = 0x48;
-            // test    eax, eax
-            codes[index++] = 0x85, codes[index++] = 0xC0;
-            // jnz     loop
-            codes[index++] = 0x0F, codes[index++] = 0x85;
-            *reinterpret_cast<int*>(codes + index) = loop - (index + 0x04);
-            index += 0x04;
-            // pop     eax
-            codes[index++] = 0x58;
-            // jmp     ...
-            codes[index++] = 0xE9;
-            *reinterpret_cast<int*>(codes + index) =
-                reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
-            VirtualProtect(codes, 0x0040, PAGE_EXECUTE_READ, nullptr);
+            attach(end[-0x01] - 0x40u, end[-0x05] - 0xE0u);
             return;
         }
-    // shl     ..., 8
-    // or      ..., ...
-        if (end[-0x03] == 0x08u) return;
+        if (end[-0x06] == 0x08u && (end[-0x01] & 0xF8u) == 0x40u)
+        {
+            // shl     ..., 8
+            // mov     .., [...]
+            // or      ..., ...
+            // inc     ...
+            wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
+            attach(end[-0x01] - 0x40u, end[-0x07] - 0xE0u);
+            return;
+        }
+        if (end[-0x03] == 0x08u && (end[-0x06] & 0xF8u) == 0x40u)
+        {
+            // movzx   ..., byte ptr [...]
+            // inc     ...
+            // shl     ..., 8
+            // or      ..., ...
+            wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
+            attach(end[-0x06] - 0x40u, end[-0x04] - 0xE0u);
+            return;
+        }
+        break;
+    case 0x10:
+        if (start[0x03] == 0x01u && start[0x06] == 0x08u && start[0x0C] == 0x02u)
+        {
+            // movzx   ..., byte ptr [...+1]
+            // shl     ..., 8
+            // or      ..., ...
+            // mov     [ebp+...], 2
+            wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
+            attach_(start[0x02] - 0x40u, start[0x05] - 0xE0u, start[0x0B]);
+            return;
+        }
         break;
     default:
-        // TODO 5.95.05   Vm60   .text:1001B74E
-        // TODO 6.23.02   rvmm   .text:100328B4
-        // TODO 6.23.02   Vm60   .text:100212A3
-        // TODO 6.23.02   Vm60   .text:100212A3
-        // TODO 6.23.02   Vm60   .text:10024DF1
-        // TODO 6.23.02   Vm60   .text:10024E7A
-        // TODO 6.23.02   Vm60   .text:100251BF
-        // TODO 6.23.02   Vm60   .text:10025241
         break;
     }
 
-    // TODO 5.73.01   Vm60   .text:10013E36
-    // TODO 5.80.20EC UnivUI .text:10014806
-    // TODO 5.95.05   UnivUI .text:1002BA4E
-    // TODO 5.95.05   Vm60   .text:10016676
-    // TODO 6.23.02   UnivUI .text:10025C3C
-    // TODO 6.23.02   UnivUI .text:100363F6
-    // TODO 6.23.02   Vm60   .text:10014D1F
-    // TODO 6.23.02   Vm60   .text:10016BBB
-    // TODO 6.23.02   Vm60   .text:10016BD4
-    // TODO 6.23.02   Vm60   .text:10023300
     wprintf(L"Attach CharacterSplit Fail 0x%p ~ 0x%p at %hs\n", start + offset, end + offset, lpszModuleName);
 }
 
@@ -803,6 +928,14 @@ int CObjectProxy::CharacterByteSize(LPCSTR const text)
     if ((text[0x0000] & 0x80u) == 0x00u) return 1;
     if ((text[0x0001] & 0xC0u) == 0x00u) return 4;
     return 2;
+}
+
+UINT CObjectProxy::Character(LPCSTR const text)
+{
+    const auto size = CharacterByteSize(text);
+    auto uChar = 0;
+    for (auto i = 0; i < size; i++) uChar = uChar << 0x08 | text[i];
+    return uChar;
 }
 
 CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)
