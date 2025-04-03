@@ -1,0 +1,21 @@
+{
+  "version": 8,
+  "configurePresets": [
+    {
+      "name": "default",
+      "binaryDir": "${sourceDir}/cmake-build-x86",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x86-windows-static-md",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_GENERATOR_TOOLSET": "v142",
+        "CMAKE_GENERATOR_PLATFORM": "Win32"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    }
+  ]
+}
