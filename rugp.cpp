@@ -179,6 +179,67 @@ BOOL CObject::IsKindOf(const CRuntimeClass* pClass) const
     return FALSE;
 }
 
+GMfc::LPIsMBCS& GMfc::FetchIsMBCS()
+{
+    const auto name = "?IsDBCS@@YAHD@Z";
+    auto& address = reinterpret_cast<LPIsMBCS&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto GMfc = GetModuleHandleA("GMfc");
+    if (GMfc == nullptr) return address = nullptr;
+    return address = reinterpret_cast<LPIsMBCS>(GetProcAddress(GMfc, name));
+}
+
+CProfile::CProfile(CStringX& text)
+{
+    using LPCProfile = CProfile* (__thiscall *)(CProfile*, CStringX&);
+    const auto name = "??0CProfile@@QAE@AAVCString@@@Z";
+    auto& proc = reinterpret_cast<LPCProfile&>(cache[name]);
+    if (proc == nullptr) proc = reinterpret_cast<LPCProfile>(GetProcAddress(GetModuleHandleA("GMfc"), name));
+    proc(this, text);
+}
+
+CProfile::CProfile(const CProfile& other)
+{
+    using LPCProfile = CProfile* (__thiscall *)(CProfile*, const CProfile&);
+    const auto name = "??0CProfile@@QAE@ABV0@@Z";
+    auto& proc = reinterpret_cast<LPCProfile&>(cache[name]);
+    if (proc == nullptr) proc = reinterpret_cast<LPCProfile>(GetProcAddress(GetModuleHandleA("GMfc"), name));
+    proc(this, other);
+}
+
+CProfile::CProfile()
+{
+    using LPCProfile = CProfile* (__thiscall *)(CProfile*);
+    const auto name = "??0CProfile@@QAE@XZ";
+    auto& proc = reinterpret_cast<LPCProfile&>(cache[name]);
+    if (proc == nullptr) proc = reinterpret_cast<LPCProfile>(GetProcAddress(GetModuleHandleA("GMfc"), name));
+    proc(this);
+}
+
+CProfile::~CProfile()
+{
+    using LPCProfile = void (__thiscall *)(CProfile*);
+    const auto name = "??1CProfile@@QAE@XZ";
+    auto& proc = reinterpret_cast<LPCProfile&>(cache[name]);
+    if (proc == nullptr) proc = reinterpret_cast<LPCProfile>(GetProcAddress(GetModuleHandleA("GMfc"), name));
+    proc(this);
+}
+
+CProfile& CProfile::operator=(const CProfile& other)
+{
+    using LPSet = CProfile& (__thiscall *)(CProfile*, const CProfile&);
+    const auto name = "??1CProfile@@QAE@XZ";
+    auto& proc = reinterpret_cast<LPSet&>(cache[name]);
+    if (proc == nullptr) proc = reinterpret_cast<LPSet>(GetProcAddress(GetModuleHandleA("GMfc"), name));
+    proc(this, other);
+    return *this;
+}
+
+CProfile::operator CStringX&()
+{
+    return *reinterpret_cast<CStringX*>(this);
+}
+
 const CRuntimeClass* CObjectEx::GetClassCObjectEx()
 {
     const auto name = "?classCObjEx@CObjEx@@2UCRtcEx@@A";
@@ -241,16 +302,6 @@ CRio::LPLibrarySupport& CRio::FetchLibrarySupport()
     const auto UnivUI = GetModuleHandleA("UnivUI");
     if (UnivUI == nullptr) return address = nullptr;
     return address = reinterpret_cast<LPLibrarySupport>(GetProcAddress(UnivUI, name));
-}
-
-CRio::LPIsMultiple& CRio::FetchIsMultiple()
-{
-    const auto name = "?IsDBCS@@YAHD@Z";
-    auto& address = reinterpret_cast<LPIsMultiple&>(cache[name]);
-    if (address != nullptr) return address;
-    const auto GMfc = GetModuleHandleA("GMfc");
-    if (GMfc == nullptr) return address = nullptr;
-    return address = reinterpret_cast<LPIsMultiple>(GetProcAddress(GMfc, name));
 }
 
 const CRuntimeClass* CVisual::GetClassCVisual()
@@ -1060,23 +1111,12 @@ CUuiGlobals* CUuiGlobals::GetGlobal()
     return nullptr;
 }
 
-std::string CRioMsg::ToMsgString()
+CProfile CRioMsg::ToMsgString()
 {
-    using LPToMsgString = LPVOID (__thiscall *)(CRioMsg*, LPVOID);
+    using LPToMsgString = CProfile (__thiscall *)(CRioMsg*);
     const auto name = "?ToMsgString@CRioMsg@@QAE?AVCProfile@@XZ";
     auto& proc = reinterpret_cast<LPToMsgString&>(cache[name]);
-    const auto build = [&proc, this]
-    {
-        LPCSTR buffer[0x02];
-        proc(this, buffer);
-        const auto result = std::string(*buffer);
-        using LPDestructor = void (__thiscall *)(LPVOID);
-        const auto GMfc = GetModuleHandleA("GMfc");
-        const auto destructor = reinterpret_cast<LPDestructor>(GetProcAddress(GMfc, "??1CProfile@@QAE@XZ"));
-        destructor(buffer);
-        return result;
-    };
-    if (proc != nullptr) return build();
+    if (proc != nullptr) return proc(this);
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -1085,9 +1125,9 @@ std::string CRioMsg::ToMsgString()
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
             proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return build();
+            if (proc != nullptr) return proc(this);
             proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(750)));
-            if (proc != nullptr) return build();
+            if (proc != nullptr) return proc(this);
         }
         break;
     case 0x0E00:
@@ -1096,7 +1136,7 @@ std::string CRioMsg::ToMsgString()
         break;
     }
 
-    return "";
+    return {};
 }
 
 CRioMsg* CRioMsg::FromMsgString(LPCSTR const text)

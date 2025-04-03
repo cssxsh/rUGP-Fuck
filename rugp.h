@@ -6,6 +6,8 @@
 struct MFC_MODULE;
 
 class CStringX;
+class GMfc;
+class CProfile;
 
 class CObjectEx;
 class CRio;
@@ -55,6 +57,28 @@ public:
     CStringX& operator=(LPCSTR);
 };
 
+class GMfc final
+{
+public:
+    using LPIsMBCS = BOOL (__cdecl *)(CHAR);
+
+    static LPIsMBCS& FetchIsMBCS();
+};
+
+class CProfile
+{
+    DWORD field_0000 = 0;
+    DWORD field_0004 = 0;
+public:
+    explicit CProfile(CStringX&);
+    CProfile(const CProfile&);
+    CProfile();
+    ~CProfile();
+
+    CProfile& operator=(const CProfile&);
+    explicit operator CStringX&();
+};
+
 #define DECLARE_DYNAMIC_EX(class_name) \
 public: \
     static const CRuntimeClass* GetClass##class_name(); \
@@ -88,10 +112,8 @@ public:
     // virtual void SerializeUserCondition(CPmArchive&) = 0;
 
     using LPLibrarySupport = void (__cdecl *)(AFX_EXTENSION_MODULE&);
-    using LPIsMultiple = BOOL (__cdecl *)(CHAR);
 
     static LPLibrarySupport& FetchLibrarySupport();
-    static LPIsMultiple& FetchIsMultiple();
 };
 
 class CVisual : public CRio
@@ -271,7 +293,7 @@ public:
     CMsgRTC* m_pRTC;
     CObjectEx* m_pObj;
 
-    std::string ToMsgString();
+    CProfile ToMsgString();
 
     static CRioMsg* FromMsgString(LPCSTR);
 };

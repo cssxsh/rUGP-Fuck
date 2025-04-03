@@ -372,10 +372,10 @@ void CObjectProxy::AttachHook()
         wprintf(L"DetourAttach: CImgBox::DrawSingleLineText\n");
         DetourAttach(&reinterpret_cast<PVOID&>(CImgBox::FetchDrawSingleLineText()), HookDrawSingleLineText);
     }
-    if (CRio::FetchIsMultiple())
+    if (GMfc::FetchIsMBCS())
     {
         wprintf(L"DetourAttach: IsDBCS\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchIsMultiple()), HookIsMultiple);
+        DetourAttach(&reinterpret_cast<PVOID&>(GMfc::FetchIsMBCS()), HookIsMBCS);
     }
     DetourTransactionCommit();
 }
@@ -418,10 +418,10 @@ void CObjectProxy::DetachHook()
         wprintf(L"DetourDetach: CS5RFont::GetCachedFont\n");
         DetourDetach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
     }
-    if (CRio::FetchIsMultiple())
+    if (GMfc::FetchIsMBCS())
     {
         wprintf(L"DetourDetach: IsDBCS\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchIsMultiple()), HookIsMultiple);
+        DetourDetach(&reinterpret_cast<PVOID&>(GMfc::FetchIsMBCS()), HookIsMBCS);
     }
     DetourTransactionCommit();
 }
@@ -590,14 +590,12 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         // test    eax, eax
         case 0x8504C483u:
             {
-                const auto is = GetProcAddress(GetModuleHandleA("GMfc"), "?IsDBCS@@YAHD@Z");
-                if (is == nullptr) continue;
                 const auto address = offset - 0x07;
                 if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
                 if (address[0x01] != 0xFFu || address[0x02] != 0x15u) continue;
                 if (IsBadCodePtr(*reinterpret_cast<FARPROC*>(address + 0x03))) continue;
                 const auto proc = **reinterpret_cast<FARPROC**>(address + 0x03);
-                if (proc != is) continue;
+                if (proc != reinterpret_cast<FARPROC>(GMfc::FetchIsMBCS())) continue;
                 AttachCharacterSplit(address + 0x0Cu, lpszModuleName);
             }
             break;
@@ -930,8 +928,7 @@ CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)
                         | static_cast<BYTE>(lpsz[0x01]) << 0x10
                         | static_cast<BYTE>(lpsz[0x02]) << 0x08
                         | static_cast<BYTE>(lpsz[0x03]) << 0x00;
-                    CHARACTER_MAP[(uChar & 0x0000FFFFu) >> 0x00] = uChar;
-                    CHARACTER_MAP[(uChar & 0xFFFF0000u) >> 0x10] = uChar;
+                    CHARACTER_MAP[uChar & 0xFFFFu] = uChar;
                 }
             }
             break;
@@ -988,7 +985,8 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
         // 文字列
         case 0x9A8EB695u:
             {
-                auto& content = *reinterpret_cast<CStringX*>(address);
+                const auto profile = reinterpret_cast<CProfile*>(address);
+                auto& content = reinterpret_cast<CStringX&>(*profile);
                 obj[key] = AnsiX(content, CP_SHIFT_JIS, CP_UTF8);
                 content = AnsiX(content, CP_SHIFT_JIS, CP_GB18030).c_str();
             }
@@ -1161,7 +1159,7 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
     return value;
 }
 
-BOOL CObjectProxy::HookIsMultiple(CHAR const c)
+BOOL CObjectProxy::HookIsMBCS(CHAR const c)
 {
     return (c & 0x80u) == 0x80u;
 }
