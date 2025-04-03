@@ -3,7 +3,7 @@
   "configurePresets": [
     {
       "name": "default",
-      "binaryDir": "${sourceDir}/build/x86",
+      "binaryDir": "${sourceDir}/cmake-build-x86",
       "cacheVariables": {
         "VCPKG_TARGET_TRIPLET": "x86-windows-static-md",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
