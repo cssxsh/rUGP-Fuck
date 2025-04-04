@@ -884,9 +884,17 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
     const auto pClass = generic->GetRuntimeClass();
     if (!obj.isObject()) obj = Json::Value(Json::objectValue);
     obj["#type"] = AnsiX(generic->m_pMsg->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
+    const auto size = pClass->m_nObjectSize + generic->GetVariableAreaSize();
+    const auto clone = static_cast<CVmGenericMsg*>(malloc(size));
+    memcpy(clone, generic, size); // NOLINT(*-undefined-memory-manipulation)
+    generic = clone;
+
     const auto params = generic->m_pMsg->m_pRTC->m_pParams;
-    for (auto member = params; member != nullptr && member->m_lpszName != nullptr; member++)
+    if (params == nullptr) return;
+    auto map = std::map<std::wstring, CMemberInfo*>();
+    for (auto member = params; member->m_lpszName != nullptr; member++)
     {
+        map[UnicodeX(member->m_lpszName, CP_SHIFT_JIS)] = member;
         const auto key = AnsiX(member->m_lpszName, CP_SHIFT_JIS, CP_UTF8) + ":" +
             AnsiX(member->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
         const auto address = reinterpret_cast<DWORD>(generic->m_pMsg) + member->m_dwOffset;
@@ -894,69 +902,102 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
         {
         // 文字列
         case 0x9A8EB695u:
+        // _CString
+        case 0x7453435Fu:
             {
-                const auto profile = reinterpret_cast<CProfile*>(address);
-                auto& content = reinterpret_cast<CStringX&>(*profile);
+                auto& content = *reinterpret_cast<CStringX*>(address);
                 obj[key] = AnsiX(content, CP_SHIFT_JIS, CP_UTF8);
                 content = AnsiX(content, CP_SHIFT_JIS, CP_GB18030).c_str();
             }
             break;
         // フラグ
         case 0x89837483u:
+        // _bool
+        case 0x6F6F625Fu:
             obj[key] = *reinterpret_cast<bool*>(address);
             break;
         // １文字
         case 0xB6955082u:
+        // _char
+        case 0x6168635Fu:
             obj[key] = *reinterpret_cast<char*>(address);
             break;
         // バイト
         case 0x43836F83u:
+        // _BYTE
+        case 0x5459425Fu:
             obj[key] = *reinterpret_cast<BYTE*>(address);
             break;
         // 短整数
         case 0xAE905A92u:
+        // _short
+        case 0x6F68735Fu:
             obj[key] = *reinterpret_cast<short*>(address);
             break;
         // 短正整数
         case 0xB3905A92u:
-            obj[key] = *reinterpret_cast<WORD*>(address);
+        // _USHORT
+        case 0x4853555Fu:
+        // _WORD
+        case 0x524F575Fu:
+            obj[key] = *reinterpret_cast<USHORT*>(address);
             break;
         // 整数
         case 0x9490AE90u:
+        // _int
+        case 0x746E695Fu:
             obj[key] = *reinterpret_cast<int*>(address);
             break;
         // 正整数
         case 0xAE90B390u:
+        // _UINT
+        case 0x4E49555Fu:
             obj[key] = *reinterpret_cast<UINT*>(address);
             break;
         // 低精度実数
         case 0xB890E192u:
+        // _float
+        case 0x6F6C665Fu:
             obj[key] = *reinterpret_cast<float*>(address);
             break;
         // 倍精度実数
         case 0xB8907B94u:
+        // _double
+        case 0x756F645Fu:
             obj[key] = *reinterpret_cast<double*>(address);
             break;
-        // CRio
-        case 0x6F695243u:
+        // 色
+        case 0x00004690u:
+        // _VCOLOR
+        case 0x4F43565Fu:
+            obj[key] = fmt::format("#{:08X}", *reinterpret_cast<DWORD*>(address));
+            break;
+        // 仮想マシン汎用値
+        case 0x7A91BC89u:
+        // 基本汎用値
+        case 0x7B96EE8Au:
+        // _CVmVar
+        case 0x6D56435Fu:
+            if (strcmp(member->m_pRTC->m_lpszClassName, "_CVmVar60") == 0)
+            {
+                __debugbreak();
+            }
+            obj[key] = static_cast<LPCSTR>(reinterpret_cast<CVmVar*>(address)->ToSerialString());
+            break;
+        default:
+            if (member->m_pRTC->m_nObjectSize > sizeof(DWORD))
             {
                 const auto node = *reinterpret_cast<COceanNode**>(address);
                 obj[key] = AnsiX(GetUUID(node).c_str(), CP_UTF8);
                 // TODO expand
                 // om[key] = Json::Value(Json::objectValue);
                 // om[key]["#type"] = AnsiX(node->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
+                break;
             }
-            break;
-        default:
             obj[key] = Json::Value(Json::nullValue);
             break;
         }
     }
-
-    const auto size = pClass->m_nObjectSize + generic->GetVariableAreaSize();
-    const auto clone = static_cast<CVmGenericMsg*>(malloc(size));
-    memcpy(clone, generic, size); // NOLINT(*-undefined-memory-manipulation)
-    generic = clone;
 }
 
 void CObjectProxy::HookSupportRio(AFX_EXTENSION_MODULE& module)
@@ -1002,18 +1043,16 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
     if (hFile != INVALID_HANDLE_VALUE)
     {
         CloseHandle(hFile);
-        const auto ansi = Ansi(path.c_str(), CP_ACP);
-        const auto load = CPmArchive::CreateLoadFilePmArchive(ansi);
-        free(ansi);
+        const auto ansi = AnsiX(path.c_str(), CP_ACP);
+        const auto load = CPmArchive::CreateLoadFilePmArchive(ansi.c_str());
         ecx->FetchSerialize()(ecx, load);
         CPmArchive::DestroyPmArchive(load);
     }
     else
     {
         ecx->FetchSerialize()(ecx, archive);
-        const auto ansi = Ansi(path.c_str(), CP_ACP);
-        const auto save = CPmArchive::CreateSaveFilePmArchive(ansi);
-        free(ansi);
+        const auto ansi = AnsiX(path.c_str(), CP_ACP);
+        const auto save = CPmArchive::CreateSaveFilePmArchive(ansi.c_str());
         ecx->FetchSerialize()(ecx, save);
         CPmArchive::DestroyPmArchive(save);
     }
@@ -1022,7 +1061,7 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
 CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
-    const auto cache = COMMAND_MAP[uuid];
+    auto& cache = COMMAND_MAP[uuid];
     if (cache != nullptr) return cache;
     const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
     wprintf(L"Hook %s::GetNextCommand(this=%s)\n", name.c_str(), uuid.c_str());
@@ -1049,21 +1088,19 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
         auto reader = Json::Reader();
         auto patch = Json::Value(Json::objectValue);
         reader.parse(std::string(), patch, false);
-        value = Fetch(value, patch);
+        cache = Fetch(value, patch);
     }
     else
     {
         auto patch = Json::Value(Json::objectValue);
-        value = Fetch(value, patch);
+        cache = Fetch(value, patch);
         auto writer = Json::FastWriter();
         const auto text = writer.write(patch);
         WriteFile(hFile, text.c_str(), text.length(), nullptr, nullptr);
         CloseHandle(hFile);
     }
 
-    COMMAND_MAP[uuid] = value;
-
-    return value;
+    return cache;
 }
 
 BOOL CObjectProxy::HookIsMBCS(CHAR const c)
@@ -1137,7 +1174,7 @@ COceanNode** COceanTree::HookGetMotherOcean(COceanNode** const pNode)
     *pNode = *COceanNode::FetchGetMotherOcean()(pNode);
 
     const auto uui = CUuiGlobals::GetGlobal();
-    if (uui != nullptr) uui->field_003C = 0x02;
+    if (uui != nullptr) uui->m_nInstallType = 0x02;
 
     const auto root = *pNode;
     auto iterator = Iterator(root);
