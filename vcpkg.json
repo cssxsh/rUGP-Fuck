@@ -8,5 +8,8 @@
   }, {
     "name" : "jsoncpp",
     "version>=" : "1.9.6"
+  }, {
+    "name" : "fmt",
+    "version>=" : "11.0.2#1"
   } ]
 }

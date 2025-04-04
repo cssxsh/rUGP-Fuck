@@ -18,9 +18,11 @@ add_definitions(-D_WIN32_WINNT=0x0A00)
 find_path(DETOURS_INCLUDE_DIRS "detours/detours.h")
 find_library(DETOURS_LIBRARY detours REQUIRED)
 find_package(jsoncpp CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
 add_library(r514783 SHARED plugin.cpp rugp.cpp hook.cpp)
 
 target_include_directories(r514783 PRIVATE ${DETOURS_INCLUDE_DIRS})
 target_link_libraries(r514783 PRIVATE ${DETOURS_LIBRARY})
 target_link_libraries(r514783 PRIVATE JsonCpp::JsonCpp)
+target_link_libraries(r514783 PRIVATE fmt::fmt)
