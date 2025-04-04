@@ -97,6 +97,102 @@ void AFXAPI AfxTermExtensionModule(AFX_EXTENSION_MODULE& extension, const BOOL b
     }
 }
 
+CStringX::CStringX(const CStringX& strSrc)
+{
+    using LPConstructor = CStringX* (__thiscall *)(CStringX*, const CStringX&);
+    const auto name = "??0CString@@QAE@ABV0@@Z";
+    auto& proc = reinterpret_cast<LPConstructor&>(cache[name]);
+    if (proc != nullptr) proc(this, strSrc);
+    if (proc != nullptr) return;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+        proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(535)));
+        if (proc != nullptr) proc(this, strSrc);
+        break;
+    case 0x0C00:
+    case 0x0E00:
+        proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(300)));
+        if (proc != nullptr) proc(this, strSrc);
+        break;
+    default:
+        break;
+    }
+}
+
+CStringX::CStringX(const LPCSTR pszSrc)
+{
+    using LPConstructor = CStringX* (__thiscall *)(CStringX*, LPCSTR);
+    const auto name = "??0CString@@QAE@PBD@Z";
+    auto& proc = reinterpret_cast<LPConstructor&>(cache[name]);
+    if (proc != nullptr) proc(this, pszSrc);
+    if (proc != nullptr) return;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+        proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(537)));
+        if (proc != nullptr) proc(this, pszSrc);
+        break;
+    case 0x0C00:
+    case 0x0E00:
+        proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(310)));
+        if (proc != nullptr) proc(this, pszSrc);
+        break;
+    default:
+        break;
+    }
+}
+
+CStringX::CStringX()
+{
+    using LPConstructor = CStringX* (__thiscall *)(CStringX*);
+    const auto name = "??0CString@@QAE@XZ";
+    auto& proc = reinterpret_cast<LPConstructor&>(cache[name]);
+    if (proc != nullptr) proc(this);
+    if (proc != nullptr) return;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+        proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(540)));
+        if (proc != nullptr) proc(this);
+        break;
+    case 0x0C00:
+    case 0x0E00:
+        proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(316)));
+        if (proc != nullptr) proc(this);
+        break;
+    default:
+        break;
+    }
+}
+
+CStringX::~CStringX()
+{
+    using LPDestructor = void (__thiscall *)(CStringX*);
+    const auto name = "??1CString@@QAE@XZ";
+    auto& proc = reinterpret_cast<LPDestructor&>(cache[name]);
+    if (proc != nullptr) proc(this);
+    if (proc != nullptr) return;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+        proc = reinterpret_cast<LPDestructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(800)));
+        if (proc != nullptr) proc(this);
+        break;
+    case 0x0C00:
+    case 0x0E00:
+        proc = reinterpret_cast<LPDestructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1046)));
+        if (proc != nullptr) proc(this);
+        break;
+    default:
+        break;
+    }
+}
+
 CStringX& CStringX::operator=(const LPCSTR pszSrc)
 {
     using LPSet = CStringX& (__thiscall *)(CStringX*, LPCSTR);
@@ -124,6 +220,16 @@ CStringX& CStringX::operator=(const LPCSTR pszSrc)
     }
 
     return *this;
+}
+
+CStringX::operator CStringA&()
+{
+    return *reinterpret_cast<CStringA*>(this);
+}
+
+CStringX::operator LPCSTR() const
+{
+    return *reinterpret_cast<const LPCSTR*>(this);
 }
 
 BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
@@ -241,6 +347,11 @@ CProfile& CProfile::operator=(const CProfile& other)
 CProfile::operator CStringX&()
 {
     return *reinterpret_cast<CStringX*>(this);
+}
+
+CProfile::operator LPCSTR() const
+{
+    return *reinterpret_cast<const LPCSTR*>(this);
 }
 
 const CRuntimeClass* CObjectEx::GetClassCObjectEx()
@@ -1174,10 +1285,11 @@ CUuiGlobals* CUuiGlobals::GetGlobal()
 
 CProfile CRioMsg::ToMsgString()
 {
-    using LPToMsgString = CProfile (__thiscall *)(CRioMsg*);
+    using LPToMsgString = CProfile* (__thiscall *)(CRioMsg*, CProfile*);
+    auto result = CProfile();
     const auto name = "?ToMsgString@CRioMsg@@QAE?AVCProfile@@XZ";
     auto& proc = reinterpret_cast<LPToMsgString&>(cache[name]);
-    if (proc != nullptr) return proc(this);
+    if (proc != nullptr) return proc(this, &result), result;
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -1186,9 +1298,9 @@ CProfile CRioMsg::ToMsgString()
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
             proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(this);
+            if (proc != nullptr) return proc(this, &result), result;
             proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(750)));
-            if (proc != nullptr) return proc(this);
+            if (proc != nullptr) return proc(this, &result), result;
         }
         break;
     case 0x0E00:
@@ -1226,6 +1338,61 @@ CRioMsg* CRioMsg::FromMsgString(LPCSTR const text)
     }
 
     return nullptr;
+}
+
+CStringX CVmVar::ToSerialString() const
+{
+    using LPToSerialString = CStringX* (__thiscall *)(const CVmVar*, CStringX*);
+    auto result = CStringX("(null)");
+    const auto name = "?ToSerialString@CVmVar@@QBE?AVCString@@XZ";
+    auto& proc = reinterpret_cast<LPToSerialString&>(cache[name]);
+    if (proc != nullptr) return proc(this, &result), result;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return proc(this, &result), result;
+            proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(754)));
+            if (proc != nullptr) return proc(this, &result), result;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: class CString __thiscall CVmVar::ToSerialString(void) const
+    default:
+        break;
+    }
+
+    return result;
+}
+
+void CVmVar::FromSerialString(LPCSTR const text)
+{
+    using LPFromSerialString = void (__thiscall *)(CVmVar*, LPCSTR);
+    const auto name = "?FromSerialString@CVmVar@@QAEXPBD@Z";
+    auto& proc = reinterpret_cast<LPFromSerialString&>(cache[name]);
+    if (proc != nullptr) return proc(this, text);
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            proc = reinterpret_cast<LPFromSerialString>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return proc(this, text);
+            proc = reinterpret_cast<LPFromSerialString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(462)));
+            if (proc != nullptr) return proc(this, text);
+        }
+        break;
+    case 0x0E00:
+        // TODO public: void __thiscall CVmVar::FromSerialString(char const *)
+    default:
+        break;
+    }
 }
 
 const CRuntimeClass* CCommandRef::GetClassCCommandRef()

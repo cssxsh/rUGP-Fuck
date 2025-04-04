@@ -26,6 +26,9 @@ class CrUGP;
 class CUuiGlobals;
 class CFontContext;
 class CRioMsg;
+class CVmVar;
+
+class CVmVarObj;
 
 class CCommandRef;
 class CVmCommand;
@@ -51,10 +54,23 @@ MFC_MODULE GetMfc();
 
 LPCSTR GetMfcVersion();
 
-class CStringX : public CStringA
+class CStringX
 {
+    LPSTR m_pszData = nullptr;
+
 public:
+    // ReSharper disable CppNonExplicitConvertingConstructor
+    CStringX(const CStringX&);
+    CStringX(LPCSTR); // NOLINT(*-explicit-constructor)
+    CStringX();
+    ~CStringX();
+    // ReSharper restore CppNonExplicitConvertingConstructor
+
     CStringX& operator=(LPCSTR);
+    // ReSharper disable CppNonExplicitConversionOperator
+    operator CStringA&(); // NOLINT(*-explicit-constructor)
+    operator LPCSTR() const; // NOLINT(*-explicit-constructor)
+    // ReSharper restore CppNonExplicitConversionOperator
 };
 
 class GMfc final
@@ -67,7 +83,7 @@ public:
 
 class CProfile
 {
-    DWORD field_0000 = 0;
+    LPSTR m_pszData = nullptr;
     DWORD field_0004 = 0;
 
 public:
@@ -76,8 +92,11 @@ public:
     CProfile();
     ~CProfile();
 
+    // ReSharper disable CppNonExplicitConversionOperator
     CProfile& operator=(const CProfile&);
-    explicit operator CStringX&();
+    operator CStringX&(); // NOLINT(*-explicit-constructor)
+    operator LPCSTR() const; // NOLINT(*-explicit-constructor)
+    // ReSharper restore CppNonExplicitConversionOperator
 };
 
 #define DECLARE_DYNAMIC_EX(class_name) \
@@ -287,7 +306,7 @@ public:
     DWORD m_dwResOffset;
     DWORD field_0034;
     DWORD field_0038;
-    DWORD field_003C;
+    UINT m_nInstallType;
 
     static CUuiGlobals* GetGlobal();
 };
@@ -310,6 +329,23 @@ public:
     CProfile ToMsgString();
 
     static CRioMsg* FromMsgString(LPCSTR);
+};
+
+class CVmVar
+{
+public:
+    PVOID m_pValue;
+
+    CStringX ToSerialString() const;
+
+    void FromSerialString(LPCSTR);
+};
+
+class CVmVarObj : public CRio
+{
+public:
+    const CRuntimeClass* m_pBasicTypeRTC; // CBasicTypeRTC
+    CVmVar m_Variable;
 };
 
 class CCommandRef : public CRio
@@ -360,9 +396,9 @@ public:
     DECLARE_DYNAMIC_EX(CVmGenericMsg)
 
     CRioMsg* m_pMsg;
-    DWORD field_0010; // CVmVar
-    DWORD field_0014;
-    DWORD m_nCount;
+    CVmVar field_0010;
+    CMsgRTC* m_pRTC;
+    INT m_nCount;
     Param m_arrVariableArea[];
 };
 
