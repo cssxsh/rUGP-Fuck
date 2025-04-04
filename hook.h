@@ -94,11 +94,7 @@ private:
         LPARAM lParam;
     };
 
-    static int CALLBACK HookEnumFontCallback(
-        const LOGFONTW* lpLogFont,
-        const TEXTMETRICW* lpTextMetric,
-        DWORD dwFontType,
-        LPARAM lParam);
+    static std::remove_pointer_t<FONTENUMPROCW> HookEnumFontCallback;
 };
 
 #endif // HOOK_H

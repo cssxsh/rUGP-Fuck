@@ -16,7 +16,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
     switch (dwReason)
     {
     case DLL_PROCESS_ATTACH:
-        _set_se_translator(StructuredException::Trans);
+        _set_se_translator(&StructuredException::Trans);
         AllocConsole();
         SetConsoleTitleA("r514783 Plugin Debug Console");
         SetConsoleCP(CP_UTF8);

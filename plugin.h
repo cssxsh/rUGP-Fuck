@@ -38,7 +38,7 @@ public:
 
     StructuredException(UINT u, const EXCEPTION_POINTERS* pExp);
 
-    static void __cdecl Trans(UINT, EXCEPTION_POINTERS*);
+    static std::remove_pointer_t<_se_translator_function> Trans;
 
 private:
     static LPCSTR __fastcall message(const EXCEPTION_POINTERS*);
@@ -67,15 +67,15 @@ protected:
     static void __fastcall Merge(CVmGenericMsg*& generic, Json::Value& obj);
     static int __stdcall CharacterByteSize(LPCSTR);
 
-    static void __cdecl HookSupportRio(AFX_EXTENSION_MODULE& module);
-    static void __thiscall HookDestructor(CRio* ecx);
-    static void __thiscall HookSerialize(CRio* ecx, CPmArchive*);
-    static CVmCommand* __thiscall HookGetNextCommand(CCommandRef* ecx);
+    static std::remove_pointer_t<CRio::LPLibrarySupport> HookSupportRio;
+    static std::remove_pointer_t<CRio::LPDestructor> HookDestructor;
+    static std::remove_pointer_t<CRio::LPSerialize> HookSerialize;
+    static std::remove_pointer_t<CCommandRef::LPGetNextCommand> HookGetNextCommand;
 
-    static BOOL __cdecl HookIsMBCS(CHAR);
-    static int __thiscall HookDrawFont1(LPVOID ecx, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
-    static LPINT __thiscall HookDrawFont2(LPVOID ecx, LPINT, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
-    static LPVOID __thiscall HookGetCachedFont(CS5RFont* ecx, UINT, COceanNode*);
+    static std::remove_pointer_t<GMfc::LPIsMBCS> HookIsMBCS;
+    static std::remove_pointer_t<CS5i::LPDrawFont1> HookDrawFont1;
+    static std::remove_pointer_t<CS5i::LPDrawFont2> HookDrawFont2;
+    static std::remove_pointer_t<CS5RFont::LPGetFont> HookGetCachedFont;
 };
 
 class COceanTree final
