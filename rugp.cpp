@@ -45,7 +45,7 @@ LPCSTR GetMfcVersion()
 BOOL AFXAPI AfxInitExtensionModule(AFX_EXTENSION_MODULE& extension, const HMODULE hMod)
 {
     cache.clear();
-    using LPAfxInitExtensionModule = BOOL (AFXAPI *)(AFX_EXTENSION_MODULE&, HMODULE);
+    using LPAfxInitExtensionModule = decltype(AfxInitExtensionModule)*;
     const auto name = "?AfxInitExtensionModule@@YGHAAUAFX_EXTENSION_MODULE@@PAUHINSTANCE__@@@Z";
     const auto mfc = GetMfc();
     auto init = reinterpret_cast<LPAfxInitExtensionModule>(GetProcAddress(mfc.native, name));
@@ -73,7 +73,7 @@ BOOL AFXAPI AfxInitExtensionModule(AFX_EXTENSION_MODULE& extension, const HMODUL
 
 void AFXAPI AfxTermExtensionModule(AFX_EXTENSION_MODULE& extension, const BOOL bAll)
 {
-    using LPAfxTermExtensionModule = void (AFXAPI *)(AFX_EXTENSION_MODULE&, BOOL);
+    using LPAfxTermExtensionModule = decltype(AfxTermExtensionModule)*;
     const auto name = "?AfxTermExtensionModule@@YGXAAUAFX_EXTENSION_MODULE@@H@Z";
     const auto mfc = GetMfc();
     auto term = reinterpret_cast<LPAfxTermExtensionModule>(GetProcAddress(mfc.native, name));
@@ -100,8 +100,11 @@ void AFXAPI AfxTermExtensionModule(AFX_EXTENSION_MODULE& extension, const BOOL b
 CStringX& CStringX::operator=(const LPCSTR pszSrc)
 {
     using LPSet = CStringX& (__thiscall *)(CStringX*, LPCSTR);
+    const auto name = "??4CString@@QAEABV0@PBD@Z";
+    auto proc = reinterpret_cast<LPSet>(cache[name]);
+    if (proc != nullptr) proc(this, pszSrc);
+    if (proc != nullptr) return *this;
     const auto mfc = GetMfc();
-    auto proc = static_cast<LPSet>(nullptr);
     switch (mfc.version)
     {
     case 0x0600:
@@ -125,11 +128,11 @@ CStringX& CStringX::operator=(const LPCSTR pszSrc)
 
 BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
 {
-    const auto name = "?IsDerivedFrom@CRuntimeClass@@QBEHPBU1@@Z";
     using LPIsDerivedFrom = BOOL (__thiscall *)(const CRuntimeClass*, const CRuntimeClass*);
-    const auto mfc = GetMfc();
-    auto proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(mfc.native, name));
+    const auto name = "?IsDerivedFrom@CRuntimeClass@@QBEHPBU1@@Z";
+    auto proc = reinterpret_cast<LPIsDerivedFrom>(cache[name]);
     if (proc != nullptr) return proc(this, pBaseClass);
+    const auto mfc = GetMfc();
     switch (mfc.version)
     {
     case 0x0600:
@@ -153,11 +156,11 @@ BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
 
 BOOL CObject::IsKindOf(const CRuntimeClass* pClass) const
 {
-    const auto name = "?IsKindOf@CObject@@QBEHPBUCRuntimeClass@@@Z";
     using LPIsKindOf = BOOL (__thiscall *)(const CObject*, const CRuntimeClass*);
-    const auto mfc = GetMfc();
-    auto proc = reinterpret_cast<LPIsKindOf>(GetProcAddress(mfc.native, name));
+    const auto name = "?IsKindOf@CObject@@QBEHPBUCRuntimeClass@@@Z";
+    auto& proc = reinterpret_cast<LPIsKindOf&>(cache[name]);
     if (proc != nullptr) return proc(this, pClass);
+    const auto mfc = GetMfc();
     switch (mfc.version)
     {
     case 0x0600:
@@ -294,6 +297,24 @@ const CRuntimeClass* CRio::GetClassCRio()
     return nullptr;
 }
 
+CRio::LPDestructor& CRio::FetchDestructor() const
+{
+    const auto clazz = this->GetRuntimeClass();
+    const auto name = "??1" + std::string(clazz->m_lpszClassName) + "@@UAE@XZ";
+    auto& address = reinterpret_cast<LPDestructor&>(cache[name]);
+    if (address != nullptr) return address;
+    return address = FindDestructor(reinterpret_cast<const CRio_vtbl*>(this));
+}
+
+CRio::LPSerialize& CRio::FetchSerialize() const
+{
+    const auto clazz = this->GetRuntimeClass();
+    const auto name = "?Serialize@" + std::string(clazz->m_lpszClassName) + "@@UAEXAAVCPmArchive@@@Z";
+    auto& address = reinterpret_cast<LPSerialize&>(cache[name]);
+    if (address != nullptr) return address;
+    return address = reinterpret_cast<const CRio_vtbl*>(this)->Serialize;
+}
+
 CRio::LPLibrarySupport& CRio::FetchLibrarySupport()
 {
     const auto name = "?RegistLibrarySupportRio@@YAXAAUAFX_EXTENSION_MODULE@@@Z";
@@ -302,6 +323,76 @@ CRio::LPLibrarySupport& CRio::FetchLibrarySupport()
     const auto UnivUI = GetModuleHandleA("UnivUI");
     if (UnivUI == nullptr) return address = nullptr;
     return address = reinterpret_cast<LPLibrarySupport>(GetProcAddress(UnivUI, name));
+}
+
+CRio::LPDestructor& CRio::FetchDestructor(const CRuntimeClass* clazz)
+{
+    const auto name = "??1" + std::string(clazz->m_lpszClassName) + "@@UAE@XZ";
+    auto& address = reinterpret_cast<LPDestructor&>(cache[name]);
+    if (address != nullptr) return address;
+    if (!clazz->IsDerivedFrom(GetClassCRio())) return address = nullptr;
+    return address = FindDestructor(FindVisualTable(clazz));
+}
+
+CRio::LPSerialize& CRio::FetchSerialize(const CRuntimeClass* clazz)
+{
+    const auto name = "?Serialize@" + std::string(clazz->m_lpszClassName) + "@@UAEXAAVCPmArchive@@@Z";
+    auto& address = reinterpret_cast<LPSerialize&>(cache[name]);
+    if (address != nullptr) return address;
+    if (!clazz->IsDerivedFrom(GetClassCRio())) return address = nullptr;
+    return address = FindVisualTable(clazz)->Serialize;
+}
+
+const CRio_vtbl* CRio::FindVisualTable(const CRuntimeClass* clazz)
+{
+    if (clazz->m_pfnCreateObject == nullptr) return nullptr;
+    auto start = reinterpret_cast<LPBYTE>(clazz->m_pfnCreateObject);
+    auto ctor = static_cast<FARPROC>(nullptr);
+    for (auto offset = start; offset - start < 0x0400; offset++)
+    {
+        // mov     ecx, ...
+        if (offset[0x00] != 0x8B) continue;
+        // call    ...
+        if (offset[0x02] != 0xE8) continue;
+        ctor = reinterpret_cast<FARPROC>(offset + 0x07 + *reinterpret_cast<int*>(offset + 0x03));
+        break;
+    }
+    if (ctor == nullptr) return nullptr;
+    start = reinterpret_cast<LPBYTE>(ctor);
+    for (auto offset = start; offset - start < 0x0400; offset++)
+    {
+        // mov     dword ptr [*], ...
+        if (offset[0x00] != 0xC7) continue;
+        const auto vtbl = *reinterpret_cast<CRio_vtbl**>(offset + 0x02);
+        if (IsBadReadPtr(vtbl, sizeof(CObject_vtbl))) continue;
+        if (IsBadCodePtr(reinterpret_cast<FARPROC>(vtbl->GetRuntimeClass))) continue;
+        const auto get = reinterpret_cast<LPBYTE>(vtbl->GetRuntimeClass);
+        // mov     eax, ...
+        if (get[0x00] != 0xB8) continue;
+        const auto rtc = *reinterpret_cast<const CRuntimeClass**>(get + 0x01);
+        if (clazz != rtc) continue;
+        return vtbl;
+    }
+
+    return nullptr;
+}
+
+CRio::LPDestructor CRio::FindDestructor(const CRio_vtbl* vtbl)
+{
+    const auto start = reinterpret_cast<LPBYTE>(vtbl->Destructor);
+    for (auto offset = start; offset - start < 0x0400; offset++)
+    {
+        // mov     ecx, ...
+        if (offset[0x00] != 0x8B) continue;
+        // call    ...
+        if (offset[0x02] != 0xE8) continue;
+        const auto jump = *reinterpret_cast<int*>(offset + 0x03);
+        const auto next = reinterpret_cast<FARPROC>(offset + 0x07 + jump);
+        if (IsBadCodePtr(next)) continue;
+        return reinterpret_cast<LPDestructor>(next);
+    }
+
+    return nullptr;
 }
 
 const CRuntimeClass* CVisual::GetClassCVisual()
@@ -483,39 +574,9 @@ CS5i* CS5i::Match(LPVOID const part) // NOLINT(*-misplaced-const)
 const CRio_vtbl* CS5i::GetVisualTable()
 {
     const auto name = "??_7CS5i@@6BCVisual@@@";
-    auto& address = reinterpret_cast<CRio_vtbl*&>(cache[name]);
+    auto& address = const_cast<const CRio_vtbl*&>(reinterpret_cast<CRio_vtbl*&>(cache[name]));
     if (address != nullptr) return address;
-    const auto clazz = GetClassCS5i();
-    if (clazz->m_pfnCreateObject == nullptr) return nullptr;
-    auto start = reinterpret_cast<LPBYTE>(clazz->m_pfnCreateObject);
-    auto ctor = static_cast<FARPROC>(nullptr);
-    for (auto offset = start; offset - start < 0x0400; offset++)
-    {
-        // mov     ecx, ...
-        if (offset[0x00] != 0x8B) continue;
-        // call    ...
-        if (offset[0x02] != 0xE8) continue;
-        const auto jump = *reinterpret_cast<int*>(offset + 0x03);
-        ctor = reinterpret_cast<FARPROC>(offset + 0x07 + jump);
-        break;
-    }
-    start = reinterpret_cast<LPBYTE>(ctor);
-    for (auto offset = start; offset - start < 0x0400; offset++)
-    {
-        // mov     dword ptr [*], ...
-        if (offset[0x00] != 0xC7) continue;
-        const auto vtbl = *reinterpret_cast<CRio_vtbl**>(offset + 0x02);
-        if (IsBadReadPtr(vtbl, sizeof(CObject_vtbl))) continue;
-        if (IsBadCodePtr(reinterpret_cast<FARPROC>(vtbl->GetRuntimeClass))) continue;
-        const auto get = reinterpret_cast<DWORD>(vtbl->GetRuntimeClass);
-        // mov     eax, ...
-        const auto rtc = *reinterpret_cast<const CRuntimeClass* const*>(get + 0x01);
-        if (clazz != rtc) continue;
-        address = vtbl;
-        return address;
-    }
-
-    return nullptr;
+    return address = FindVisualTable(GetClassCS5i());
 }
 
 const CRuntimeClass* CS5RFont::GetClassCS5RFont()
@@ -1196,21 +1257,34 @@ const CRuntimeClass* CCommandRef::GetClassCCommandRef()
 
 CVmCommand* CCommandRef::GetNextCommand()
 {
-    using LPGetNextCommand = CVmCommand*(__thiscall *)(CCommandRef*);
     const auto clazz = this->GetRuntimeClass();
     const auto name = "?GetNextCommand@" + std::string(clazz->m_lpszClassName) + "@@UBEPAVCVmCommand@@XZ";
     auto& proc = reinterpret_cast<LPGetNextCommand&>(cache[name]);
     if (proc != nullptr) return proc(this);
-    const auto vtbl = *reinterpret_cast<FARPROC* const*>(this);
+    proc = FindGetNextCommand(reinterpret_cast<const CRio_vtbl*>(this));
+    if (proc != nullptr) return proc(this);
+    return nullptr;
+}
+
+CCommandRef::LPGetNextCommand& CCommandRef::FetchGetNextCommand(const CRuntimeClass* clazz)
+{
+    const auto name = "?GetNextCommand@" + std::string(clazz->m_lpszClassName) + "@@UBEPAVCVmCommand@@XZ";
+    auto& address = reinterpret_cast<LPGetNextCommand&>(cache[name]);
+    if (address != nullptr) return address;
+    if (!clazz->IsDerivedFrom(GetClassCCommandRef())) return address = nullptr;
+    return address = FindGetNextCommand(FindVisualTable(clazz));
+}
+
+CCommandRef::LPGetNextCommand CCommandRef::FindGetNextCommand(const CRio_vtbl* vtbl)
+{
+    const auto arr = reinterpret_cast<FARPROC* const*>(vtbl);
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
     case 0x0600:
-        proc = reinterpret_cast<LPGetNextCommand>(vtbl[0x000B]);
-        return proc(this);
+        return reinterpret_cast<LPGetNextCommand>(arr[0x000B]);
     case 0x0C00:
-        proc = reinterpret_cast<LPGetNextCommand>(vtbl[0x000C]);
-        return proc(this);
+        return reinterpret_cast<LPGetNextCommand>(arr[0x000C]);
     default:
         // TODO ?GetNextCommand@CCommandRef@@UBEPAVCVmCommand@@XZ
         break;

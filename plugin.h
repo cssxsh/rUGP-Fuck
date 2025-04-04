@@ -47,15 +47,6 @@ private:
 class CObjectProxy final
 {
 public:
-    const CRuntimeClass* m_pClass;
-    const CObject_vtbl* m_pVTBL = nullptr;
-    CObject* (__stdcall *m_pfnCreateObject)() = nullptr;
-    void (__thiscall *m_pfnDestructor)(CRio*) = nullptr;
-    void (__thiscall *m_pfnSerialize)(CRio*, CPmArchive*) = nullptr;
-    CVmCommand* (__thiscall *m_pfnGetNextCommand)(CCommandRef*) = nullptr;
-
-    explicit CObjectProxy(const CRuntimeClass* pClass);
-
     static BOOL LoadFromModule(LPCSTR lpszModuleName);
     static void AttachHook();
     static void DetachHook();
@@ -63,14 +54,13 @@ public:
     static void Clear();
 
 protected:
-    static std::map<std::wstring, CObjectProxy*> REF_MAP;
+    static std::map<std::wstring, const CRuntimeClass*> RTC_MAP;
     static std::map<std::wstring, CVmCommand*> COMMAND_MAP;
     static std::map<HMODULE, const AFX_EXTENSION_MODULE*> MODULE_MAP;
     static std::map<LPVOID, CodePatchRecord*> PATCH_CACHE;
     static std::map<WORD, UINT> CHARACTER_MAP;
     static std::map<UINT, LPVOID> FONT_CACHE;
 
-    static const CObject_vtbl* __fastcall FindVirtualTable(const CRuntimeClass* rtc, FARPROC ctor);
     static void __fastcall AttachCharacterSplit(LPBYTE address, LPCSTR lpszModuleName);
     static CVmCommand* __fastcall Fetch(const CVmCommand* ecx, Json::Value& edx);
     static void __fastcall Merge(CVmMsg*& message, Json::Value& text);
@@ -82,12 +72,10 @@ protected:
     static void __thiscall HookSerialize(CRio* ecx, CPmArchive*);
     static CVmCommand* __thiscall HookGetNextCommand(CCommandRef* ecx);
 
-    static BOOL __cdecl HookIsMultiple(CHAR);
+    static BOOL __cdecl HookIsMBCS(CHAR);
     static int __thiscall HookDrawFont1(LPVOID ecx, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
     static LPINT __thiscall HookDrawFont2(LPVOID ecx, LPINT, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
     static LPVOID __thiscall HookGetCachedFont(CS5RFont* ecx, UINT, COceanNode*);
-
-    static LPCSTR __thiscall HookDrawSingleLineText(CImgBox* ecx, SHORT, SHORT, LPCSTR, CFontContext*);
 };
 
 class COceanTree final

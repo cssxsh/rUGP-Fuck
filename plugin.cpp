@@ -247,55 +247,6 @@ void StructuredException::Trans(UINT const u, PEXCEPTION_POINTERS const pExp) //
     throw StructuredException(u, pExp);
 }
 
-CObjectProxy::CObjectProxy(const CRuntimeClass* const pClass)
-{
-    m_pClass = pClass;
-    m_pfnCreateObject = m_pClass->m_pfnCreateObject;
-    if (m_pfnCreateObject == nullptr) return;
-    m_pVTBL = FindVirtualTable(m_pClass, reinterpret_cast<FARPROC>(m_pfnCreateObject));
-    if (m_pVTBL == nullptr) return;
-    if (strcmp(m_pClass->m_lpszClassName, "CResourceClipOnlyRegion") == 0) return;
-
-    const auto mfc = GetMfc();
-    if (pClass->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
-    {
-        using LPGetNextCommand = CVmCommand*(__thiscall *)(CCommandRef*);
-        const auto vtbl = reinterpret_cast<const FARPROC*>(m_pVTBL);
-        switch (mfc.version)
-        {
-        case 0x0600:
-            m_pfnGetNextCommand = reinterpret_cast<LPGetNextCommand>(vtbl[0x000B]);
-            break;
-        case 0x0C00:
-            m_pfnGetNextCommand = reinterpret_cast<LPGetNextCommand>(vtbl[0x000C]);
-            break;
-        default:
-            // TODO ?GetNextCommand@CCommandRef@@UBEPAVCVmCommand@@XZ
-            m_pfnGetNextCommand = nullptr;
-            break;
-        }
-        //
-        const auto start = reinterpret_cast<LPBYTE>(m_pVTBL->Destructor);
-        for (auto offset = start; offset - start < 0x0400; offset++)
-        {
-            // mov     ecx, ...
-            if (offset[0x00] != 0x8B) continue;
-            // call    ...
-            if (offset[0x02] != 0xE8) continue;
-            const auto jump = *reinterpret_cast<int*>(offset + 0x03);
-            const auto next = reinterpret_cast<FARPROC>(offset + 0x07 + jump);
-            if (IsBadCodePtr(next)) continue;
-            m_pfnDestructor = reinterpret_cast<decltype(m_pfnDestructor)>(next);
-            break;
-        }
-    }
-
-    if (pClass->IsDerivedFrom(CRip::GetClassCRip()))
-    {
-        m_pfnSerialize = reinterpret_cast<const CRio_vtbl*>(m_pVTBL)->Serialize;
-    }
-}
-
 BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
 {
     const auto hModule = GetModuleHandleA(lpszModuleName);
@@ -323,7 +274,7 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     for (auto clazz = MODULE_MAP[hModule]->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
     {
         const auto name = UnicodeX(clazz->m_lpszClassName, CP_SHIFT_JIS);
-        REF_MAP[name] = new CObjectProxy(clazz);
+        RTC_MAP[name] = clazz;
     }
 
     return TRUE;
@@ -333,23 +284,26 @@ void CObjectProxy::AttachHook()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    for (const auto& pair : REF_MAP)
+    for (const auto& pair : RTC_MAP)
     {
-        const auto ref = pair.second;
-        const auto name = UnicodeX(ref->m_pClass->m_lpszClassName, CP_SHIFT_JIS);
+        const auto clazz = pair.second;
+        if (clazz->m_pfnCreateObject == nullptr) continue;
+        // fix: CResourceClipOnlyRegion
+        if (clazz->m_pfnGetBaseClass() == clazz) continue;
+        const auto name = UnicodeX(clazz->m_lpszClassName, CP_SHIFT_JIS);
 
-        if (ref->m_pfnGetNextCommand != nullptr)
+        if (clazz->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
         {
             wprintf(L"DetourAttach: %s::GetNextCommand\n", name.c_str());
-            DetourAttach(&reinterpret_cast<PVOID&>(ref->m_pfnGetNextCommand), HookGetNextCommand);
+            DetourAttach(&reinterpret_cast<PVOID&>(CCommandRef::FetchGetNextCommand(clazz)), HookGetNextCommand);
             wprintf(L"DetourAttach: %s::~%s\n", name.c_str(), name.c_str());
-            DetourAttach(&reinterpret_cast<PVOID&>(ref->m_pfnDestructor), HookDestructor);
+            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchDestructor(clazz)), HookDestructor);
         }
 
-        if (ref->m_pfnSerialize != nullptr)
+        if (clazz->IsDerivedFrom(CRip::GetClassCRip()))
         {
             wprintf(L"DetourAttach: %s::Serialize\n", name.c_str());
-            DetourAttach(&reinterpret_cast<PVOID&>(ref->m_pfnSerialize), HookSerialize);
+            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), HookSerialize);
         }
     }
     if (CS5i::FetchDrawFont1())
@@ -367,11 +321,6 @@ void CObjectProxy::AttachHook()
         wprintf(L"DetourAttach: CS5RFont::GetCachedFont\n");
         DetourAttach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
     }
-    if (CImgBox::FetchDrawSingleLineText())
-    {
-        wprintf(L"DetourAttach: CImgBox::DrawSingleLineText\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(CImgBox::FetchDrawSingleLineText()), HookDrawSingleLineText);
-    }
     if (GMfc::FetchIsMBCS())
     {
         wprintf(L"DetourAttach: IsDBCS\n");
@@ -384,23 +333,26 @@ void CObjectProxy::DetachHook()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    for (const auto& pair : REF_MAP)
+    for (const auto& pair : RTC_MAP)
     {
-        const auto ref = pair.second;
-        const auto name = UnicodeX(ref->m_pClass->m_lpszClassName, CP_SHIFT_JIS);
+        const auto clazz = pair.second;
+        if (clazz->m_pfnCreateObject == nullptr) continue;
+        // fix: CResourceClipOnlyRegion
+        if (clazz->m_pfnGetBaseClass() == clazz) continue;
+        const auto name = UnicodeX(clazz->m_lpszClassName, CP_SHIFT_JIS);
 
-        if (ref->m_pfnGetNextCommand != nullptr)
+        if (CCommandRef::FetchGetNextCommand(clazz))
         {
             wprintf(L"DetourDetach: %s::GetNextCommand\n", name.c_str());
-            DetourDetach(&reinterpret_cast<PVOID&>(ref->m_pfnGetNextCommand), HookGetNextCommand);
+            DetourAttach(&reinterpret_cast<PVOID&>(CCommandRef::FetchGetNextCommand(clazz)), HookGetNextCommand);
             wprintf(L"DetourDetach: %s::~%s\n", name.c_str(), name.c_str());
-            DetourDetach(&reinterpret_cast<PVOID&>(ref->m_pfnDestructor), HookDestructor);
+            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchDestructor(clazz)), HookDestructor);
         }
 
-        if (ref->m_pfnSerialize != nullptr)
+        if (clazz->IsDerivedFrom(CRip::GetClassCRip()))
         {
             wprintf(L"DetourDetach: %s::Serialize\n", name.c_str());
-            DetourDetach(&reinterpret_cast<PVOID&>(ref->m_pfnSerialize), HookSerialize);
+            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), HookSerialize);
         }
     }
     if (CS5i::FetchDrawFont1())
@@ -440,14 +392,7 @@ void CObjectProxy::Clear()
         }
     }
     COMMAND_MAP.clear();
-
-    for (auto& pair : REF_MAP)
-    {
-        const auto p = pair.second;
-        pair.second = nullptr;
-        delete p;
-    }
-    REF_MAP.clear();
+    RTC_MAP.clear();
     MODULE_MAP.clear();
 
     for (auto& pair : PATCH_CACHE)
@@ -473,41 +418,6 @@ void CObjectProxy::Clear()
         free(record);
     }
     FONT_CACHE.clear();
-}
-
-const CObject_vtbl* CObjectProxy::FindVirtualTable( // NOLINT(*-no-recursion)
-    const CRuntimeClass* const rtc, FARPROC const ctor) // NOLINT(*-misplaced-const)
-{
-    if (IsBadCodePtr(ctor)) return nullptr;
-    const auto module = DetourGetContainingModule(const_cast<CRuntimeClass*>(rtc));
-    if (DetourGetContainingModule(ctor) != module) return nullptr;
-    const auto start = reinterpret_cast<LPBYTE>(ctor);
-    for (auto offset = start; offset - start < 0x0400; offset++)
-    {
-        // mov     dword ptr [*], ...
-        if (offset[0x00] != 0xC7) continue;
-        const auto address = *reinterpret_cast<const CObject_vtbl* const*>(offset + 0x02);
-        if (IsBadReadPtr(address, sizeof(CObject_vtbl))) continue;
-        if (IsBadCodePtr(reinterpret_cast<FARPROC>(address->GetRuntimeClass))) continue;
-        const auto get = reinterpret_cast<DWORD>(address->GetRuntimeClass);
-        // mov     eax, ...
-        const auto clazz = *reinterpret_cast<const CRuntimeClass* const*>(get + 0x01);
-        if (rtc == clazz) return address;
-    }
-    if (ctor != reinterpret_cast<FARPROC>(rtc->m_pfnCreateObject)) return nullptr;
-    for (auto offset = start; offset - start < 0x0400; offset++)
-    {
-        // mov     ecx, ...
-        if (offset[0x00] != 0x8B) continue;
-        // call    ...
-        if (offset[0x02] != 0xE8) continue;
-        const auto jump = *reinterpret_cast<const INT*>(offset + 0x03);
-        const auto next = reinterpret_cast<FARPROC>(offset + 0x07 + jump);
-        const auto vtbl = FindVirtualTable(rtc, next);
-        if (vtbl != nullptr) return vtbl;
-    }
-
-    return nullptr;
 }
 
 void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
@@ -1059,7 +969,6 @@ void CObjectProxy::HookDestructor(CRio* const ecx)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
     const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
-    const auto ref = REF_MAP[name];
     wprintf(L"Hook %s::~%s(this=%s)\n", name.c_str(), name.c_str(), uuid.c_str());
 
     auto cache = COMMAND_MAP[uuid];
@@ -1071,16 +980,15 @@ void CObjectProxy::HookDestructor(CRio* const ecx)
         free(command);
     }
 
-    return ref->m_pfnDestructor(ecx);
+    return ecx->FetchDestructor()(ecx);
 }
 
 void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
     const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
-    const auto ref = REF_MAP[name];
+    if (ecx->m_pNode->m_dwResAddr == 0x00000000) return ecx->FetchSerialize()(ecx, archive);
     wprintf(L"Hook %s::Serialize(this=%s)\n", name.c_str(), uuid.c_str());
-    if (ecx->m_pNode->m_dwResAddr == 0x00000000) return ref->m_pfnSerialize(ecx, archive);
 
     const auto path = GetFilePath(ecx->m_pNode);
     const auto hFile = CreateFileW(
@@ -1097,16 +1005,16 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
         const auto ansi = Ansi(path.c_str(), CP_ACP);
         const auto load = CPmArchive::CreateLoadFilePmArchive(ansi);
         free(ansi);
-        ref->m_pfnSerialize(ecx, load);
+        ecx->FetchSerialize()(ecx, load);
         CPmArchive::DestroyPmArchive(load);
     }
     else
     {
-        ref->m_pfnSerialize(ecx, archive);
+        ecx->FetchSerialize()(ecx, archive);
         const auto ansi = Ansi(path.c_str(), CP_ACP);
         const auto save = CPmArchive::CreateSaveFilePmArchive(ansi);
         free(ansi);
-        ref->m_pfnSerialize(ecx, save);
+        ecx->FetchSerialize()(ecx, save);
         CPmArchive::DestroyPmArchive(save);
     }
 }
@@ -1117,9 +1025,8 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
     const auto cache = COMMAND_MAP[uuid];
     if (cache != nullptr) return cache;
     const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
-    const auto ref = REF_MAP[name];
     wprintf(L"Hook %s::GetNextCommand(this=%s)\n", name.c_str(), uuid.c_str());
-    auto value = ref->m_pfnGetNextCommand(ecx);
+    auto value = ecx->GetNextCommand();
 
     const auto path = GetFilePath(ecx->m_pNode) + L".json";
     const auto hFile = CreateFileW(
@@ -1194,19 +1101,7 @@ LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT uChar, COceanNode* co
     return font;
 }
 
-LPCSTR CObjectProxy::HookDrawSingleLineText(
-    CImgBox* const ecx, SHORT const x, SHORT const y, LPCSTR const text, CFontContext* const context)
-{
-    const auto uuid = GetUUID(ecx->m_pNode);
-    wprintf(L"Hook CImgBox::DrawSingleLineText(this=%s)\n", uuid.c_str());
-    // const auto ansi = AnsiTrans(text, CP_SHIFT_JIS, CP_GB18030);
-    const auto result = ecx->DrawSingleLineText(x, y, text, context);
-    // const auto result = ecx->DrawSingleLineText(x, y, ansi, context);
-    // free(ansi);
-    return result;
-}
-
-std::map<std::wstring, CObjectProxy*> CObjectProxy::REF_MAP;
+std::map<std::wstring, const CRuntimeClass*> CObjectProxy::RTC_MAP;
 
 std::map<std::wstring, CVmCommand*> CObjectProxy::COMMAND_MAP;
 

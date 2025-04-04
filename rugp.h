@@ -37,7 +37,7 @@ struct CMsgRTC;
 struct CObject_vtbl;
 struct CRio_vtbl;
 
-template<typename T, int SIZE = 0x11>
+template <typename T, int SIZE = 0x11>
 struct HashBucket;
 
 struct MFC_MODULE
@@ -69,6 +69,7 @@ class CProfile
 {
     DWORD field_0000 = 0;
     DWORD field_0004 = 0;
+
 public:
     explicit CProfile(CStringX&);
     CProfile(const CProfile&);
@@ -112,8 +113,19 @@ public:
     // virtual void SerializeUserCondition(CPmArchive&) = 0;
 
     using LPLibrarySupport = void (__cdecl *)(AFX_EXTENSION_MODULE&);
+    using LPDestructor = void (__thiscall *)(CRio*);
+    using LPSerialize = void (__thiscall *)(CRio*, CPmArchive*);
+
+    LPDestructor& FetchDestructor() const;
+    LPSerialize& FetchSerialize() const;
 
     static LPLibrarySupport& FetchLibrarySupport();
+    static LPDestructor& FetchDestructor(const CRuntimeClass*);
+    static LPSerialize& FetchSerialize(const CRuntimeClass*);
+
+protected:
+    static const CRio_vtbl* FindVisualTable(const CRuntimeClass*);
+    static LPDestructor FindDestructor(const CRio_vtbl*);
 };
 
 class CVisual : public CRio
@@ -200,6 +212,7 @@ public:
 class COceanNode
 {
     COceanNode();
+
 public:
     struct POS
     {
@@ -257,6 +270,7 @@ protected:
 class CUuiGlobals
 {
     CUuiGlobals();
+
 public:
     UINT m_dwSchema;
     LPVOID field_0004;
@@ -303,7 +317,14 @@ class CCommandRef : public CRio
 public:
     DECLARE_DYNAMIC_RIO(CCommandRef)
 
+    using LPGetNextCommand = CVmCommand* (__thiscall *)(CCommandRef*);
+
     CVmCommand* GetNextCommand();
+
+    static LPGetNextCommand& FetchGetNextCommand(const CRuntimeClass*);
+
+protected:
+    static LPGetNextCommand FindGetNextCommand(const CRio_vtbl*);
 };
 
 class CVmCommand : public CObjectEx
@@ -377,7 +398,7 @@ struct CRio_vtbl : CObject_vtbl
     void (__thiscall *Serialize)(CRio*, CPmArchive*);
 };
 
-template<class T, int SIZE>
+template <class T, int SIZE>
 struct HashBucket
 {
     const T* m_arr[SIZE];
