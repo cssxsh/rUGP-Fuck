@@ -344,7 +344,7 @@ void CObjectProxy::DetachHook()
         if (CCommandRef::FetchGetNextCommand(clazz))
         {
             wprintf(L"DetourDetach: %s::GetNextCommand\n", name.c_str());
-            DetourAttach(&reinterpret_cast<PVOID&>(CCommandRef::FetchGetNextCommand(clazz)), HookGetNextCommand);
+            DetourDetach(&reinterpret_cast<PVOID&>(CCommandRef::FetchGetNextCommand(clazz)), HookGetNextCommand);
             wprintf(L"DetourDetach: %s::~%s\n", name.c_str(), name.c_str());
             DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchDestructor(clazz)), HookDestructor);
         }
@@ -352,7 +352,7 @@ void CObjectProxy::DetachHook()
         if (clazz->IsDerivedFrom(CRip::GetClassCRip()))
         {
             wprintf(L"DetourDetach: %s::Serialize\n", name.c_str());
-            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), HookSerialize);
+            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), HookSerialize);
         }
     }
     if (CS5i::FetchDrawFont1())
