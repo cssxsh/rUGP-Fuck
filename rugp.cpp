@@ -101,7 +101,7 @@ CStringX& CStringX::operator=(const LPCSTR pszSrc)
 {
     using LPSet = CStringX& (__thiscall *)(CStringX*, LPCSTR);
     const auto name = "??4CString@@QAEABV0@PBD@Z";
-    auto proc = reinterpret_cast<LPSet>(cache[name]);
+    auto& proc = reinterpret_cast<LPSet&>(cache[name]);
     if (proc != nullptr) proc(this, pszSrc);
     if (proc != nullptr) return *this;
     const auto mfc = GetMfc();
@@ -112,11 +112,11 @@ CStringX& CStringX::operator=(const LPCSTR pszSrc)
         if (proc != nullptr) proc(this, pszSrc);
         break;
     case 0x0C00:
-        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1517)));
+        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1511)));
         if (proc != nullptr) proc(this, pszSrc);
         break;
     case 0x0E00:
-        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1526)));
+        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1520)));
         if (proc != nullptr) proc(this, pszSrc);
         break;
     default:
@@ -130,7 +130,7 @@ BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
 {
     using LPIsDerivedFrom = BOOL (__thiscall *)(const CRuntimeClass*, const CRuntimeClass*);
     const auto name = "?IsDerivedFrom@CRuntimeClass@@QBEHPBU1@@Z";
-    auto proc = reinterpret_cast<LPIsDerivedFrom>(cache[name]);
+    auto& proc = reinterpret_cast<LPIsDerivedFrom&>(cache[name]);
     if (proc != nullptr) return proc(this, pBaseClass);
     const auto mfc = GetMfc();
     switch (mfc.version)
