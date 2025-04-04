@@ -10,109 +10,109 @@ void Win32Hook::AttachHook()
     {
         pfnCreateWindowExA = &CreateWindowExA;
         wprintf(L"DetourAttach: CreateWindowExA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateWindowExA), HookCreateWindowExA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateWindowExA), &HookCreateWindowExA);
     }
     if (pfnCreateMDIWindowA == nullptr)
     {
         pfnCreateMDIWindowA = &CreateMDIWindowA;
         wprintf(L"DetourAttach: CreateMDIWindowA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateMDIWindowA), HookCreateMDIWindowA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateMDIWindowA), &HookCreateMDIWindowA);
     }
     if (pfnSetWindowTextA == nullptr)
     {
         pfnSetWindowTextA = &SetWindowTextA;
         wprintf(L"DetourAttach: SetWindowTextA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnSetWindowTextA), HookSetWindowTextA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnSetWindowTextA), &HookSetWindowTextA);
     }
     if (pfnCreatePropertySheetPageA == nullptr)
     {
         pfnCreatePropertySheetPageA = &CreatePropertySheetPageA;
         wprintf(L"DetourAttach: CreatePropertySheetPageA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreatePropertySheetPageA), HookCreatePropertySheetPageA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreatePropertySheetPageA), &HookCreatePropertySheetPageA);
     }
     if (pfnPropertySheetA == nullptr)
     {
         pfnPropertySheetA = &PropertySheetA;
         wprintf(L"DetourAttach: PropertySheetA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnPropertySheetA), HookPropertySheetA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnPropertySheetA), &HookPropertySheetA);
     }
     if (pfnCreateDialogParamA == nullptr)
     {
         pfnCreateDialogParamA = &CreateDialogParamA;
         wprintf(L"DetourAttach: CreateDialogParamA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateDialogParamA), HookCreateDialogParamA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateDialogParamA), &HookCreateDialogParamA);
     }
     if (pfnCreateDialogIndirectParamA == nullptr)
     {
         pfnCreateDialogIndirectParamA = &CreateDialogIndirectParamA;
         wprintf(L"DetourAttach: CreateDialogIndirectParamA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateDialogIndirectParamA), HookCreateDialogIndirectParamA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateDialogIndirectParamA), &HookCreateDialogIndirectParamA);
     }
     if (pfnDialogBoxParamA == nullptr)
     {
         pfnDialogBoxParamA = &DialogBoxParamA;
         wprintf(L"DetourAttach: DialogBoxParamA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnDialogBoxParamA), HookDialogBoxParamA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnDialogBoxParamA), &HookDialogBoxParamA);
     }
     if (pfnDialogBoxIndirectParamA == nullptr)
     {
         pfnDialogBoxIndirectParamA = &DialogBoxIndirectParamA;
         wprintf(L"DetourAttach: DialogBoxIndirectParamA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnDialogBoxIndirectParamA), HookDialogBoxIndirectParamA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnDialogBoxIndirectParamA), &HookDialogBoxIndirectParamA);
     }
     if (pfnSetDlgItemTextA == nullptr)
     {
         pfnSetDlgItemTextA = &SetDlgItemTextA;
         wprintf(L"DetourAttach: SetDlgItemTextA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnSetDlgItemTextA), HookSetDlgItemTextA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnSetDlgItemTextA), &HookSetDlgItemTextA);
     }
     if (pfnMessageBoxA == nullptr)
     {
         pfnMessageBoxA = &MessageBoxA;
         wprintf(L"DetourAttach: MessageBoxA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnMessageBoxA), HookMessageBoxA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnMessageBoxA), &HookMessageBoxA);
     }
     if (pfnMessageBoxExA == nullptr)
     {
         pfnMessageBoxExA = &MessageBoxExA;
         wprintf(L"DetourAttach: MessageBoxExA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnMessageBoxExA), HookMessageBoxExA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnMessageBoxExA), &HookMessageBoxExA);
     }
     if (pfnCreateFontA == nullptr)
     {
         pfnCreateFontA = &CreateFontA;
         wprintf(L"DetourAttach: CreateFontA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateFontA), HookCreateFontA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateFontA), &HookCreateFontA);
     }
     if (pfnCreateFontIndirectA == nullptr)
     {
         pfnCreateFontIndirectA = &CreateFontIndirectA;
         wprintf(L"DetourAttach: CreateFontIndirectA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateFontIndirectA), HookCreateFontIndirectA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateFontIndirectA), &HookCreateFontIndirectA);
     }
     if (pfnEnumFontFamiliesExA == nullptr)
     {
         pfnEnumFontFamiliesExA = &EnumFontFamiliesExA;
         wprintf(L"DetourAttach: EnumFontFamiliesExA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesExA), HookEnumFontFamiliesExA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesExA), &HookEnumFontFamiliesExA);
     }
     if (pfnEnumFontFamiliesA == nullptr)
     {
         pfnEnumFontFamiliesA = &EnumFontFamiliesA;
         wprintf(L"DetourAttach: EnumFontFamiliesA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesA), HookEnumFontFamiliesA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesA), &HookEnumFontFamiliesA);
     }
     if (pfnEnumFontsA == nullptr)
     {
         pfnEnumFontsA = &EnumFontsA;
         wprintf(L"DetourAttach: EnumFontsA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontsA), HookEnumFontsA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontsA), &HookEnumFontsA);
     }
     if (pfnGetGlyphOutlineA == nullptr)
     {
         pfnGetGlyphOutlineA = &GetGlyphOutlineA;
         wprintf(L"DetourAttach: GetGlyphOutlineA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnGetGlyphOutlineA), HookGetGlyphOutlineA);
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnGetGlyphOutlineA), &HookGetGlyphOutlineA);
     }
     DetourTransactionCommit();
 }
@@ -124,112 +124,112 @@ void Win32Hook::DetachHook()
     if (pfnCreateWindowExA != nullptr)
     {
         wprintf(L"DetourDetach: CreateWindowExA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateWindowExA), HookCreateWindowExA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateWindowExA), &HookCreateWindowExA);
         pfnCreateWindowExA = nullptr;
     }
     if (pfnCreateMDIWindowA != nullptr)
     {
         wprintf(L"DetourDetach: CreateMDIWindowA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateMDIWindowA), HookCreateMDIWindowA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateMDIWindowA), &HookCreateMDIWindowA);
         pfnCreateMDIWindowA = nullptr;
     }
     if (pfnSetWindowTextA != nullptr)
     {
         wprintf(L"DetourDetach: SetWindowTextA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnSetWindowTextA), HookSetWindowTextA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnSetWindowTextA), &HookSetWindowTextA);
         pfnSetWindowTextA = nullptr;
     }
     if (pfnCreatePropertySheetPageA != nullptr)
     {
         wprintf(L"DetourDetach: CreatePropertySheetPageA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreatePropertySheetPageA), HookCreatePropertySheetPageA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreatePropertySheetPageA), &HookCreatePropertySheetPageA);
         pfnCreatePropertySheetPageA = nullptr;
     }
     if (pfnPropertySheetA != nullptr)
     {
         wprintf(L"DetourDetach: PropertySheetA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnPropertySheetA), HookPropertySheetA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnPropertySheetA), &HookPropertySheetA);
         pfnPropertySheetA = nullptr;
     }
     if (pfnCreateDialogParamA != nullptr)
     {
         wprintf(L"DetourDetach: CreateDialogParamA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateDialogParamA), HookCreateDialogParamA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateDialogParamA), &HookCreateDialogParamA);
         pfnCreateDialogParamA = nullptr;
     }
     if (pfnCreateDialogIndirectParamA != nullptr)
     {
         wprintf(L"DetourDetach: CreateDialogIndirectParamA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateDialogIndirectParamA), HookCreateDialogIndirectParamA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateDialogIndirectParamA), &HookCreateDialogIndirectParamA);
         pfnCreateDialogIndirectParamA = nullptr;
     }
     if (pfnDialogBoxParamA != nullptr)
     {
         pfnDialogBoxParamA = DialogBoxParamA;
         wprintf(L"DetourDetach: DialogBoxParamA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnDialogBoxParamA), HookDialogBoxParamA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnDialogBoxParamA), &HookDialogBoxParamA);
         pfnDialogBoxParamA = nullptr;
     }
     if (pfnDialogBoxIndirectParamA != nullptr)
     {
         pfnDialogBoxIndirectParamA = DialogBoxIndirectParamA;
         wprintf(L"DetourDetach: DialogBoxIndirectParamA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnDialogBoxIndirectParamA), HookDialogBoxIndirectParamA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnDialogBoxIndirectParamA), &HookDialogBoxIndirectParamA);
         pfnDialogBoxIndirectParamA = nullptr;
     }
     if (pfnSetDlgItemTextA != nullptr)
     {
         pfnSetDlgItemTextA = SetDlgItemTextA;
         wprintf(L"DetourDetach: SetDlgItemTextA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnSetDlgItemTextA), HookSetDlgItemTextA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnSetDlgItemTextA), &HookSetDlgItemTextA);
         pfnSetDlgItemTextA = nullptr;
     }
     if (pfnMessageBoxA != nullptr)
     {
         wprintf(L"DetourDetach: MessageBoxA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnMessageBoxA), HookMessageBoxA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnMessageBoxA), &HookMessageBoxA);
         pfnMessageBoxA = nullptr;
     }
     if (pfnMessageBoxExA != nullptr)
     {
         wprintf(L"DetourDetach: MessageBoxExA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnMessageBoxExA), HookMessageBoxExA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnMessageBoxExA), &HookMessageBoxExA);
         pfnMessageBoxExA = nullptr;
     }
     if (pfnCreateFontA != nullptr)
     {
         wprintf(L"DetourDetach: CreateFontA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateFontA), HookCreateFontA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateFontA), &HookCreateFontA);
         pfnCreateFontA = nullptr;
     }
     if (pfnCreateFontIndirectA != nullptr)
     {
         wprintf(L"DetourDetach: CreateFontIndirectA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateFontIndirectA), HookCreateFontIndirectA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateFontIndirectA), &HookCreateFontIndirectA);
         pfnCreateFontIndirectA = nullptr;
     }
     if (pfnEnumFontFamiliesExA != nullptr)
     {
         wprintf(L"DetourDetach: EnumFontFamiliesExA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesExA), HookEnumFontFamiliesExA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesExA), &HookEnumFontFamiliesExA);
         pfnEnumFontFamiliesExA = nullptr;
     }
     if (pfnEnumFontFamiliesA != nullptr)
     {
         wprintf(L"DetourDetach: EnumFontFamiliesA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesA), HookEnumFontFamiliesA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesA), &HookEnumFontFamiliesA);
         pfnEnumFontFamiliesA = nullptr;
     }
     if (pfnEnumFontsA != nullptr)
     {
         wprintf(L"DetourDetach: EnumFontsA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnEnumFontsA), HookEnumFontsA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnEnumFontsA), &HookEnumFontsA);
         pfnEnumFontsA = nullptr;
     }
     if (pfnGetGlyphOutlineA != nullptr)
     {
         wprintf(L"DetourDetach: GetGlyphOutlineA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnGetGlyphOutlineA), HookGetGlyphOutlineA);
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnGetGlyphOutlineA), &HookGetGlyphOutlineA);
         pfnGetGlyphOutlineA = nullptr;
     }
     DetourTransactionCommit();

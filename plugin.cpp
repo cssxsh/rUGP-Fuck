@@ -259,12 +259,12 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), HookSupportRio);
+        DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), &HookSupportRio);
         DetourTransactionCommit();
         reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), HookSupportRio);
+        DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), &HookSupportRio);
         DetourTransactionCommit();
     }
     else
@@ -295,36 +295,36 @@ void CObjectProxy::AttachHook()
         if (clazz->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
         {
             wprintf(L"DetourAttach: %s::GetNextCommand\n", name.c_str());
-            DetourAttach(&reinterpret_cast<PVOID&>(CCommandRef::FetchGetNextCommand(clazz)), HookGetNextCommand);
+            DetourAttach(&reinterpret_cast<PVOID&>(CCommandRef::FetchGetNextCommand(clazz)), &HookGetNextCommand);
             wprintf(L"DetourAttach: %s::~%s\n", name.c_str(), name.c_str());
-            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchDestructor(clazz)), HookDestructor);
+            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchDestructor(clazz)), &HookDestructor);
         }
 
         if (clazz->IsDerivedFrom(CRip::GetClassCRip()))
         {
             wprintf(L"DetourAttach: %s::Serialize\n", name.c_str());
-            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), HookSerialize);
+            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
         }
     }
     if (CS5i::FetchDrawFont1())
     {
         wprintf(L"DetourAttach: CS5i::DrawFont\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont1()), HookDrawFont1);
+        DetourAttach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont1()), &HookDrawFont1);
     }
     if (CS5i::FetchDrawFont2())
     {
         wprintf(L"DetourAttach: CS5i::DrawFont\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont2()), HookDrawFont2);
+        DetourAttach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont2()), &HookDrawFont2);
     }
     if (CS5RFont::FetchGetCachedFont())
     {
         wprintf(L"DetourAttach: CS5RFont::GetCachedFont\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
+        DetourAttach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), &HookGetCachedFont);
     }
     if (GMfc::FetchIsMBCS())
     {
         wprintf(L"DetourAttach: IsDBCS\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(GMfc::FetchIsMBCS()), HookIsMBCS);
+        DetourAttach(&reinterpret_cast<PVOID&>(GMfc::FetchIsMBCS()), &HookIsMBCS);
     }
     DetourTransactionCommit();
 }
@@ -344,36 +344,36 @@ void CObjectProxy::DetachHook()
         if (CCommandRef::FetchGetNextCommand(clazz))
         {
             wprintf(L"DetourDetach: %s::GetNextCommand\n", name.c_str());
-            DetourDetach(&reinterpret_cast<PVOID&>(CCommandRef::FetchGetNextCommand(clazz)), HookGetNextCommand);
+            DetourDetach(&reinterpret_cast<PVOID&>(CCommandRef::FetchGetNextCommand(clazz)), &HookGetNextCommand);
             wprintf(L"DetourDetach: %s::~%s\n", name.c_str(), name.c_str());
-            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchDestructor(clazz)), HookDestructor);
+            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchDestructor(clazz)), &HookDestructor);
         }
 
         if (clazz->IsDerivedFrom(CRip::GetClassCRip()))
         {
             wprintf(L"DetourDetach: %s::Serialize\n", name.c_str());
-            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), HookSerialize);
+            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
         }
     }
     if (CS5i::FetchDrawFont1())
     {
         wprintf(L"DetourDetach: CS5i::DrawFont\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont1()), HookDrawFont1);
+        DetourDetach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont1()), &HookDrawFont1);
     }
     if (CS5i::FetchDrawFont2())
     {
         wprintf(L"DetourDetach: CS5i::DrawFont\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont2()), HookDrawFont2);
+        DetourDetach(&reinterpret_cast<PVOID&>(CS5i::FetchDrawFont2()), &HookDrawFont2);
     }
     if (CS5RFont::FetchGetCachedFont())
     {
         wprintf(L"DetourDetach: CS5RFont::GetCachedFont\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), HookGetCachedFont);
+        DetourDetach(&reinterpret_cast<PVOID&>(CS5RFont::FetchGetCachedFont()), &HookGetCachedFont);
     }
     if (GMfc::FetchIsMBCS())
     {
         wprintf(L"DetourDetach: IsDBCS\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(GMfc::FetchIsMBCS()), HookIsMBCS);
+        DetourDetach(&reinterpret_cast<PVOID&>(GMfc::FetchIsMBCS()), &HookIsMBCS);
     }
     DetourTransactionCommit();
 }
@@ -1155,7 +1155,7 @@ void COceanTree::AttachHook()
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     wprintf(L"DetourAttach: GetMotherOcean\n");
-    DetourAttach(&reinterpret_cast<PVOID&>(COceanNode::FetchGetMotherOcean()), HookGetMotherOcean);
+    DetourAttach(&reinterpret_cast<PVOID&>(COceanNode::FetchGetMotherOcean()), &HookGetMotherOcean);
     DetourTransactionCommit();
 }
 
@@ -1164,7 +1164,7 @@ void COceanTree::DetachHook()
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     wprintf(L"DetourDetach: GetMotherOcean\n");
-    DetourDetach(&reinterpret_cast<PVOID&>(COceanNode::FetchGetMotherOcean()), HookGetMotherOcean);
+    DetourDetach(&reinterpret_cast<PVOID&>(COceanNode::FetchGetMotherOcean()), &HookGetMotherOcean);
     DetourTransactionCommit();
 }
 
