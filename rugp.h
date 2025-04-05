@@ -63,8 +63,8 @@ public:
     CStringX(const CStringX&);
     CStringX(LPCSTR); // NOLINT(*-explicit-constructor)
     CStringX();
-    ~CStringX();
     // ReSharper restore CppNonExplicitConvertingConstructor
+    ~CStringX();
 
     CStringX& operator=(LPCSTR);
     // ReSharper disable CppNonExplicitConversionOperator
@@ -92,8 +92,8 @@ public:
     CProfile();
     ~CProfile();
 
-    // ReSharper disable CppNonExplicitConversionOperator
     CProfile& operator=(const CProfile&);
+    // ReSharper disable CppNonExplicitConversionOperator
     operator CStringX&(); // NOLINT(*-explicit-constructor)
     operator LPCSTR() const; // NOLINT(*-explicit-constructor)
     // ReSharper restore CppNonExplicitConversionOperator

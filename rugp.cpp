@@ -184,8 +184,11 @@ CStringX::~CStringX()
         if (proc != nullptr && (proc(this), proc)) return;
         break;
     case 0x0C00:
+        proc = reinterpret_cast<LPDestructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1041)));
+        if (proc != nullptr && (proc(this), proc)) return;
+        break;
     case 0x0E00:
-        proc = reinterpret_cast<LPDestructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1046)));
+        proc = reinterpret_cast<LPDestructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1044)));
         if (proc != nullptr && (proc(this), proc)) return;
         break;
     default:
@@ -208,11 +211,11 @@ CStringX& CStringX::operator=(const LPCSTR pszSrc)
         if (proc != nullptr) return proc(this, pszSrc); // NOLINT(*-unconventional-assign-operator)
         break;
     case 0x0C00:
-        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1511)));
+        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1524)));
         if (proc != nullptr) return proc(this, pszSrc); // NOLINT(*-unconventional-assign-operator)
         break;
     case 0x0E00:
-        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1520)));
+        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1529)));
         if (proc != nullptr) return proc(this, pszSrc); // NOLINT(*-unconventional-assign-operator)
         break;
     default:
