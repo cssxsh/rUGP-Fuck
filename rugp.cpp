@@ -170,6 +170,13 @@ CStringX::CStringX()
     __debugbreak();
 }
 
+template <class T>
+CStringX::CStringX(const T* src, CStringX (__thiscall *fetch)(const T*))
+{
+    reinterpret_cast<CStringX* (__thiscall *)(const T*, CStringX*)>(fetch)(src, this);
+    if (m_pszData == nullptr) __debugbreak();
+}
+
 CStringX::~CStringX()
 {
     using LPDestructor = void (__thiscall *)(CStringX*);
@@ -326,6 +333,13 @@ CProfile::CProfile()
     auto& proc = reinterpret_cast<LPCProfile&>(cache[name]);
     if (proc == nullptr) proc = reinterpret_cast<LPCProfile>(GetProcAddress(GetModuleHandleA("GMfc"), name));
     proc(this);
+}
+
+template <class T>
+CProfile::CProfile(const T* src, CProfile (__thiscall *fetch)(const T*))
+{
+    reinterpret_cast<CProfile* (__thiscall *)(const T*, CProfile*)>(fetch)(src, this);
+    if (m_pszData == nullptr) __debugbreak();
 }
 
 CProfile::~CProfile()
@@ -1290,14 +1304,10 @@ CUuiGlobals* CUuiGlobals::GetGlobal()
 
 CProfile CRioMsg::ToMsgString()
 {
-    using LPToMsgString = CProfile (__thiscall *)(CRioMsg*);
-    // using LPToMsgString = CProfile* (__thiscall *)(CRioMsg*, CProfile*);
-    // const auto destructor = [](CStringX* p) { delete reinterpret_cast<CStringX*>(new LPCSTR(*p)); };
-    // auto result = CProfile();
+    using LPToMsgString = CProfile (__thiscall *)(const CRioMsg*);
     const auto name = "?ToMsgString@CRioMsg@@QAE?AVCProfile@@XZ";
     auto& proc = reinterpret_cast<LPToMsgString&>(cache[name]);
-    if (proc != nullptr) return proc(this);
-    // if (proc != nullptr) return *proc(this, (destructor(&result), &result));
+    if (proc != nullptr) return CProfile(this, proc);
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -1306,11 +1316,9 @@ CProfile CRioMsg::ToMsgString()
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
             proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(this);
-            // if (proc != nullptr) return *proc(this, (destructor(&result), &result));
+            if (proc != nullptr) return CProfile(this, proc);
             proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(750)));
-            if (proc != nullptr) return proc(this);
-            // if (proc != nullptr) return *proc(this, (destructor(&result), &result));
+            if (proc != nullptr) return CProfile(this, proc);
         }
         break;
     case 0x0E00:
@@ -1353,13 +1361,9 @@ CRioMsg* CRioMsg::FromMsgString(LPCSTR const text)
 CStringX CVmVar::ToSerialString() const
 {
     using LPToSerialString = CStringX (__thiscall *)(const CVmVar*);
-    // using LPToSerialString = CStringX* (__thiscall *)(const CVmVar*, CStringX*);
-    // const auto destructor = [](CStringX* p) { delete reinterpret_cast<CStringX*>(new LPCSTR(*p)); };
-    // auto result = CStringX();
     const auto name = "?ToSerialString@CVmVar@@QBE?AVCString@@XZ";
     auto& proc = reinterpret_cast<LPToSerialString&>(cache[name]);
-    if (proc != nullptr) return proc(this);
-    // if (proc != nullptr) return *proc(this, (destructor(&result), &result));
+    if (proc != nullptr) return CStringX(this, proc);
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -1368,11 +1372,9 @@ CStringX CVmVar::ToSerialString() const
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
             proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(this);
-            // if (proc != nullptr) return *proc(this, (destructor(&result), &result));
+            if (proc != nullptr) return CStringX(this, proc);
             proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(754)));
-            if (proc != nullptr) return proc(this);
-            // if (proc != nullptr) return *proc(this, (destructor(&result), &result));
+            if (proc != nullptr) return CStringX(this, proc);
         }
         break;
     case 0x0E00:

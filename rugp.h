@@ -66,6 +66,9 @@ public:
     // ReSharper restore CppNonExplicitConvertingConstructor
     ~CStringX();
 
+    template <class T>
+    CStringX(const T*, CStringX (__thiscall *)(const T*));
+
     CStringX& operator=(LPCSTR);
     // ReSharper disable CppNonExplicitConversionOperator
     operator CStringA&(); // NOLINT(*-explicit-constructor)
@@ -91,6 +94,9 @@ public:
     CProfile(const CProfile&);
     CProfile();
     ~CProfile();
+
+    template <class T>
+    CProfile(const T*, CProfile (__thiscall *)(const T*));
 
     CProfile& operator=(const CProfile&);
     // ReSharper disable CppNonExplicitConversionOperator
