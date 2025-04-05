@@ -1159,15 +1159,13 @@ const COceanNode* COceanNode::GetRoot()
             const auto UnivUI = GetModuleHandleA("UnivUI");
             proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, name));
             if (proc != nullptr) return proc();
-            const auto is_root = GetProcAddress(UnivUI, "?IsRoot@COceanNode@@QBE_NXZ");
-            if (is_root != nullptr)
-            {
-                const auto address = reinterpret_cast<LPBYTE>(is_root);
-                // cmp     ecx, offset ...
-                return *reinterpret_cast<const COceanNode**>(address + 0x04);
-            }
             proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, MAKEINTRESOURCE(500)));
-            if (proc != nullptr) return proc();
+            if (proc != nullptr && reinterpret_cast<LPBYTE>(proc)[0x00] == 0xB8u) return proc();
+            const auto is_root = GetProcAddress(UnivUI, MAKEINTRESOURCE(114));
+            if (is_root == nullptr) break;
+            // cmp     ecx, offset ...
+            const auto address = reinterpret_cast<LPBYTE>(is_root);
+            return *reinterpret_cast<const COceanNode**>(address + 0x04);
         }
         break;
     case 0x0E00:
