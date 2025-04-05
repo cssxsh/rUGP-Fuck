@@ -800,7 +800,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     default:
         break;
     }
-
+    __debugbreak();
     wprintf(L"Attach CharacterSplit Fail 0x%p ~ 0x%p at %hs\n", start + offset, end + offset, lpszModuleName);
 }
 
@@ -994,6 +994,7 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
                 // om[key]["#type"] = AnsiX(node->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
                 break;
             }
+            __debugbreak();
             obj[key] = Json::Value(Json::nullValue);
             break;
         }

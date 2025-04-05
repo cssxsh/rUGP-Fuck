@@ -20,7 +20,7 @@ MFC_MODULE GetMfc()
     module.unicode = TRUE;
     module.native = GetModuleHandleA("MFC140U");
     if (module.native != nullptr) return module;
-
+    __debugbreak();
     return {};
 }
 
@@ -38,7 +38,7 @@ LPCSTR GetMfcVersion()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -67,7 +67,7 @@ BOOL AFXAPI AfxInitExtensionModule(AFX_EXTENSION_MODULE& extension, const HMODUL
     default:
         break;
     }
-
+    __debugbreak();
     return FALSE;
 }
 
@@ -95,6 +95,7 @@ void AFXAPI AfxTermExtensionModule(AFX_EXTENSION_MODULE& extension, const BOOL b
     default:
         break;
     }
+    __debugbreak();
 }
 
 CStringX::CStringX(const CStringX& strSrc)
@@ -102,23 +103,23 @@ CStringX::CStringX(const CStringX& strSrc)
     using LPConstructor = CStringX* (__thiscall *)(CStringX*, const CStringX&);
     const auto name = "??0CString@@QAE@ABV0@@Z";
     auto& proc = reinterpret_cast<LPConstructor&>(cache[name]);
-    if (proc != nullptr) proc(this, strSrc);
-    if (proc != nullptr) return;
+    if (proc != nullptr && proc(this, strSrc)) return;
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
     case 0x0600:
         proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(535)));
-        if (proc != nullptr) proc(this, strSrc);
+        if (proc != nullptr && proc(this, strSrc)) return;
         break;
     case 0x0C00:
     case 0x0E00:
         proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(300)));
-        if (proc != nullptr) proc(this, strSrc);
+        if (proc != nullptr && proc(this, strSrc)) return;
         break;
     default:
         break;
     }
+    __debugbreak();
 }
 
 CStringX::CStringX(const LPCSTR pszSrc)
@@ -126,23 +127,23 @@ CStringX::CStringX(const LPCSTR pszSrc)
     using LPConstructor = CStringX* (__thiscall *)(CStringX*, LPCSTR);
     const auto name = "??0CString@@QAE@PBD@Z";
     auto& proc = reinterpret_cast<LPConstructor&>(cache[name]);
-    if (proc != nullptr) proc(this, pszSrc);
-    if (proc != nullptr) return;
+    if (proc != nullptr && proc(this, pszSrc)) return;
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
     case 0x0600:
         proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(537)));
-        if (proc != nullptr) proc(this, pszSrc);
+        if (proc != nullptr && proc(this, pszSrc)) return;
         break;
     case 0x0C00:
     case 0x0E00:
         proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(310)));
-        if (proc != nullptr) proc(this, pszSrc);
+        if (proc != nullptr && proc(this, pszSrc)) return;
         break;
     default:
         break;
     }
+    __debugbreak();
 }
 
 CStringX::CStringX()
@@ -150,23 +151,23 @@ CStringX::CStringX()
     using LPConstructor = CStringX* (__thiscall *)(CStringX*);
     const auto name = "??0CString@@QAE@XZ";
     auto& proc = reinterpret_cast<LPConstructor&>(cache[name]);
-    if (proc != nullptr) proc(this);
-    if (proc != nullptr) return;
+    if (proc != nullptr && proc(this)) return;
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
     case 0x0600:
         proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(540)));
-        if (proc != nullptr) proc(this);
+        if (proc != nullptr && proc(this)) return;
         break;
     case 0x0C00:
     case 0x0E00:
         proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(316)));
-        if (proc != nullptr) proc(this);
+        if (proc != nullptr && proc(this)) return;
         break;
     default:
         break;
     }
+    __debugbreak();
 }
 
 CStringX::~CStringX()
@@ -174,23 +175,23 @@ CStringX::~CStringX()
     using LPDestructor = void (__thiscall *)(CStringX*);
     const auto name = "??1CString@@QAE@XZ";
     auto& proc = reinterpret_cast<LPDestructor&>(cache[name]);
-    if (proc != nullptr) proc(this);
-    if (proc != nullptr) return;
+    if (proc != nullptr && (proc(this), proc)) return;
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
     case 0x0600:
         proc = reinterpret_cast<LPDestructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(800)));
-        if (proc != nullptr) proc(this);
+        if (proc != nullptr && (proc(this), proc)) return;
         break;
     case 0x0C00:
     case 0x0E00:
         proc = reinterpret_cast<LPDestructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1046)));
-        if (proc != nullptr) proc(this);
+        if (proc != nullptr && (proc(this), proc)) return;
         break;
     default:
         break;
     }
+    __debugbreak();
 }
 
 CStringX& CStringX::operator=(const LPCSTR pszSrc)
@@ -198,27 +199,26 @@ CStringX& CStringX::operator=(const LPCSTR pszSrc)
     using LPSet = CStringX& (__thiscall *)(CStringX*, LPCSTR);
     const auto name = "??4CString@@QAEABV0@PBD@Z";
     auto& proc = reinterpret_cast<LPSet&>(cache[name]);
-    if (proc != nullptr) proc(this, pszSrc);
-    if (proc != nullptr) return *this;
+    if (proc != nullptr) return proc(this, pszSrc); // NOLINT(*-unconventional-assign-operator)
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
     case 0x0600:
         proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(860)));
-        if (proc != nullptr) proc(this, pszSrc);
+        if (proc != nullptr) return proc(this, pszSrc); // NOLINT(*-unconventional-assign-operator)
         break;
     case 0x0C00:
         proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1511)));
-        if (proc != nullptr) proc(this, pszSrc);
+        if (proc != nullptr) return proc(this, pszSrc); // NOLINT(*-unconventional-assign-operator)
         break;
     case 0x0E00:
         proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1520)));
-        if (proc != nullptr) proc(this, pszSrc);
+        if (proc != nullptr) return proc(this, pszSrc); // NOLINT(*-unconventional-assign-operator)
         break;
     default:
         break;
     }
-
+    __debugbreak();
     return *this;
 }
 
@@ -256,7 +256,7 @@ BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
     default:
         break;
     }
-
+    __debugbreak();
     return FALSE;
 }
 
@@ -284,7 +284,7 @@ BOOL CObject::IsKindOf(const CRuntimeClass* pClass) const
     default:
         break;
     }
-
+    __debugbreak();
     return FALSE;
 }
 
@@ -377,7 +377,7 @@ const CRuntimeClass* CObjectEx::GetClassCObjectEx()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -404,7 +404,7 @@ const CRuntimeClass* CRio::GetClassCRio()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -484,7 +484,7 @@ const CRio_vtbl* CRio::FindVisualTable(const CRuntimeClass* clazz)
         if (clazz != rtc) continue;
         return vtbl;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -502,7 +502,7 @@ CRio::LPDestructor CRio::FindDestructor(const CRio_vtbl* vtbl)
         if (IsBadCodePtr(next)) continue;
         return reinterpret_cast<LPDestructor>(next);
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -529,7 +529,7 @@ const CRuntimeClass* CVisual::GetClassCVisual()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -556,7 +556,7 @@ const CRuntimeClass* CRip::GetClassCRip()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -583,7 +583,7 @@ const CRuntimeClass* CS5i::GetClassCS5i()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -611,16 +611,16 @@ CS5i::LPDrawFont1& CS5i::FetchDrawFont1()
                 address = reinterpret_cast<LPDrawFont1>(proc);
                 break;
             }
-            if (address != nullptr) return address;
         }
-        break;
+        return address;
     case 0x0C00:
     case 0x0E00:
         // @see FetchDrawFont2
+        return address = nullptr;
     default:
         break;
     }
-
+    __debugbreak();
     return address = nullptr;
 }
 
@@ -634,7 +634,7 @@ CS5i::LPDrawFont2& CS5i::FetchDrawFont2()
     {
     case 0x0600:
         // @see FetchDrawFont1
-        break;
+        return address = nullptr;
     case 0x0C00:
         {
             const auto start = reinterpret_cast<LPBYTE const*>(GetVisualTable());
@@ -656,15 +656,14 @@ CS5i::LPDrawFont2& CS5i::FetchDrawFont2()
                 address = reinterpret_cast<LPDrawFont2>(proc);
                 break;
             }
-            if (address != nullptr) return address;
         }
-        break;
+        return address;
     case 0x0E00:
         // TODO public: int * __thiscall CS5i::DrawFont(int *, short, short, struct tagRBDY const *, struct SQRBDY *, unsigned int, class CFontContext const *)
     default:
         break;
     }
-
+    __debugbreak();
     return address = nullptr;
 }
 
@@ -678,7 +677,7 @@ CS5i* CS5i::Match(LPVOID const part) // NOLINT(*-misplaced-const)
         if (*offset != vtbl) continue;
         return reinterpret_cast<CS5i*>(offset);
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -713,7 +712,7 @@ const CRuntimeClass* CS5RFont::GetClassCS5RFont()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -757,7 +756,7 @@ LPVOID CS5RFont::CreateNewFont(UINT const uChar, COceanNode* const node)
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -785,7 +784,7 @@ CS5RFont::LPGetFont& CS5RFont::FetchGetCachedFont()
     default:
         break;
     }
-
+    __debugbreak();
     return address = nullptr;
 }
 
@@ -812,7 +811,7 @@ const CRuntimeClass* CUI::GetClassCUI()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -839,7 +838,7 @@ const CRuntimeClass* CImgBox::GetClassCImgBox()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -881,7 +880,7 @@ CImgBox::LPDrawFont& CImgBox::FetchDrawFont()
     default:
         break;
     }
-
+    __debugbreak();
     return address = nullptr;
 }
 
@@ -908,7 +907,7 @@ CImgBox::LPDrawSingleLineText& CImgBox::FetchDrawSingleLineText()
     default:
         break;
     }
-
+    __debugbreak();
     return address = nullptr;
 }
 
@@ -935,7 +934,7 @@ CImgBox::LPDrawSzText& CImgBox::FetchDrawSzText()
     default:
         break;
     }
-
+    __debugbreak();
     return address = nullptr;
 }
 
@@ -950,6 +949,7 @@ const CArchive* CPmArchive::GetNative() const
         if (offset[0x01] != 0x7Eu) continue;
         return reinterpret_cast<CArchive*>(reinterpret_cast<DWORD>(this) + offset[0x02]);
     }
+    __debugbreak();
     return reinterpret_cast<CArchive*>(reinterpret_cast<DWORD>(this) + 0x08);
 }
 
@@ -977,7 +977,7 @@ CPmArchive* CPmArchive::CreateLoadFilePmArchive(const LPCSTR path)
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1005,7 +1005,7 @@ CPmArchive* CPmArchive::CreateSaveFilePmArchive(const LPCSTR path)
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1034,6 +1034,7 @@ void CPmArchive::DestroyPmArchive(CPmArchive* archive)
     default:
         break;
     }
+    __debugbreak();
 }
 
 BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
@@ -1060,7 +1061,7 @@ BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
     default:
         break;
     }
-
+    __debugbreak();
     return FALSE;
 }
 
@@ -1088,7 +1089,7 @@ CRio* COceanNode::FetchRef()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1116,6 +1117,7 @@ void COceanNode::ReleaseRef()
     default:
         break;
     }
+    __debugbreak();
 }
 
 DWORD COceanNode::GetAddress() const
@@ -1156,7 +1158,7 @@ const COceanNode* COceanNode::GetRoot()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1183,7 +1185,7 @@ const COceanNode* COceanNode::GetNull()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1210,7 +1212,7 @@ COceanNode::LPGetMotherOcean& COceanNode::FetchGetMotherOcean()
     default:
         break;
     }
-
+    __debugbreak();
     return address = nullptr;
 }
 
@@ -1250,7 +1252,7 @@ CrUGP* CrUGP::GetGlobal()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1279,7 +1281,7 @@ CUuiGlobals* CUuiGlobals::GetGlobal()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1308,7 +1310,7 @@ CProfile CRioMsg::ToMsgString()
     default:
         break;
     }
-
+    __debugbreak();
     return {};
 }
 
@@ -1336,7 +1338,7 @@ CRioMsg* CRioMsg::FromMsgString(LPCSTR const text)
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1365,8 +1367,8 @@ CStringX CVmVar::ToSerialString() const
     default:
         break;
     }
-
-    return result;
+    __debugbreak();
+    return "(null)";
 }
 
 void CVmVar::FromSerialString(LPCSTR const text)
@@ -1393,6 +1395,7 @@ void CVmVar::FromSerialString(LPCSTR const text)
     default:
         break;
     }
+    __debugbreak();
 }
 
 const CRuntimeClass* CCommandRef::GetClassCCommandRef()
@@ -1418,7 +1421,7 @@ const CRuntimeClass* CCommandRef::GetClassCCommandRef()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1430,6 +1433,7 @@ CVmCommand* CCommandRef::GetNextCommand()
     if (proc != nullptr) return proc(this);
     proc = FindGetNextCommand(reinterpret_cast<const CRio_vtbl*>(this));
     if (proc != nullptr) return proc(this);
+    __debugbreak();
     return nullptr;
 }
 
@@ -1456,7 +1460,7 @@ CCommandRef::LPGetNextCommand CCommandRef::FindGetNextCommand(const CRio_vtbl* v
         // TODO ?GetNextCommand@CCommandRef@@UBEPAVCVmCommand@@XZ
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1482,14 +1486,10 @@ int CVmCommand::GetVariableAreaSize() const
         // TODO ?GetValiableAreaSize@CVmCommand@@UAEHXZ
         break;
     }
-
-    if (m_pNext != nullptr)
-    {
-        // The memory is continuous by CHeap.
-        return reinterpret_cast<int>(m_pNext) - reinterpret_cast<int>(this) - clazz->m_nObjectSize;
-    }
-
-    return 0;
+    __debugbreak();
+     // The memory is continuous by CHeap.
+    if (m_pNext == nullptr) return 0;
+    return reinterpret_cast<int>(m_pNext) - reinterpret_cast<int>(this) - clazz->m_nObjectSize;
 }
 
 const CRuntimeClass* CVmMsg::GetClassCVmMsg()
@@ -1515,7 +1515,7 @@ const CRuntimeClass* CVmMsg::GetClassCVmMsg()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1542,7 +1542,7 @@ const CRuntimeClass* CVmGenericMsg::GetClassCVmGenericMsg()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
 
@@ -1570,6 +1570,6 @@ const HashBucket<CMsgRTC>* CMsgRTC::GetRegister()
     default:
         break;
     }
-
+    __debugbreak();
     return nullptr;
 }
