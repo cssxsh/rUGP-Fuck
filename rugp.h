@@ -324,17 +324,21 @@ public:
     DWORD field_0010;
     DWORD field_0014;
     DWORD field_0018;
-    LPVOID field_001C;
+    FARPROC m_pfnInstallHandler; // CustomInstallHandler
     CStringX m_strGameName;
     DWORD m_dwFlags;
     DWORD field_0028;
-    CNoTrackObject* field_002C; // CBootTracer
-    DWORD m_dwResOffset;
-    DWORD field_0034;
+    class CBootTracer* m_pBootTracer;
+    DWORD m_dwResKeyA;
+    DWORD m_dwResKeyB;
     DWORD field_0038;
     UINT m_nInstallType;
 
+    using LPStep = void (__thiscall *)(CBootTracer*, int);
+
     static CUuiGlobals* GetGlobal();
+
+    static LPStep& FetchStep();
 };
 
 class CFontContext

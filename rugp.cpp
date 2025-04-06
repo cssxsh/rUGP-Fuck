@@ -1375,6 +1375,33 @@ CUuiGlobals* CUuiGlobals::GetGlobal()
 }
 
 CProfile CRioMsg::ToMsgString()
+CUuiGlobals::LPStep& CUuiGlobals::FetchStep()
+{
+    const auto name = "?Step@CBootTracer@@QAEXH@Z";
+    auto& address = reinterpret_cast<LPStep&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<LPStep>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            // address = reinterpret_cast<LPFirstStep>(GetProcAddress(UnivUI, MAKEINTRESOURCE(750)));
+            // if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: int __thiscall CBootTracer::FirstStep(char const *,int)
+    default:
+        break;
+    }
+    __debugbreak();
+    return address = nullptr;
+}
+
 {
     using LPToMsgString = CProfile (__thiscall *)(const CRioMsg*);
     const auto name = "?ToMsgString@CRioMsg@@QAE?AVCProfile@@XZ";
