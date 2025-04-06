@@ -236,13 +236,11 @@ public:
 
 class COceanNode
 {
-    COceanNode();
-
 public:
     struct POS
     {
-        BOOL m_bNext;
-        INT m_nIndex;
+        COceanNode* m_pNode = nullptr;
+        INT m_nIndex = 0;
     };
 
     struct Children
@@ -256,16 +254,17 @@ public:
     CStringX m_strName;
     COceanNode* m_pParent;
     Children* m_pChildren;
-    CRuntimeClass* m_pRTC;
+    const CRuntimeClass* m_pRTC;
     UINT m_nRefCount;
     DWORD m_dwFlags;
-    DWORD m_dwResAddr;
-    DWORD m_dwResSize;
+    const DWORD m_dwResAddr;
+    const DWORD m_dwResSize;
     DWORD field_0028;
     DWORD field_002C; // CObject
 
 protected:
-    ~COceanNode() = default;
+    COceanNode();
+    ~COceanNode();
 
 public:
     using LPGetMotherOcean = COceanNode** (__cdecl *)(COceanNode**);
@@ -273,12 +272,33 @@ public:
     BOOL IsDerivedFrom(const CRuntimeClass*) const;
     CRio* FetchRef();
     void ReleaseRef();
+    COceanNode* GetNextAssocRef(POS&, CStringX&) const;
     DWORD GetAddress() const;
 
     static const COceanNode* GetRoot();
     static const COceanNode* GetNull();
 
     static LPGetMotherOcean& FetchGetMotherOcean();
+    
+    class Iterator final
+    {
+    protected:
+        COceanNode* m_ptr;
+        std::map<COceanNode*, POS> m_record;
+    public:
+        explicit Iterator(COceanNode* root);
+
+        COceanNode* operator*() const;
+
+        Iterator& operator++();
+
+        Iterator operator++(int count);
+
+        bool operator!=(const Iterator& other) const;
+    };
+    
+    Iterator begin();
+    static Iterator end();
 };
 
 class CrUGP

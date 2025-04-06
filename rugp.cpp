@@ -1137,11 +1137,39 @@ void COceanNode::ReleaseRef()
     __debugbreak();
 }
 
+COceanNode* COceanNode::GetNextAssocRef(POS& pos, CStringX& key) const
+{
+    using LPGetManageRef = COceanNode* (__thiscall *)(const COceanNode*, POS&, CStringX&);
+    const auto name = "?GetNextAssocRef@COceanNode@@QBEPAV1@AAUPOS@1@AAVCString@@@Z";
+    auto& proc = reinterpret_cast<LPGetManageRef&>(cache[name]);
+    if (proc != nullptr) return proc(this, pos, key);
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            proc = reinterpret_cast<LPGetManageRef>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return proc(this, pos, key);
+            proc = reinterpret_cast<LPGetManageRef>(GetProcAddress(UnivUI, MAKEINTRESOURCE(125)));
+            if (proc != nullptr) return proc(this, pos, key);
+        }
+        break;
+    case 0x0E00:
+        // TODO public: class COceanNode * __thiscall COceanNode::GetNextAssocRef(struct COceanNode::POS &, class CString &) const
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
 DWORD COceanNode::GetAddress() const
 {
     const auto globals = CUuiGlobals::GetGlobal();
     if (globals == nullptr) return m_dwResAddr;
-    return m_dwResAddr % globals->m_dwResOffset;
+    return m_dwResAddr % globals->m_dwResKeyA;
 }
 
 const COceanNode* COceanNode::GetRoot()
@@ -1229,6 +1257,52 @@ COceanNode::LPGetMotherOcean& COceanNode::FetchGetMotherOcean()
     }
     __debugbreak();
     return address = nullptr;
+}
+
+auto COceanNode::begin() -> Iterator
+{
+    return Iterator(this);
+}
+
+auto COceanNode::end() -> Iterator
+{
+    return Iterator(const_cast<COceanNode*>(GetNull()));
+}
+
+COceanNode::Iterator::Iterator(COceanNode* root)
+{
+    m_ptr = root;
+}
+
+auto COceanNode::Iterator::operator*() const -> COceanNode*
+{
+    return m_ptr;
+}
+
+auto COceanNode::Iterator::operator++() -> Iterator&
+{
+    CStringX name;
+    const auto null = GetNull();
+    auto current = m_ptr;
+    while (current != nullptr && current != null)
+    {
+        auto& pos = m_record[current];
+        if ((m_ptr = current->GetNextAssocRef(pos, name)) != nullptr) break;
+        m_ptr = current = current->m_pParent;
+    }
+    return *this;
+}
+
+auto COceanNode::Iterator::operator++(int const count) -> Iterator
+{
+    const Iterator iterator = *this;
+    for (auto i = 0; i < count; i++) this->operator++();
+    return iterator;
+}
+
+auto COceanNode::Iterator::operator!=(const Iterator& other) const -> bool
+{
+    return m_ptr != other.m_ptr;
 }
 
 LPCSTR CrUGP::GetVersion() const

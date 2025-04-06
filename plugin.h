@@ -85,23 +85,7 @@ public:
     static void DetachHook();
 
 protected:
-    static COceanNode** __cdecl HookGetMotherOcean(COceanNode** pNode);
-
-    class Iterator final
-    {
-    public:
-        explicit Iterator(const COceanNode* root = COceanNode::GetRoot());
-        DWORD Level() const;
-        const COceanNode* Next();
-
-        static void AttachHook();
-        static void DetachHook();
-
-    protected:
-        const COceanNode* m_pNode;
-        DWORD m_nLevel;
-        std::map<const COceanNode*, WORD> m_pVisited;
-    };
+    static std::remove_pointer_t<COceanNode::LPGetMotherOcean> HookGetMotherOcean;
 };
 
 #endif // PLUGIN_H
