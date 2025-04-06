@@ -28,11 +28,11 @@ class CFontContext;
 class CRioMsg;
 class CVmVar;
 
-class CVmVarObj;
-
 class CCommandRef;
 class CVmCommand;
 class CVmMsg;
+class CVmGenericMsg;
+class CVmVarObj;
 
 struct CMemberInfo;
 struct CMsgRTC;
@@ -222,7 +222,7 @@ public:
 class CPmArchive
 {
 protected:
-    ~CPmArchive() = default;
+    ~CPmArchive();
 
 public:
     virtual LONG Seek(LONG, UINT) = 0;
@@ -353,10 +353,10 @@ public:
 class CRioMsg
 {
 public:
-    CMsgRTC* m_pRTC;
+    const CMsgRTC* m_pRTC;
     CObjectEx* m_pObj;
 
-    CProfile ToMsgString();
+    CProfile ToMsgString() const;
 
     static CRioMsg* FromMsgString(LPCSTR);
 };
@@ -369,13 +369,6 @@ public:
     CStringX ToSerialString() const;
 
     void FromSerialString(LPCSTR);
-};
-
-class CVmVarObj : public CRio
-{
-public:
-    const CRuntimeClass* m_pBasicTypeRTC; // CBasicTypeRTC
-    CVmVar m_Variable;
 };
 
 class CCommandRef : public CRio
@@ -427,15 +420,24 @@ public:
 
     CRioMsg* m_pMsg;
     CVmVar field_0010;
-    CMsgRTC* m_pRTC;
+    const CMsgRTC* m_pRTC;
     INT m_nCount;
     Param m_arrVariableArea[];
+};
+
+class CVmVarObj : public CRio
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmGenericMsg)
+
+    const CRuntimeClass* m_pBasicTypeRTC; // CBasicTypeRTC
+    CVmVar m_Variable;
 };
 
 struct CMemberInfo
 {
     LPCSTR m_lpszName;
-    CRuntimeClass* m_pRTC;
+    const CRuntimeClass* m_pRTC;
     DWORD m_dwOffset;
 };
 

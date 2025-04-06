@@ -1374,7 +1374,6 @@ CUuiGlobals* CUuiGlobals::GetGlobal()
     return nullptr;
 }
 
-CProfile CRioMsg::ToMsgString()
 CUuiGlobals::LPStep& CUuiGlobals::FetchStep()
 {
     const auto name = "?Step@CBootTracer@@QAEXH@Z";
@@ -1402,11 +1401,12 @@ CUuiGlobals::LPStep& CUuiGlobals::FetchStep()
     return address = nullptr;
 }
 
+CProfile CRioMsg::ToMsgString() const
 {
     using LPToMsgString = CProfile (__thiscall *)(const CRioMsg*);
     const auto name = "?ToMsgString@CRioMsg@@QAE?AVCProfile@@XZ";
     auto& proc = reinterpret_cast<LPToMsgString&>(cache[name]);
-    if (proc != nullptr) return CProfile(this, proc);
+    if (proc != nullptr) return {this, proc};
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -1415,9 +1415,9 @@ CUuiGlobals::LPStep& CUuiGlobals::FetchStep()
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
             proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return CProfile(this, proc);
+            if (proc != nullptr) return {this, proc};
             proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(750)));
-            if (proc != nullptr) return CProfile(this, proc);
+            if (proc != nullptr) return {this, proc};
         }
         break;
     case 0x0E00:
@@ -1462,7 +1462,7 @@ CStringX CVmVar::ToSerialString() const
     using LPToSerialString = CStringX (__thiscall *)(const CVmVar*);
     const auto name = "?ToSerialString@CVmVar@@QBE?AVCString@@XZ";
     auto& proc = reinterpret_cast<LPToSerialString&>(cache[name]);
-    if (proc != nullptr) return CStringX(this, proc);
+    if (proc != nullptr) return {this, proc};
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -1471,9 +1471,9 @@ CStringX CVmVar::ToSerialString() const
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
             proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return CStringX(this, proc);
+            if (proc != nullptr) return {this, proc};
             proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(754)));
-            if (proc != nullptr) return CStringX(this, proc);
+            if (proc != nullptr) return {this, proc};
         }
         break;
     case 0x0E00:
@@ -1601,7 +1601,7 @@ int CVmCommand::GetVariableAreaSize() const
         break;
     }
     __debugbreak();
-     // The memory is continuous by CHeap.
+    // The memory is continuous by CHeap.
     if (m_pNext == nullptr) return 0;
     return reinterpret_cast<int>(m_pNext) - reinterpret_cast<int>(this) - clazz->m_nObjectSize;
 }
@@ -1653,6 +1653,33 @@ const CRuntimeClass* CVmGenericMsg::GetClassCVmGenericMsg()
         break;
     case 0x0E00:
         // TODO public: static struct CRtcEx CVmGenericMsg::classCVmMsg
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
+const CRuntimeClass* CVmVarObj::GetClassCVmGenericMsg()
+{
+    const auto name = "?classCVmVarObj@CVmVarObj@@2UCRtcEx@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto Vm60 = GetModuleHandleA("Vm60");
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(868)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static struct CRtcEx CVmVarObj::classCVmVarObj
     default:
         break;
     }
