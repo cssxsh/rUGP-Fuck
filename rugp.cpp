@@ -1132,9 +1132,21 @@ CProcessOcean::LPBeginProcess& CProcessOcean::FetchBeginProcess()
             const auto Vm60 = GetModuleHandleA("Vm60");
             address = reinterpret_cast<LPBeginProcess>(GetProcAddress(Vm60, name));
             if (address != nullptr) return address;
-            const auto vtbl = FindVisualTable(GetClassCProcessOcean());
-            address = reinterpret_cast<LPBeginProcess>(reinterpret_cast<FARPROC* const*>(vtbl)[0x000E]);
-            if (address != nullptr) return address;
+            const auto clazz = GetClassCProcessOcean();
+            const auto vtbl = FindVisualTable(clazz);
+            switch (clazz->m_nObjectSize)
+            {
+            case 0x002C:
+                address = *reinterpret_cast<LPBeginProcess*>(reinterpret_cast<DWORD>(vtbl) + 0x38);
+                if (address != nullptr) return address;
+                break;
+            case 0x0030:
+                address = *reinterpret_cast<LPBeginProcess*>(reinterpret_cast<DWORD>(vtbl) + 0x3C);
+                if (address != nullptr) return address;
+                break;
+            default:
+                break;
+            }
         }
         break;
     case 0x0E00:
