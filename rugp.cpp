@@ -1818,6 +1818,7 @@ CStringX* CInstallSource::GetName()
         return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x18);
     case 0x00C8:
     case 0x00F0:
+    case 0x0104:
         return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x20);
     default:
         break;
@@ -1836,6 +1837,8 @@ CStringX* CInstallSource::GetSource()
         return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x40);
     case 0x00F0:
         return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x48);
+    case 0x0104:
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x4C);
     default:
         break;
     }
@@ -1853,6 +1856,8 @@ CStringX* CInstallSource::GetTarget()
         return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x68);
     case 0x00F0:
         return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x70);
+    case 0x0104:
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x78);
     default:
         break;
     }
