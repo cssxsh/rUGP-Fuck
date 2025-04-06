@@ -1155,6 +1155,10 @@ CProcessOcean::LPBeginProcess& CProcessOcean::FetchBeginProcess()
                 address = *reinterpret_cast<LPBeginProcess*>(reinterpret_cast<DWORD>(vtbl) + 0x3C);
                 if (address != nullptr) return address;
                 break;
+            case 0x0034:
+                address = *reinterpret_cast<LPBeginProcess*>(reinterpret_cast<DWORD>(vtbl) + 0x40);
+                if (address != nullptr) return address;
+                break;
             default:
                 break;
             }
