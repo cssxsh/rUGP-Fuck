@@ -20,6 +20,9 @@ class CS5RFont;
 class CUI;
 class CImgBox;
 
+class CObjectOcean;
+class CrelicUnitedGameProject;
+
 class CPmArchive;
 class COceanNode;
 class CrUGP;
@@ -219,6 +222,23 @@ public:
     static LPDrawSzText& FetchDrawSzText();
 };
 
+class CObjectOcean : public CRio
+{
+public:
+    DECLARE_DYNAMIC_RIO(CObjectOcean)
+
+};
+
+class CProcessOcean : public CObjectOcean
+{
+public:
+    DECLARE_DYNAMIC_RIO(CProcessOcean)
+    
+    using LPBeginProcess = UINT (__thiscall *)(CProcessOcean*, CView*);
+    
+    static LPBeginProcess& FetchBeginProcess();
+};
+
 class CPmArchive
 {
 protected:
@@ -267,8 +287,6 @@ protected:
     ~COceanNode();
 
 public:
-    using LPGetMotherOcean = COceanNode** (__cdecl *)(COceanNode**);
-
     BOOL IsDerivedFrom(const CRuntimeClass*) const;
     CRio* FetchRef();
     void ReleaseRef();
@@ -277,8 +295,6 @@ public:
 
     static const COceanNode* GetRoot();
     static const COceanNode* GetNull();
-
-    static LPGetMotherOcean& FetchGetMotherOcean();
     
     class Iterator final
     {

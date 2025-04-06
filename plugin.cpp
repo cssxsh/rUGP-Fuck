@@ -84,26 +84,8 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
             wprintf(L"CObjectProxy::AttachCharacterPatch Fail: %hs\n", se.what());
         }
 
-        try
-        {
-            COceanTree::AttachHook();
-        }
-        catch (StructuredException& se)
-        {
-            wprintf(L"COceanTree::AttachHook Fail: %hs\n", se.what());
-        }
-
         break;
     case DLL_PROCESS_DETACH:
-        try
-        {
-            COceanTree::DetachHook();
-        }
-        catch (StructuredException& se)
-        {
-            wprintf(L"COceanTree::DetachHook Fail: %hs\n", se.what());
-        }
-
         try
         {
             CObjectProxy::DetachHook();
@@ -199,7 +181,7 @@ std::wstring GetUUID(const COceanNode* const node)
     return buffer;
 }
 
-std::wstring GetFilePath(const COceanNode* const node)
+std::wstring GetMergeFilePath(const COceanNode* const node)
 {
     wchar_t buffer[MAX_PATH];
     auto format = UnicodeX(node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin", CP_SHIFT_JIS);
@@ -326,6 +308,16 @@ void CObjectProxy::AttachHook()
         wprintf(L"DetourAttach: IsDBCS\n");
         DetourAttach(&reinterpret_cast<PVOID&>(GMfc::FetchIsMBCS()), &HookIsMBCS);
     }
+    if (CUuiGlobals::FetchStep())
+    {
+        wprintf(L"DetourAttach: CBootTracer::Step\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(CUuiGlobals::FetchStep()), &HookStep);
+    }
+    if (CProcessOcean::FetchBeginProcess())
+    {
+        wprintf(L"DetourAttach: CProcessOcean::BeginProcess\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(CProcessOcean::FetchBeginProcess()), &HookBeginProcess);
+    }
     DetourTransactionCommit();
 }
 
@@ -341,7 +333,7 @@ void CObjectProxy::DetachHook()
         if (clazz->m_pfnGetBaseClass() == clazz) continue;
         const auto name = UnicodeX(clazz->m_lpszClassName, CP_SHIFT_JIS);
 
-        if (CCommandRef::FetchGetNextCommand(clazz))
+        if (clazz->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
         {
             wprintf(L"DetourDetach: %s::GetNextCommand\n", name.c_str());
             DetourDetach(&reinterpret_cast<PVOID&>(CCommandRef::FetchGetNextCommand(clazz)), &HookGetNextCommand);
@@ -830,6 +822,7 @@ CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)
             {
                 auto& message = reinterpret_cast<CVmMsg*&>(next);
                 Merge(message, edx[name]);
+                // cache 4 bytes character
                 for (auto lpsz = message->m_arrVariableArea; *lpsz != '\0'; lpsz += CharacterByteSize(lpsz))
                 {
                     if (static_cast<BYTE>(lpsz[0x00]) < 0x81u || static_cast<BYTE>(lpsz[0x01]) > 0x39u) continue;
@@ -978,10 +971,7 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
         case 0x7B96EE8Au:
         // _CVmVar
         case 0x6D56435Fu:
-            if (strcmp(member->m_pRTC->m_lpszClassName, "_CVmVar60") == 0)
-            {
-                __debugbreak();
-            }
+            if (strcmp(member->m_pRTC->m_lpszClassName, "_CVmVar64") == 0) __debugbreak();
             obj[key] = static_cast<LPCSTR>(reinterpret_cast<CVmVar*>(address)->ToSerialString());
             break;
         default:
@@ -1032,7 +1022,7 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
     if (ecx->m_pNode->m_dwResAddr == 0x00000000) return ecx->FetchSerialize()(ecx, archive);
     wprintf(L"Hook %s::Serialize(this=%s)\n", name.c_str(), uuid.c_str());
 
-    const auto path = GetFilePath(ecx->m_pNode);
+    const auto path = GetMergeFilePath(ecx->m_pNode);
     const auto hFile = CreateFileW(
         path.c_str(),
         GENERIC_READ,
@@ -1066,9 +1056,9 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
     if (cache != nullptr) return cache;
     const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
     wprintf(L"Hook %s::GetNextCommand(this=%s)\n", name.c_str(), uuid.c_str());
-    auto value = ecx->GetNextCommand();
+    const auto value = ecx->GetNextCommand();
 
-    const auto path = GetFilePath(ecx->m_pNode) + L".json";
+    const auto path = GetMergeFilePath(ecx->m_pNode) + L".json";
     const auto hFile = CreateFileW(
         path.c_str(),
         GENERIC_READ | GENERIC_WRITE,
@@ -1088,7 +1078,7 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
         free(buffer);
         auto reader = Json::Reader();
         auto patch = Json::Value(Json::objectValue);
-        reader.parse(std::string(), patch, false);
+        reader.parse(document, patch, false);
         cache = Fetch(value, patch);
     }
     else
@@ -1139,6 +1129,30 @@ LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT uChar, COceanNode* co
     return font;
 }
 
+void CObjectProxy::HookStep(CBootTracer* ecx, int const index)
+{
+    wprintf(L"Hook CBootTracer::Step(index=%d)\n", index);
+    const auto uui = CUuiGlobals::GetGlobal();
+    if (uui != nullptr) uui->m_nInstallType = 2;
+    return CUuiGlobals::FetchStep()(ecx, index);
+}
+
+UINT CObjectProxy::HookBeginProcess(CProcessOcean* ecx, CView* view)
+{
+    // for (const auto node : *const_cast<COceanNode*>(COceanNode::GetRoot()))
+    // {
+    //     // TODO ...
+    //     if (node->m_pRTC->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
+    //     {
+    //         // const auto rio = const_cast<COceanNode*>(node)->FetchRef();
+    //         // const auto vtbl = *reinterpret_cast<FARPROC**>(rio);
+    //         // const auto fetch = reinterpret_cast<CCommandRef::LPGetNextCommand>(vtbl[0x000B]);
+    //         // fetch(reinterpret_cast<CCommandRef*>(rio));
+    //     }
+    // }
+    return CProcessOcean::FetchBeginProcess()(ecx, view);
+}
+
 std::map<std::wstring, const CRuntimeClass*> CObjectProxy::RTC_MAP;
 
 std::map<std::wstring, CVmCommand*> CObjectProxy::COMMAND_MAP;
@@ -1150,91 +1164,3 @@ std::map<LPVOID, CodePatchRecord*> CObjectProxy::PATCH_CACHE;
 std::map<WORD, UINT> CObjectProxy::CHARACTER_MAP;
 
 std::map<UINT, LPVOID> CObjectProxy::FONT_CACHE;
-
-void COceanTree::AttachHook()
-{
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    wprintf(L"DetourAttach: GetMotherOcean\n");
-    DetourAttach(&reinterpret_cast<PVOID&>(COceanNode::FetchGetMotherOcean()), &HookGetMotherOcean);
-    DetourTransactionCommit();
-}
-
-void COceanTree::DetachHook()
-{
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    wprintf(L"DetourDetach: GetMotherOcean\n");
-    DetourDetach(&reinterpret_cast<PVOID&>(COceanNode::FetchGetMotherOcean()), &HookGetMotherOcean);
-    DetourTransactionCommit();
-}
-
-COceanNode** COceanTree::HookGetMotherOcean(COceanNode** const pNode)
-{
-    wprintf(L"Hook GetMotherOcean()\n");
-    *pNode = *COceanNode::FetchGetMotherOcean()(pNode);
-
-    const auto uui = CUuiGlobals::GetGlobal();
-    if (uui != nullptr) uui->m_nInstallType = 0x02;
-
-    const auto root = *pNode;
-    auto iterator = Iterator(root);
-    for (auto node = iterator.Next(); node != nullptr; node = iterator.Next())
-    {
-        // TODO ...
-    }
-
-    return pNode;
-}
-
-COceanTree::Iterator::Iterator(const COceanNode* const root)
-{
-    m_pNode = root;
-    m_nLevel = root ? 1 : 0;
-}
-
-DWORD COceanTree::Iterator::Level() const
-{
-    return m_nLevel;
-}
-
-const COceanNode* COceanTree::Iterator::Next()
-{
-    const auto node = m_pNode;
-    if (node == nullptr) return nullptr;
-    constexpr auto empty = COceanNode::Children();
-    const auto null = COceanNode::GetNull();
-
-    for (auto root = m_pNode; root && m_nLevel; root = root->m_pParent, m_nLevel--)
-    {
-        auto mask = static_cast<WORD>(0x0000);
-        const auto visited = m_pVisited[root];
-
-        mask = static_cast<WORD>(0x0001);
-        for (const auto child : (root->m_pChildren ? root->m_pChildren : &empty)->m_arrBucket)
-        {
-            if (child == nullptr) continue;
-            if (child == null) continue;
-            mask <<= 0x01;
-            if (visited & mask) continue;
-            m_pNode = child;
-            m_nLevel++;
-            m_pVisited[root] = visited | mask;
-
-            return node;
-        }
-
-        if (root->m_pNext == nullptr) continue;
-        if (root->m_pNext == null) continue;
-        mask = static_cast<WORD>(0x8000);
-        if (visited & mask) continue;
-        m_pNode = root->m_pNext;
-        m_pVisited[root] = visited | mask;
-
-        return node;
-    }
-
-    m_pNode = nullptr;
-    m_nLevel = 0;
-    return nullptr;
-}

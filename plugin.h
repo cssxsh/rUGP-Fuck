@@ -20,7 +20,7 @@ std::string WINAPI AnsiX(LPCSTR lpText, UINT from, UINT to);
 
 std::wstring GetUUID(const COceanNode* node);
 
-std::wstring GetFilePath(const COceanNode* node);
+std::wstring GetMergeFilePath(const COceanNode* node);
 
 std::wstring GetGameName();
 
@@ -76,16 +76,9 @@ protected:
     static std::remove_pointer_t<CS5i::LPDrawFont1> HookDrawFont1;
     static std::remove_pointer_t<CS5i::LPDrawFont2> HookDrawFont2;
     static std::remove_pointer_t<CS5RFont::LPGetFont> HookGetCachedFont;
-};
 
-class COceanTree final
-{
-public:
-    static void AttachHook();
-    static void DetachHook();
-
-protected:
-    static std::remove_pointer_t<COceanNode::LPGetMotherOcean> HookGetMotherOcean;
+    static std::remove_pointer_t<CUuiGlobals::LPStep> HookStep;
+    static std::remove_pointer_t<CProcessOcean::LPBeginProcess> HookBeginProcess;
 };
 
 #endif // PLUGIN_H

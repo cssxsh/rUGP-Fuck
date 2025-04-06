@@ -955,6 +955,88 @@ CImgBox::LPDrawSzText& CImgBox::FetchDrawSzText()
     return address = nullptr;
 }
 
+const CRuntimeClass* CObjectOcean::GetClassCObjectOcean()
+{
+    const auto name = "?classCObjectOcean@CObjectOcean@@2UCRioRTC@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(839)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static struct CRioRTC CObjectOcean::classCObjectOcean
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
+const CRuntimeClass* CProcessOcean::GetClassCProcessOcean()
+{
+    const auto name = "?classCProcessOcean@CProcessOcean@@2UCRioRTC@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto Vm60 = GetModuleHandleA("Vm60");
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(178)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static struct CRioRTC CProcessOcean::classCProcessOcean
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
+CProcessOcean::LPBeginProcess& CProcessOcean::FetchBeginProcess()
+{
+    const auto name = "?BeginProcess@CProcessOcean@@QAEIPAVCVmmView@@@Z";
+    auto& address = reinterpret_cast<LPBeginProcess&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto Vm60 = GetModuleHandleA("Vm60");
+            address = reinterpret_cast<LPBeginProcess>(GetProcAddress(Vm60, name));
+            if (address != nullptr) return address;
+            const auto vtbl = FindVisualTable(GetClassCProcessOcean());
+            address = reinterpret_cast<LPBeginProcess>(reinterpret_cast<FARPROC* const*>(vtbl)[0x000E]);
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: unsigned int __thiscall CProcessOcean::BeginProcess(class CVmmView *)
+    default:
+        break;
+    }
+    __debugbreak();
+    return address = nullptr;
+}
+
 const CArchive* CPmArchive::GetNative() const
 {
     const auto vtbl = *reinterpret_cast<FARPROC* const*>(this);
@@ -1232,33 +1314,6 @@ const COceanNode* COceanNode::GetNull()
     return nullptr;
 }
 
-COceanNode::LPGetMotherOcean& COceanNode::FetchGetMotherOcean()
-{
-    const auto name = "?GetMotherOcean@@YA?AV?$CRef@VCObjectOcean@@VCObjectOcean_ome@@VTObjectOcean@@@@XZ";
-    auto& address = reinterpret_cast<LPGetMotherOcean&>(cache[name]);
-    if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<LPGetMotherOcean>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<LPGetMotherOcean>(GetProcAddress(UnivUI, MAKEINTRESOURCE(499)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO class CRef<class CObjectOcean, class CObjectOcean_ome, class TObjectOcean> __cdecl GetMotherOcean(void)
-    default:
-        break;
-    }
-    __debugbreak();
-    return address = nullptr;
-}
-
 auto COceanNode::begin() -> Iterator
 {
     return Iterator(this);
@@ -1388,12 +1443,12 @@ CUuiGlobals::LPStep& CUuiGlobals::FetchStep()
             const auto UnivUI = GetModuleHandleA("UnivUI");
             address = reinterpret_cast<LPStep>(GetProcAddress(UnivUI, name));
             if (address != nullptr) return address;
-            // address = reinterpret_cast<LPFirstStep>(GetProcAddress(UnivUI, MAKEINTRESOURCE(750)));
-            // if (address != nullptr) return address;
+            address = reinterpret_cast<LPStep>(GetProcAddress(UnivUI, MAKEINTRESOURCE(730)));
+            if (address != nullptr) return address;
         }
         break;
     case 0x0E00:
-        // TODO public: int __thiscall CBootTracer::FirstStep(char const *,int)
+        // TODO public: void __thiscall CBootTracer::Step(int)
     default:
         break;
     }
