@@ -170,13 +170,6 @@ CStringX::CStringX()
     __debugbreak();
 }
 
-template <class T>
-CStringX::CStringX(const T* src, CStringX (__thiscall *fetch)(const T*))
-{
-    reinterpret_cast<CStringX* (__thiscall *)(const T*, CStringX*)>(fetch)(src, this);
-    if (m_pszData == nullptr) __debugbreak();
-}
-
 CStringX::~CStringX()
 {
     using LPDestructor = void (__thiscall *)(CStringX*);
@@ -240,6 +233,18 @@ CStringX::operator CStringA&()
 CStringX::operator LPCSTR() const
 {
     return *reinterpret_cast<const LPCSTR*>(this);
+}
+
+template <class T>
+CStringX::CStringX(const T* src, CStringX* (__thiscall * fetch)(const T*, CStringX*))
+{
+    if (this != fetch(src, this)) __debugbreak();
+    if (m_pszData == nullptr) __debugbreak();
+}
+
+inline CStringX CStringX::Fetch(const CVmVar* var, CStringX* (__thiscall *fetch)(const CVmVar*, CStringX*))
+{
+    return CStringX(var, fetch);
 }
 
 BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
@@ -335,13 +340,6 @@ CProfile::CProfile()
     proc(this);
 }
 
-template <class T>
-CProfile::CProfile(const T* src, CProfile (__thiscall *fetch)(const T*))
-{
-    reinterpret_cast<CProfile* (__thiscall *)(const T*, CProfile*)>(fetch)(src, this);
-    if (m_pszData == nullptr) __debugbreak();
-}
-
 CProfile::~CProfile()
 {
     using LPCProfile = void (__thiscall *)(CProfile*);
@@ -369,6 +367,18 @@ CProfile::operator CStringX&()
 CProfile::operator LPCSTR() const
 {
     return *reinterpret_cast<const LPCSTR*>(this);
+}
+
+template <class T>
+CProfile::CProfile(const T* src, CProfile* (__thiscall * fetch)(const T*, CProfile*))
+{
+    fetch(src, this);
+    if (m_pszData == nullptr) __debugbreak();
+}
+
+inline CProfile CProfile::Fetch(const CRioMsg* msg, CProfile* (__thiscall * fetch)(const CRioMsg*, CProfile*))
+{
+    return CProfile(msg, fetch);
 }
 
 const CRuntimeClass* CObjectEx::GetClassCObjectEx()
@@ -1012,8 +1022,8 @@ const CRuntimeClass* CrelicUnitedGameProject::GetClassCrelicUnitedGameProject()
 CrelicUnitedGameProject* CrelicUnitedGameProject::GetGlobal()
 {
     const auto name = "?_GLOBAL_rLocalAppOcean@@3V?$CRef@VCObjectOcean@@VCObjectOcean_ome@@VTObjectOcean@@@@A";
-    auto& global = reinterpret_cast<COceanNode**&>(cache[name]);
-    if (global != nullptr) return reinterpret_cast<CrelicUnitedGameProject*>((*global)->m_pObject);
+    auto& global = reinterpret_cast<CRef*&>(cache[name]);
+    if (global != nullptr) return *global;
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -1021,10 +1031,10 @@ CrelicUnitedGameProject* CrelicUnitedGameProject::GetGlobal()
     case 0x0C00:
         {
             const auto rvmm = GetModuleHandleA("rvmm");
-            global = reinterpret_cast<COceanNode**>(GetProcAddress(rvmm, name));
-            if (global != nullptr) return reinterpret_cast<CrelicUnitedGameProject*>((*global)->m_pObject);
-            global = reinterpret_cast<COceanNode**>(GetProcAddress(rvmm, MAKEINTRESOURCE(595)));
-            if (global != nullptr) return reinterpret_cast<CrelicUnitedGameProject*>((*global)->m_pObject);
+            global = reinterpret_cast<CRef*>(GetProcAddress(rvmm, name));
+            if (global != nullptr) return *global;
+            global = reinterpret_cast<CRef*>(GetProcAddress(rvmm, MAKEINTRESOURCE(595)));
+            if (global != nullptr) return *global;
         }
         break;
     case 0x0E00:
@@ -1285,7 +1295,7 @@ BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
     return FALSE;
 }
 
-CRio* COceanNode::FetchRef()
+CRio* COceanNode::Fetch()
 {
     using LPGetPointer = CRio* (__thiscall *)(COceanNode*);
     const auto name = "?__GetPointer@COceanNode@@QBEPAVCRio@@XZ";
@@ -1338,6 +1348,64 @@ void COceanNode::ReleaseRef()
         break;
     }
     __debugbreak();
+}
+
+COceanNode* COceanNode::FindChildrenTypeOf(const CRuntimeClass* rtc) const
+{
+    if (rtc == nullptr) return nullptr;
+    using LPFindChildrenTypeOf = CRef* (__thiscall *)(const COceanNode*, CRef*, const CRuntimeClass*);
+    const auto name = "?__FindChildrenTypeof@COceanNode@@QBE?AVCRefBase@@PBUCRioRTC@@@Z";
+    auto& proc = reinterpret_cast<LPFindChildrenTypeOf&>(cache[name]);
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+            proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, MAKEINTRESOURCE(116)));
+            if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: class CRefBase __thiscall COceanNode::__FindChildrenTypeof(struct CRioRTC const *) const
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
+COceanNode* COceanNode::FindParentTypeOf(const CRuntimeClass* rtc) const
+{
+    if (rtc == nullptr) return nullptr;
+    using LPFindChildrenTypeOf = CRef* (__thiscall *)(const COceanNode*, CRef*, const CRuntimeClass*);
+    const auto name = "?__FindParentTypeof@COceanNode@@QBE?AVCRefBase@@PBUCRioRTC@@@Z";
+    auto& proc = reinterpret_cast<LPFindChildrenTypeOf&>(cache[name]);
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+            proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, MAKEINTRESOURCE(115)));
+            if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: class CRefBase __thiscall COceanNode::__FindParentTypeof(struct CRioRTC const *) const
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
 }
 
 COceanNode* COceanNode::GetNextAssocRef(POS& pos, CStringX& key) const
@@ -1482,6 +1550,58 @@ auto COceanNode::Iterator::operator!=(const Iterator& other) const -> bool
     return m_ptr != other.m_ptr;
 }
 
+CRef::CRef(const CRef& refSrc) : CRef(refSrc.m_pNode)
+{
+    // ...
+}
+
+CRef::CRef(COceanNode* const nodeSrc)
+{
+    m_pNode = nodeSrc;
+    InterlockedIncrement(&m_pNode->m_nRefCount);
+}
+
+CRef::CRef()
+{
+    m_pNode = nullptr;
+}
+
+CRef::~CRef()
+{
+    if (m_pNode == nullptr) return;
+    m_pNode->ReleaseRef();
+}
+
+CRef& CRef::operator=(COceanNode* const nodeSrc)
+{
+    if (m_pNode != nullptr) m_pNode->ReleaseRef();
+    m_pNode = nodeSrc;
+    InterlockedIncrement(&m_pNode->m_nRefCount);
+    return *this;
+}
+
+template <class T>
+CRef::operator T*() const
+{
+    static_assert(std::is_base_of<CRio, T>::value, "T must be derived from CRio");
+    if (m_pNode == nullptr) return nullptr;
+    return reinterpret_cast<T*>(m_pNode->Fetch());
+}
+
+template <class C, typename P>
+CRef::CRef(const C* src, const P* p1, CRef* (__thiscall * fetch)(const C*, CRef*, const P*))
+{
+    if (this != fetch(src, this, p1)) __debugbreak();
+}
+
+inline CRef CRef::Fetch(
+    const COceanNode* const node,
+    const CRuntimeClass* const rtc,
+    CRef* (__thiscall * fetch)(const COceanNode*, CRef*, const CRuntimeClass*))
+{
+    return CRef(node, rtc, fetch);
+}
+
 LPCSTR CrUGP::GetVersion() const
 {
     return version;
@@ -1580,10 +1700,10 @@ CUuiGlobals::LPStep& CUuiGlobals::FetchStep()
 
 CProfile CRioMsg::ToMsgString() const
 {
-    using LPToMsgString = CProfile (__thiscall *)(const CRioMsg*);
+    using LPToMsgString = CProfile* (__thiscall *)(const CRioMsg*, CProfile*);
     const auto name = "?ToMsgString@CRioMsg@@QAE?AVCProfile@@XZ";
     auto& proc = reinterpret_cast<LPToMsgString&>(cache[name]);
-    if (proc != nullptr) return {this, proc};
+    if (proc != nullptr) return CProfile::Fetch(this, proc);
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -1592,9 +1712,9 @@ CProfile CRioMsg::ToMsgString() const
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
             proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return {this, proc};
+            if (proc != nullptr) return CProfile::Fetch(this, proc);
             proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(750)));
-            if (proc != nullptr) return {this, proc};
+            if (proc != nullptr) return CProfile::Fetch(this, proc);
         }
         break;
     case 0x0E00:
@@ -1636,10 +1756,10 @@ CRioMsg* CRioMsg::FromMsgString(LPCSTR const text)
 
 CStringX CVmVar::ToSerialString() const
 {
-    using LPToSerialString = CStringX (__thiscall *)(const CVmVar*);
+    using LPToSerialString = CStringX* (__thiscall *)(const CVmVar*, CStringX*);
     const auto name = "?ToSerialString@CVmVar@@QBE?AVCString@@XZ";
     auto& proc = reinterpret_cast<LPToSerialString&>(cache[name]);
-    if (proc != nullptr) return {this, proc};
+    if (proc != nullptr) return CStringX::Fetch(this, proc);
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
@@ -1648,9 +1768,9 @@ CStringX CVmVar::ToSerialString() const
         {
             const auto UnivUI = GetModuleHandleA("UnivUI");
             proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return {this, proc};
+            if (proc != nullptr) return CStringX::Fetch(this, proc);
             proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(754)));
-            if (proc != nullptr) return {this, proc};
+            if (proc != nullptr) return CStringX::Fetch(this, proc);
         }
         break;
     case 0x0E00:

@@ -27,6 +27,7 @@ class CProcessOcean;
 
 class CPmArchive;
 class COceanNode;
+class CRef;
 class CrUGP;
 class CUuiGlobals;
 class CFontContext;
@@ -72,14 +73,18 @@ public:
     // ReSharper restore CppNonExplicitConvertingConstructor
     ~CStringX();
 
-    template <class T>
-    CStringX(const T*, CStringX (__thiscall *)(const T*));
-
     CStringX& operator=(LPCSTR);
     // ReSharper disable CppNonExplicitConversionOperator
     operator CStringA&(); // NOLINT(*-explicit-constructor)
     operator LPCSTR() const; // NOLINT(*-explicit-constructor)
     // ReSharper restore CppNonExplicitConversionOperator
+
+protected:
+    template <class T>
+    CStringX(const T*, CStringX* (__thiscall *)(const T*, CStringX*));
+
+public:
+    static CStringX Fetch(const CVmVar*, CStringX* (__thiscall *)(const CVmVar*, CStringX*));
 };
 
 class GMfc final
@@ -101,14 +106,18 @@ public:
     CProfile();
     ~CProfile();
 
-    template <class T>
-    CProfile(const T*, CProfile (__thiscall *)(const T*));
-
     CProfile& operator=(const CProfile&);
     // ReSharper disable CppNonExplicitConversionOperator
     operator CStringX&(); // NOLINT(*-explicit-constructor)
     operator LPCSTR() const; // NOLINT(*-explicit-constructor)
     // ReSharper restore CppNonExplicitConversionOperator
+
+protected:
+    template <class T>
+    CProfile(const T*, CProfile* (__thiscall *)(const T*, CProfile*));
+
+public:
+    static CProfile Fetch(const CRioMsg*, CProfile* (__thiscall *)(const CRioMsg*, CProfile*));
 };
 
 #define DECLARE_DYNAMIC_EX(class_name) \
@@ -306,8 +315,10 @@ protected:
 
 public:
     BOOL IsDerivedFrom(const CRuntimeClass*) const;
-    CRio* FetchRef();
+    CRio* Fetch();
     void ReleaseRef();
+    COceanNode* FindChildrenTypeOf(const CRuntimeClass*) const;
+    COceanNode* FindParentTypeOf(const CRuntimeClass*) const;
     COceanNode* GetNextAssocRef(POS&, CStringX&) const;
     DWORD GetAddress() const;
 
@@ -334,6 +345,35 @@ public:
 
     Iterator begin();
     static Iterator end();
+};
+
+class CRef
+{
+public:
+    COceanNode* m_pNode;
+
+    // ReSharper disable CppNonExplicitConvertingConstructor
+    CRef(const CRef&);
+    CRef(COceanNode*);
+    CRef();
+    // ReSharper restore CppNonExplicitConvertingConstructor
+    ~CRef();
+
+    CRef& operator=(COceanNode*);
+    // ReSharper disable CppNonExplicitConversionOperator
+    template <class T>
+    operator T*() const;
+    // ReSharper restore CppNonExplicitConversionOperator
+
+protected:
+    template <class C, typename P>
+    CRef(const C*, const P*, CRef* (__thiscall *)(const C*, CRef*, const P*));
+
+public:
+    static CRef Fetch(
+        const COceanNode*,
+        const CRuntimeClass*,
+        CRef* (__thiscall *)(const COceanNode*, CRef*, const CRuntimeClass*));
 };
 
 class CrUGP
