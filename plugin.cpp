@@ -1129,7 +1129,7 @@ LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT uChar, COceanNode* co
     return font;
 }
 
-void CObjectProxy::HookStep(CBootTracer* ecx, int const index)
+void CObjectProxy::HookStep(CBootTracer* ecx, INT_PTR const index)
 {
     wprintf(L"Hook CBootTracer::Step(index=%d)\n", index);
     const auto uui = CUuiGlobals::GetGlobal();
@@ -1141,7 +1141,6 @@ UINT CObjectProxy::HookBeginProcess(CProcessOcean* ecx, CView* view)
 {
     // for (const auto node : *const_cast<COceanNode*>(COceanNode::GetRoot()))
     // {
-    //     // TODO ...
     //     if (node->m_pRTC->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
     //     {
     //         // const auto rio = const_cast<COceanNode*>(node)->FetchRef();

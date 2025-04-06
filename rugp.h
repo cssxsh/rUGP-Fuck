@@ -449,9 +449,9 @@ public:
 class CInstallSource
 {
 public:
-    CStringX* GetName();
-    CStringX* GetSource();
-    CStringX* GetTarget();
+    CStringX& FetchName();
+    CStringX& FetchSource();
+    CStringX& FetchTarget();
 };
 
 class CCommandRef : public CRio

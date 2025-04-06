@@ -1814,59 +1814,59 @@ void CVmVar::FromSerialString(LPCSTR const text)
     __debugbreak();
 }
 
-CStringX* CInstallSource::GetName()
+CStringX& CInstallSource::FetchName()
 {
     switch (CObjectArcMan::GetClassCObjectArcMan()->m_nObjectSize)
     {
     case 0x00C0:
-        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x18);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x18);
     case 0x00C8:
     case 0x00F0:
     case 0x0104:
-        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x20);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x20);
     default:
         break;
     }
     __debugbreak();
-    return nullptr;
+    throw std::exception("CInstallSource::FetchName no match");
 }
 
-CStringX* CInstallSource::GetSource()
+CStringX& CInstallSource::FetchSource()
 {
     switch (CObjectArcMan::GetClassCObjectArcMan()->m_nObjectSize)
     {
     case 0x00C0:
-        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x30);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x30);
     case 0x00C8:
-        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x40);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x40);
     case 0x00F0:
-        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x48);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x48);
     case 0x0104:
-        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x4C);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x4C);
     default:
         break;
     }
     __debugbreak();
-    return nullptr;
+    throw std::exception("CInstallSource::FetchSource no match");
 }
 
-CStringX* CInstallSource::GetTarget()
+CStringX& CInstallSource::FetchTarget()
 {
     switch (CObjectArcMan::GetClassCObjectArcMan()->m_nObjectSize)
     {
     case 0x00C0:
-        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x5C);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x5C);
     case 0x00C8:
-        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x68);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x68);
     case 0x00F0:
-        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x70);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x70);
     case 0x0104:
-        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x78);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x78);
     default:
         break;
     }
     __debugbreak();
-    return nullptr;
+    throw std::exception("CInstallSource::FetchTarget no match");
 }
 
 const CRuntimeClass* CCommandRef::GetClassCCommandRef()
