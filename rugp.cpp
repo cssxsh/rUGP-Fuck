@@ -1060,6 +1060,7 @@ const CRuntimeClass* CObjectArcMan::GetClassCObjectArcMan()
             const auto UnivUI = GetModuleHandleA("UnivUI");
             address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
             if (address != nullptr) return address;
+            if (GetProcAddress(UnivUI, "?classCObjectOcean@CObjectOcean@@2UCRioRTC@@A") != nullptr) return nullptr;
             address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(838)));
             if (address != nullptr) return address;
         }
