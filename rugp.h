@@ -22,6 +22,8 @@ class CImgBox;
 
 class CObjectOcean;
 class CrelicUnitedGameProject;
+class CObjectArcMan;
+class CProcessOcean;
 
 class CPmArchive;
 class COceanNode;
@@ -30,6 +32,7 @@ class CUuiGlobals;
 class CFontContext;
 class CRioMsg;
 class CVmVar;
+class CInstallSource;
 
 class CCommandRef;
 class CVmCommand;
@@ -229,6 +232,22 @@ public:
 
 };
 
+class CrelicUnitedGameProject : public CObjectOcean
+{
+public:
+    DECLARE_DYNAMIC_RIO(CrelicUnitedGameProject)
+
+    static CrelicUnitedGameProject* GetGlobal();
+};
+
+class CObjectArcMan : public CObjectOcean
+{
+public:
+    DECLARE_DYNAMIC_RIO(CObjectArcMan)
+
+    CInstallSource* GetSourceObject(INT_PTR);
+};
+
 class CProcessOcean : public CObjectOcean
 {
 public:
@@ -385,6 +404,14 @@ public:
     CStringX ToSerialString() const;
 
     void FromSerialString(LPCSTR);
+};
+
+class CInstallSource
+{
+public:
+    CStringX* GetName();
+    CStringX* GetSource();
+    CStringX* GetTarget();
 };
 
 class CCommandRef : public CRio

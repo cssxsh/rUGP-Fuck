@@ -982,6 +982,115 @@ const CRuntimeClass* CObjectOcean::GetClassCObjectOcean()
     return nullptr;
 }
 
+const CRuntimeClass* CrelicUnitedGameProject::GetClassCrelicUnitedGameProject()
+{
+    const auto name = "?classCrelicUnitedGameProject@CrelicUnitedGameProject@@2UCRioRTC@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(199)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static struct CRioRTC CrelicUnitedGameProject::classCrelicUnitedGameProject
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
+CrelicUnitedGameProject* CrelicUnitedGameProject::GetGlobal()
+{
+    const auto name = "?_GLOBAL_rLocalAppOcean@@3V?$CRef@VCObjectOcean@@VCObjectOcean_ome@@VTObjectOcean@@@@A";
+    auto& global = reinterpret_cast<COceanNode**&>(cache[name]);
+    if (global != nullptr) return reinterpret_cast<CrelicUnitedGameProject*>((*global)->m_pObject);
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto rvmm = GetModuleHandleA("rvmm");
+            global = reinterpret_cast<COceanNode**>(GetProcAddress(rvmm, name));
+            if (global != nullptr) return reinterpret_cast<CrelicUnitedGameProject*>((*global)->m_pObject);
+            global = reinterpret_cast<COceanNode**>(GetProcAddress(rvmm, MAKEINTRESOURCE(595)));
+            if (global != nullptr) return reinterpret_cast<CrelicUnitedGameProject*>((*global)->m_pObject);
+        }
+        break;
+    case 0x0E00:
+        // TODO class CRef<class CObjectOcean,class CObjectOcean_ome,class TObjectOcean> _GLOBAL_rLocalAppOcean
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
+const CRuntimeClass* CObjectArcMan::GetClassCObjectArcMan()
+{
+    const auto name = "?classCObjectArcMan@CObjectArcMan@@2UCRioRTC@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(838)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static struct CRioRTC CObjectArcMan::classCObjectArcMan
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
+CInstallSource* CObjectArcMan::GetSourceObject(INT_PTR const index)
+{
+    using LPGetSourceObject = CInstallSource* (__thiscall *)(CObjectArcMan*, INT_PTR);
+    const auto name = "?GetSourceObject@CObjectArcMan@@QAEPAVCInstallSource@@H@Z";
+    auto& proc = reinterpret_cast<LPGetSourceObject&>(cache[name]);
+    if (proc != nullptr) return proc(this, index);
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            proc = reinterpret_cast<LPGetSourceObject>(GetProcAddress(UnivUI, name));
+            if (proc != nullptr) return proc(this, index);
+            proc = reinterpret_cast<LPGetSourceObject>(GetProcAddress(UnivUI, MAKEINTRESOURCE(546)));
+            if (proc != nullptr) return proc(this, index);
+        }
+        break;
+    case 0x0E00:
+        // TODO public: class CInstallSource * __thiscall CObjectArcMan::GetSourceObject(int)
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
 const CRuntimeClass* CProcessOcean::GetClassCProcessOcean()
 {
     const auto name = "?classCProcessOcean@CProcessOcean@@2UCRioRTC@@A";
@@ -1565,6 +1674,56 @@ void CVmVar::FromSerialString(LPCSTR const text)
         break;
     }
     __debugbreak();
+}
+
+CStringX* CInstallSource::GetName()
+{
+    switch (CObjectArcMan::GetClassCObjectArcMan()->m_nObjectSize)
+    {
+    case 0x00C0:
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x18);
+    case 0x00C8:
+    case 0x00F0:
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x20);
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
+CStringX* CInstallSource::GetSource()
+{
+    switch (CObjectArcMan::GetClassCObjectArcMan()->m_nObjectSize)
+    {
+    case 0x00C0:
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x30);
+    case 0x00C8:
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x40);
+    case 0x00F0:
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x48);
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
+CStringX* CInstallSource::GetTarget()
+{
+    switch (CObjectArcMan::GetClassCObjectArcMan()->m_nObjectSize)
+    {
+    case 0x00C0:
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x5C);
+    case 0x00C8:
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x68);
+    case 0x00F0:
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x70);
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
 }
 
 const CRuntimeClass* CCommandRef::GetClassCCommandRef()
