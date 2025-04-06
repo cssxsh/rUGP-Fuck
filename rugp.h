@@ -229,7 +229,6 @@ class CObjectOcean : public CRio
 {
 public:
     DECLARE_DYNAMIC_RIO(CObjectOcean)
-
 };
 
 class CrelicUnitedGameProject : public CObjectOcean
@@ -252,9 +251,9 @@ class CProcessOcean : public CObjectOcean
 {
 public:
     DECLARE_DYNAMIC_RIO(CProcessOcean)
-    
+
     using LPBeginProcess = UINT (__thiscall *)(CProcessOcean*, CView*);
-    
+
     static LPBeginProcess& FetchBeginProcess();
 };
 
@@ -314,14 +313,15 @@ public:
 
     static const COceanNode* GetRoot();
     static const COceanNode* GetNull();
-    
+
     class Iterator final
     {
     protected:
         COceanNode* m_ptr;
         std::map<COceanNode*, POS> m_record;
+
     public:
-        explicit Iterator(COceanNode* root);
+        explicit Iterator(COceanNode* node);
 
         COceanNode* operator*() const;
 
@@ -331,7 +331,7 @@ public:
 
         bool operator!=(const Iterator& other) const;
     };
-    
+
     Iterator begin();
     static Iterator end();
 };
@@ -369,7 +369,7 @@ public:
     DWORD field_0038;
     UINT m_nInstallType;
 
-    using LPStep = void (__thiscall *)(CBootTracer*, int);
+    using LPStep = void (__thiscall *)(CBootTracer*, INT_PTR);
 
     static CUuiGlobals* GetGlobal();
 

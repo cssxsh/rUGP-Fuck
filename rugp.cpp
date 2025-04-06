@@ -1433,9 +1433,9 @@ auto COceanNode::end() -> Iterator
     return Iterator(const_cast<COceanNode*>(GetNull()));
 }
 
-COceanNode::Iterator::Iterator(COceanNode* root)
+COceanNode::Iterator::Iterator(COceanNode* node)
 {
-    m_ptr = root;
+    m_ptr = node;
 }
 
 auto COceanNode::Iterator::operator*() const -> COceanNode*
@@ -1451,7 +1451,8 @@ auto COceanNode::Iterator::operator++() -> Iterator&
     while (current != nullptr && current != null)
     {
         auto& pos = m_record[current];
-        if ((m_ptr = current->GetNextAssocRef(pos, name)) != nullptr) break;
+        m_ptr = current->GetNextAssocRef(pos, name);
+        if (m_ptr != nullptr) break;
         m_ptr = current = current->m_pParent;
     }
     return *this;
