@@ -439,7 +439,7 @@ public:
 class CVmVar
 {
 public:
-    PVOID m_pValue;
+    DWORD m_pValue;
 
     CStringX ToSerialString() const;
 
@@ -504,6 +504,21 @@ public:
     CRioMsg* m_pMsg;
     CVmVar field_0010;
     const CMsgRTC* m_pRTC;
+    INT m_nCount;
+    Param m_arrVariableArea[];
+};
+
+class CVmCall : public CVmCommand
+{
+public:
+    struct Param
+    {
+        CVmVar m_var;
+        BYTE m_data[0x08];
+    };
+    DECLARE_DYNAMIC_EX(CVmCall)
+
+    CRef m_refRsa;
     INT m_nCount;
     Param m_arrVariableArea[];
 };

@@ -70,6 +70,7 @@ protected:
     static CVmCommand* __fastcall Fetch(const CVmCommand* ecx, Json::Value& edx);
     static void __fastcall Merge(CVmMsg*& message, Json::Value& text);
     static void __fastcall Merge(CVmGenericMsg*& generic, Json::Value& obj);
+    static void __fastcall Merge(CVmCall*& call, Json::Value& arr);
     static int __stdcall CharacterByteSize(LPCSTR);
 
     static std::remove_pointer_t<CRio::LPLibrarySupport> HookSupportRio;

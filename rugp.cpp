@@ -2017,6 +2017,33 @@ const CRuntimeClass* CVmGenericMsg::GetClassCVmGenericMsg()
     return nullptr;
 }
 
+const CRuntimeClass* CVmCall::GetClassCVmCall()
+{
+    const auto name = "?classCVmCall@CVmCall@@2UCRtcEx@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto Vm60 = GetModuleHandleA("Vm60");
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(186)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static struct CRtcEx CVmCall::classCVmCall
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
 const CRuntimeClass* CVmVarObj::GetClassCVmGenericMsg()
 {
     const auto name = "?classCVmVarObj@CVmVarObj@@2UCRtcEx@@A";

@@ -870,6 +870,13 @@ CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)
                 Merge(generic, edx[name]);
             }
             break;
+        // CVmCall
+        case 0x6C6C6143:
+            {
+                auto& call = reinterpret_cast<CVmCall*&>(next);
+                Merge(call, edx[name]);
+            }
+            break;
         default:
             {
                 edx[name] = Json::Value(Json::nullValue);
@@ -1016,6 +1023,27 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
             obj[key] = Json::Value(Json::nullValue);
             break;
         }
+    }
+}
+
+void CObjectProxy::Merge(CVmCall*& call, Json::Value& arr)
+{
+    const auto pClass = call->GetRuntimeClass();
+    if (!arr.isArray()) arr = Json::Value(Json::arrayValue);
+    const auto size = pClass->m_nObjectSize + call->GetVariableAreaSize();
+    const auto clone = static_cast<CVmCall*>(malloc(size));
+    memcpy(clone, call, size); // NOLINT(*-undefined-memory-manipulation)
+    call = clone;
+
+    arr[0] = AnsiX(GetUUID(call->m_refRsa.m_pNode).c_str(), CP_UTF8); 
+    for (auto i = 0; i < call->m_nCount; i++)
+    {
+        auto& param = call->m_arrVariableArea[i];
+        arr[i + 1] = AnsiX(param.m_var.ToSerialString(), CP_SHIFT_JIS, CP_UTF8);
+        if ((param.m_var.m_pValue & 0x03) != 0x01) continue;
+        auto temp = param.m_var.m_pValue ^ 0x01;
+        auto& str = *reinterpret_cast<CStringX*>(&temp);
+        str = AnsiX(str, CP_SHIFT_JIS, CP_ACP).c_str();
     }
 }
 
