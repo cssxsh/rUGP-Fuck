@@ -26,8 +26,12 @@ std::wstring GetGameName();
 
 struct CodePatchRecord
 {
-    SIZE_T block_size;
-    BYTE origin[];
+    union
+    {
+        PVOID target;
+        SIZE_T block_size;
+    };
+    BYTE codes[];
 };
 
 class StructuredException final : public std::exception
@@ -51,6 +55,7 @@ public:
     static void AttachHook();
     static void DetachHook();
     static void AttachCharacterPatch(LPCSTR lpszModuleName);
+    static void DetachCharacterPatch();
     static void Clear();
 
 protected:

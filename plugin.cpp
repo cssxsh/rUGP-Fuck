@@ -88,6 +88,15 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
     case DLL_PROCESS_DETACH:
         try
         {
+            CObjectProxy::DetachCharacterPatch();
+        }
+        catch (StructuredException& se)
+        {
+            wprintf(L"CObjectProxy::DetachCharacterPatch Fail: %hs\n", se.what());
+        }
+
+        try
+        {
             CObjectProxy::DetachHook();
         }
         catch (StructuredException& se)
@@ -387,19 +396,6 @@ void CObjectProxy::Clear()
     RTC_MAP.clear();
     MODULE_MAP.clear();
 
-    for (auto& pair : PATCH_CACHE)
-    {
-        const auto address = pair.first;
-        const auto record = pair.second;
-        pair.second = nullptr;
-
-        auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
-        VirtualProtect(address, record->block_size, protect, &protect);
-        memcpy(address, record->origin, record->block_size);
-        VirtualProtect(address, record->block_size, protect, &protect);
-        free(record);
-    }
-    PATCH_CACHE.clear();
     CHARACTER_MAP.clear();
 
     for (auto& pair : FONT_CACHE)
@@ -426,7 +422,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
         const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + sizeof(DWORD)));
         record->block_size = sizeof(DWORD);
-        memcpy(record->origin, address, record->block_size);
+        memcpy(record->codes, address, record->block_size);
         auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
         VirtualProtect(address, record->block_size, protect, &protect);
         *address = nChar;
@@ -448,7 +444,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 wprintf(L"Attach CharacterPatch 0x%p at %hs\n", address + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + 0x04));
                 record->block_size = 0x04;
-                memcpy(record->origin, address, record->block_size);
+                memcpy(record->codes, address, record->block_size);
                 auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
                 VirtualProtect(address, record->block_size, protect, &protect);
                 address[0x00] = 0x34u;
@@ -475,7 +471,7 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 wprintf(L"Attach CharacterPatch 0x%p at %hs\n", address + diff, lpszModuleName);
                 const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + 0x06));
                 record->block_size = 0x06;
-                memcpy(record->origin, address, record->block_size);
+                memcpy(record->codes, address, record->block_size);
                 auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
                 VirtualProtect(address, record->block_size, protect, &protect);
                 address[0x01] = address[0x01] ^ 0x30u;
@@ -533,6 +529,34 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
             break;
         }
     }
+}
+
+void CObjectProxy::DetachCharacterPatch()
+{
+    for (auto& pair : PATCH_CACHE)
+    {
+        const auto address = pair.first;
+        const auto record = pair.second;
+        pair.second = nullptr;
+
+        if (IS_INTRESOURCE(record->target))
+        {
+            auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
+            VirtualProtect(address, record->block_size, protect, &protect);
+            memcpy(address, record->codes, record->block_size);
+            VirtualProtect(address, record->block_size, protect, &protect);
+            free(record);
+        }
+        else
+        {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            DetourDetach(&reinterpret_cast<PVOID&>(record->target), record->codes);
+            DetourTransactionCommit();
+            VirtualFree(record, 0, MEM_RELEASE);
+        }
+    }
+    PATCH_CACHE.clear();
 }
 
 void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszModuleName) // NOLINT(*-misplaced-const)
@@ -659,18 +683,21 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         break;
     }
 
-    const auto attach = [start, end](BYTE const tmp) -> LPVOID
+    const auto attach = [start, end](BYTE const tmp)
     {
-        const auto codes = static_cast<LPBYTE>(VirtualAlloc(
+        auto& record = PATCH_CACHE[end];
+        if (record != nullptr) return;
+        record = static_cast<CodePatchRecord*>(VirtualAlloc(
             nullptr,
-            0x0040,
+            sizeof(CodePatchRecord) + 0x0040,
             MEM_COMMIT | MEM_RESERVE,
             PAGE_EXECUTE_READWRITE));
+        auto& hook = record->target = end;
+        const auto codes = record->codes;
         memset(codes, 0xCCu, 0x0040);
-        auto hook = end;
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
+        DetourAttach(&hook, codes);
         DetourTransactionCommit();
         auto index = 0x00;
         // cmp     @tmp, 0x39
@@ -691,21 +718,23 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         *reinterpret_cast<int*>(codes + index) =
             reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
         VirtualProtect(codes, 0x0040, PAGE_EXECUTE_READ, nullptr);
-        return hook;
     };
 
-    const auto attach_ = [start, end](BYTE const tmp) -> LPVOID
+    const auto attach_ = [start, end](BYTE const tmp)
     {
-        const auto codes = static_cast<LPBYTE>(VirtualAlloc(
+        auto& record = PATCH_CACHE[end];
+        if (record != nullptr) return;
+        record = static_cast<CodePatchRecord*>(VirtualAlloc(
             nullptr,
-            0x0040,
+            sizeof(CodePatchRecord) + 0x0040,
             MEM_COMMIT | MEM_RESERVE,
             PAGE_EXECUTE_READWRITE));
+        auto& hook = reinterpret_cast<PVOID&>(record->target) = end;
+        const auto codes = record->codes;
         memset(codes, 0xCCu, 0x0040);
-        auto hook = end;
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&reinterpret_cast<PVOID&>(hook), codes);
+        DetourAttach(&hook, codes);
         DetourTransactionCommit();
         auto index = 0x00;
         // cmp     @tmp, 0x39
@@ -727,7 +756,6 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         *reinterpret_cast<int*>(codes + index) =
             reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
         VirtualProtect(codes, 0x0040, PAGE_EXECUTE_READ, nullptr);
-        return hook;
     };
 
     switch (end - start)
@@ -971,7 +999,7 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
         case 0x7B96EE8Au:
         // _CVmVar
         case 0x6D56435Fu:
-            if (strcmp(member->m_pRTC->m_lpszClassName, "_CVmVar64") == 0) __debugbreak();
+            // if (strcmp(member->m_pRTC->m_lpszClassName, "_CVmVar64") == 0) __debugbreak();
             obj[key] = static_cast<LPCSTR>(reinterpret_cast<CVmVar*>(address)->ToSerialString());
             break;
         default:
@@ -1132,8 +1160,17 @@ LPVOID CObjectProxy::HookGetCachedFont(CS5RFont* ecx, UINT uChar, COceanNode* co
 void CObjectProxy::HookStep(CBootTracer* ecx, INT_PTR const index)
 {
     wprintf(L"Hook CBootTracer::Step(index=%d)\n", index);
-    const auto uui = CUuiGlobals::GetGlobal();
-    if (uui != nullptr) uui->m_nInstallType = 2;
+    switch (index)
+    {
+    case 7:
+        {
+            const auto uui = CUuiGlobals::GetGlobal();
+            if (uui != nullptr) uui->m_nInstallType = 2;
+        }
+        break;
+    default:
+        break;
+    }
     return CUuiGlobals::FetchStep()(ecx, index);
 }
 
