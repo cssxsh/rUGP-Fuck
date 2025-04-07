@@ -6,8 +6,6 @@
 #include "rugp.h"
 #include "hook.h"
 
-static BOOL CreateMergeDirectory();
-
 static AFX_EXTENSION_MODULE R514783_PLUGIN = {FALSE, nullptr};
 
 // ReSharper disable once CppParameterMayBeConst
@@ -36,7 +34,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
 
         try
         {
-            CreateMergeDirectory();
+            CreateDirectoryW(GetGameName().c_str(), nullptr);
         }
         catch (StructuredException& se)
         {
@@ -206,12 +204,6 @@ std::wstring GetGameName()
     const auto l = wcsrchr(command, '\\') + 1;
     const auto r = wcschr(l, '}');
     return {l, r};
-}
-
-BOOL CreateMergeDirectory()
-{
-    const auto name = GetGameName();
-    return CreateDirectoryW(name.c_str(), nullptr);
 }
 
 StructuredException::StructuredException(const UINT u, const EXCEPTION_POINTERS* pExp)
