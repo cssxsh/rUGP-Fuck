@@ -244,7 +244,7 @@ CStringX::CStringX(const T* src, CStringX* (__thiscall * fetch)(const T*, CStrin
 
 inline CStringX CStringX::Fetch(const CVmVar* var, CStringX* (__thiscall *fetch)(const CVmVar*, CStringX*))
 {
-    return CStringX(var, fetch);
+    return {var, fetch};
 }
 
 BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
@@ -378,7 +378,7 @@ CProfile::CProfile(const T* src, CProfile* (__thiscall * fetch)(const T*, CProfi
 
 inline CProfile CProfile::Fetch(const CRioMsg* msg, CProfile* (__thiscall * fetch)(const CRioMsg*, CProfile*))
 {
-    return CProfile(msg, fetch);
+    return {msg, fetch};
 }
 
 const CRuntimeClass* CObjectEx::GetClassCObjectEx()
@@ -1594,7 +1594,7 @@ CRef::operator T*() const
 }
 
 template <class C, typename P>
-CRef::CRef(const C* src, const P* p1, CRef* (__thiscall * fetch)(const C*, CRef*, const P*))
+CRef::CRef(const C* src, const P* p1, CRef* (__thiscall * fetch)(const C*, CRef*, const P*)) : CRef()
 {
     if (this != fetch(src, this, p1)) __debugbreak();
 }
@@ -1604,7 +1604,7 @@ inline CRef CRef::Fetch(
     const CRuntimeClass* const rtc,
     CRef* (__thiscall * fetch)(const COceanNode*, CRef*, const CRuntimeClass*))
 {
-    return CRef(node, rtc, fetch);
+    return {node, rtc, fetch};
 }
 
 LPCSTR CrUGP::GetVersion() const

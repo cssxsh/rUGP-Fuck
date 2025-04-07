@@ -245,7 +245,7 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     const auto proc = GetProcAddress(hModule, "PluginThisLibrary");
     if (proc == nullptr) return FALSE;
 
-    MODULE_MAP[hModule] = nullptr;
+    auto& module = MODULE_MAP[hModule] = nullptr;
     if (CRio::FetchLibrarySupport() != nullptr)
     {
         DetourTransactionBegin();
@@ -260,9 +260,10 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     }
     else
     {
-        MODULE_MAP[hModule] = reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
+        module = reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
     }
-    for (auto clazz = MODULE_MAP[hModule]->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
+    if (module == nullptr) return FALSE;
+    for (auto clazz = module->pFirstSharedClass; clazz != nullptr; clazz = clazz->m_pNextClass)
     {
         const auto name = UnicodeX(clazz->m_lpszClassName, CP_SHIFT_JIS);
         RTC_MAP[name] = clazz;

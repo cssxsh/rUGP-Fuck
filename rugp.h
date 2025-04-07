@@ -191,7 +191,7 @@ public:
     static LPDrawFont1& FetchDrawFont1();
     static LPDrawFont2& FetchDrawFont2();
 
-    static CS5i* Match(LPVOID part);
+    static CS5i* Match(LPVOID);
 
 protected:
     static const CRio_vtbl* GetVisualTable();
@@ -354,7 +354,7 @@ public:
 
     // ReSharper disable CppNonExplicitConvertingConstructor
     CRef(const CRef&);
-    CRef(COceanNode*);
+    CRef(COceanNode*); // NOLINT(*-explicit-constructor)
     CRef();
     // ReSharper restore CppNonExplicitConvertingConstructor
     ~CRef();
@@ -362,7 +362,7 @@ public:
     CRef& operator=(COceanNode*);
     // ReSharper disable CppNonExplicitConversionOperator
     template <class T>
-    operator T*() const;
+    operator T*() const; // NOLINT(*-explicit-constructor)
     // ReSharper restore CppNonExplicitConversionOperator
 
 protected:
