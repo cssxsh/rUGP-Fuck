@@ -61,7 +61,7 @@
   * rUGP System Version 5.81.03
 * `[080328][age] 君が望む永遠 another episode 悲しみは風のように`
   * MFC Version 6.0
-  * rUGP System Version 5.60.32
+  * rUGP System Version 5.81.03
 * `[111028][age] 君がいた季節 初回限定生産版`
   * MFC Version 6.0
   * rUGP System Version 5.95.05
