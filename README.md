@@ -1,4 +1,4 @@
-# rUGP Fuck
+# [rUGP Fuck](https://github.com/cssxsh/rUGP-Fuck)
 
 > Plugin for `relic Unified Game Platform` / `AGES Player`
 
@@ -32,8 +32,8 @@
 
 文本接口
 
-* `public: void __thiscall CS5i::DrawFont(
-  short, short, struct tagRBDY const *, struct SQRBDY *, unsigned int, class CFontContext const *)`  
+* `public: void __thiscall CS5i::DrawFont(short, short, struct tagRBDY const *, struct SQRBDY *, unsigned int,
+  class CFontContext const *)`  
   文本绘制接口
 * `int __cdecl IsDBCS(char)`  
   多字节字符判断接口
@@ -44,6 +44,36 @@
 ## Install
 
 `$GAME_PATH/Plugins/r514783.dll`
+
+## Test Samples
+
+* `[040625][age] 君が望む永遠 ～special FanDisk～`
+  * MFC Version 6.0
+  * rUGP System Version 5.60.32
+* `[061229][mirage] アノニマス`
+  * MFC Version 6.0
+  * rUGP System Version 5.73.01
+* `[070420][ruf] 螺旋回廊 復刻版`
+  * MFC Version 6.0
+  * rUGP System Version 5.80.20EC
+* `[080328][age] 君が望む永遠 ～Latest Edition～`
+  * MFC Version 6.0
+  * rUGP System Version 5.81.03
+* `[080328][age] 君が望む永遠 another episode 悲しみは風のように`
+  * MFC Version 6.0
+  * rUGP System Version 5.60.32
+* `[111028][age] 君がいた季節 初回限定生産版`
+  * MFC Version 6.0
+  * rUGP System Version 5.95.05
+* `[151127][age] シュヴァルツェスマーケン 紅血の紋章`
+  * MFC Version 12.0
+  * rUGP System Version 6.23.02
+
+## Dependencies
+
+* [Detours v4.0.1](https://github.com/microsoft/Detours/releases/tag/v4.0.1)
+* [JsonCpp v1.9.6](https://github.com/open-source-parsers/jsoncpp/releases/tag/1.9.6)
+* [spdlog v1.15.2](https://github.com/gabime/spdlog/releases/tag/v1.15.2)
 
 ## TODO
 
