@@ -487,7 +487,7 @@ public:
 
     COceanNode* m_pMessBoxNode; // CMessBox
     COceanNode* m_pCRioNode; // COptimizedObs
-    CHAR m_arrVariableArea[];
+    CHAR m_pVariableArea[];
 };
 
 class CVmGenericMsg : public CVmCommand
@@ -505,22 +505,17 @@ public:
     CVmVar field_0010;
     const CMsgRTC* m_pRTC;
     INT m_nCount;
-    Param m_arrVariableArea[];
+    Param m_pVariableArea[];
 };
 
 class CVmCall : public CVmCommand
 {
 public:
-    struct Param
-    {
-        CVmVar m_var;
-        BYTE m_data[0x08];
-    };
     DECLARE_DYNAMIC_EX(CVmCall)
 
     CRef m_refRsa;
     INT m_nCount;
-    Param m_arrVariableArea[];
+    BYTE m_pVariableArea[];
 };
 
 class CVmVarObj : public CRio

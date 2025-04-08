@@ -844,7 +844,7 @@ CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)
                 auto& message = reinterpret_cast<CVmMsg*&>(next);
                 Merge(message, edx[name]);
                 // cache 4 bytes character
-                for (auto lpsz = message->m_arrVariableArea; *lpsz != '\0'; lpsz += CharacterByteSize(lpsz))
+                for (auto lpsz = message->m_pVariableArea; *lpsz != '\0'; lpsz += CharacterByteSize(lpsz))
                 {
                     if (static_cast<BYTE>(lpsz[0x00]) < 0x81u || static_cast<BYTE>(lpsz[0x01]) > 0x39u) continue;
                     const auto uChar = 0u
@@ -891,12 +891,12 @@ CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)
 void CObjectProxy::Merge(CVmMsg*& message, Json::Value& text)
 {
     const auto pClass = message->GetRuntimeClass();
-    if (!text.isString()) text = AnsiX(message->m_arrVariableArea, CP_SHIFT_JIS, CP_UTF8);
+    if (!text.isString()) text = AnsiX(message->m_pVariableArea, CP_SHIFT_JIS, CP_UTF8);
     const auto ansi = AnsiX(text.asCString(), CP_UTF8, CP_GB18030);
     const auto size = pClass->m_nObjectSize + (ansi.length() + 0x04 & ~0x03);
     const auto clone = static_cast<CVmMsg*>(malloc(size));
     memcpy(clone, message, pClass->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-    memcpy(clone->m_arrVariableArea, ansi.c_str(), ansi.length() + 0x04 & ~0x03);
+    memcpy(clone->m_pVariableArea, ansi.c_str(), ansi.length() + 0x04 & ~0x03);
     message = clone;
 }
 
@@ -1028,13 +1028,16 @@ void CObjectProxy::Merge(CVmCall*& call, Json::Value& arr)
     memcpy(clone, call, size); // NOLINT(*-undefined-memory-manipulation)
     call = clone;
 
-    arr[0] = AnsiX(GetUUID(call->m_refRsa.m_pNode).c_str(), CP_UTF8); 
+    arr[0] = AnsiX(GetUUID(call->m_refRsa.m_pNode).c_str(), CP_UTF8);
+    if (call->m_nCount == 0) return;
+    const auto block_size = call->GetVariableAreaSize() / call->m_nCount;
     for (auto i = 0; i < call->m_nCount; i++)
     {
-        auto& param = call->m_arrVariableArea[i];
-        arr[i + 1] = AnsiX(param.m_var.ToSerialString(), CP_SHIFT_JIS, CP_UTF8);
-        if ((param.m_var.m_pValue & 0x03) != 0x01) continue;
-        auto temp = param.m_var.m_pValue ^ 0x01;
+        auto& param = *reinterpret_cast<CVmVar*>(call->m_pVariableArea + i * block_size);
+        if (param.m_pValue == NULL) __debugbreak();
+        arr[i + 1] = AnsiX(param.ToSerialString(), CP_SHIFT_JIS, CP_UTF8);
+        if ((param.m_pValue & 0x03) != 0x01) continue;
+        auto temp = param.m_pValue ^ 0x01;
         auto& str = *reinterpret_cast<CStringX*>(&temp);
         str = AnsiX(str, CP_SHIFT_JIS, CP_ACP).c_str();
     }
