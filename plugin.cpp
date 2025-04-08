@@ -619,6 +619,8 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
 
     switch (reinterpret_cast<DWORD>(start) + offset)
     {
+    // 5.81.03   UnivUI .text:1002A2BE ?x2C@CUser@@UBE_NPBD@Z
+    case 0x1002A2BEu:
     // 5.95.05   UnivUI .text:1002BA4E ?x2C@CUser@@UBE_NPBD@Z
     case 0x1002BA4Eu:
     // 6.23.02   UnivUI .text:10025C68 ?GetSwitch@CRioRTC@@QBEHPBD@Z
@@ -627,12 +629,14 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     case 0x100363F6u:
         if (strcmp(lpszModuleName, "UnivUI") == 0) return;
         break;
-    // 5.95.05   Vm60   .text:10011467 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+    // 5.60.32   Vm60   .text:10011467 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
     case 0x10011467u:
     // 5.73.01   Vm60   .text:10013CE6 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
     case 0x10013CE6u:
     // 5.80.20EC Vm60   .text:100146B6 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
     case 0x100146B6u:
+    // 5.81.03   Vm60   .text:10014906 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+    case 0x10014906u:
     // 5.95.05   Vm60   .text:10016526 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
     case 0x10016526u:
     // 6.23.02   Vm60   .text:1001C4D2 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
