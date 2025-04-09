@@ -196,23 +196,19 @@ std::wstring GetGameName()
     return {l, r};
 }
 
-StructuredException::StructuredException(const UINT u, const EXCEPTION_POINTERS* pExp)
-    : exception(message(pExp)), Code(u), ExceptionPointers(pExp)
+StructuredException::StructuredException(const UINT u, const EXCEPTION_POINTERS* pExp) : m_pExceptionPointers(pExp)
 {
-    // ReSharper disable once CppDFAMemoryLeak
-}
-
-LPCSTR StructuredException::message(const EXCEPTION_POINTERS* pExp)
-{
+    const auto data = reinterpret_cast<__std_exception_data*>(this);
     const auto record = pExp->ExceptionRecord;
     const auto module = DetourGetContainingModule(record->ExceptionAddress);
     char filename[MAX_PATH];
     GetModuleFileNameA(module, filename, MAX_PATH);
-    // ReSharper disable once CppDFAMemoryLeak
     const auto buffer = static_cast<LPSTR>(malloc(0x0100));
     sprintf(buffer, "StructuredException 0x%08X at address 0x%p module %s",
-            record->ExceptionCode, record->ExceptionAddress, strrchr(filename, '\\') + 1);
-    return buffer;
+            u, record->ExceptionAddress, strrchr(filename, '\\') + 1);
+    const __std_exception_data temp = { buffer, true };
+    __std_exception_copy(&temp, data);
+    free(buffer);
 }
 
 void StructuredException::Trans(UINT const u, PEXCEPTION_POINTERS const pExp) // NOLINT(*-misplaced-const)

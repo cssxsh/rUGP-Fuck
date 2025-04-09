@@ -36,15 +36,11 @@ struct CodePatchRecord
 class StructuredException final : public std::exception
 {
 public:
-    const UINT Code;
-    const EXCEPTION_POINTERS* ExceptionPointers;
+    const EXCEPTION_POINTERS* m_pExceptionPointers;
 
     StructuredException(UINT u, const EXCEPTION_POINTERS* pExp);
 
     static std::remove_pointer_t<_se_translator_function> Trans;
-
-private:
-    static LPCSTR __fastcall message(const EXCEPTION_POINTERS*);
 };
 
 class CObjectProxy final
