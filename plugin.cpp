@@ -72,7 +72,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
 
         try
         {
-            // CObjectProxy::AttachCharacterPatch("GMfc");
+            CObjectProxy::AttachCharacterPatch("GMfc");
             CObjectProxy::AttachCharacterPatch("UnivUI");
             CObjectProxy::AttachCharacterPatch("rvmm");
             CObjectProxy::AttachCharacterPatch("Vm60");
@@ -544,6 +544,7 @@ void CObjectProxy::DetachCharacterPatch()
 
 void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszModuleName) // NOLINT(*-misplaced-const)
 {
+    if (strcmp(lpszModuleName, "GMfc") == 0) return;
     const auto module = DetourGetContainingModule(address);
     const auto offset = 0x10000000u - reinterpret_cast<DWORD>(module);
     auto start = static_cast<LPBYTE>(nullptr);
