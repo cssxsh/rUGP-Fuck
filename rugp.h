@@ -21,6 +21,8 @@ class CEditData;
 class CUI;
 class CImgBox;
 
+class CDatabase;
+
 class CObjectOcean;
 class CrelicUnitedGameProject;
 class CObjectArcMan;
@@ -83,9 +85,18 @@ public:
 protected:
     template <class T>
     CStringX(const T*, CStringX* (__thiscall *)(const T*, CStringX*));
+    template <class T>
+    CStringX(const T*, LPCSTR, LPCSTR, CStringX* (__thiscall *)(const T*, CStringX*, LPCSTR, LPCSTR));
 
 public:
-    static CStringX Fetch(const CVmVar*, CStringX* (__thiscall *)(const CVmVar*, CStringX*));
+    static CStringX Fetch(
+        const CVmVar*,
+        CStringX* (__thiscall *)(const CVmVar*, CStringX*));
+    static CStringX Fetch(
+        const CProfile*,
+        LPCSTR,
+        LPCSTR,
+        CStringX* (__thiscall *)(const CProfile*, CStringX*, LPCSTR, LPCSTR));
 };
 
 class GMfc final
@@ -108,12 +119,31 @@ public:
     ~CProfile();
 
     CProfile& operator=(const CProfile&);
+    CStringX operator[](LPCSTR) const;
     // ReSharper disable CppNonExplicitConversionOperator
-    operator CStringX&(); // NOLINT(*-explicit-constructor)
     operator LPCSTR() const; // NOLINT(*-explicit-constructor)
     // ReSharper restore CppNonExplicitConversionOperator
 
+    class Iterator final
+    {
+    protected:
+        const CProfile* m_profile;
+        LPCSTR m_pos;
+
+    public:
+        explicit Iterator(const CProfile* profile, LPCSTR pos);
+        std::pair<CStringX, CStringX> operator*() const;
+        Iterator& operator++();
+        Iterator operator++(int count);
+        bool operator!=(const Iterator& other) const;
+    };
+
+    Iterator begin() const;
+    Iterator end() const;
+
 protected:
+    LPCSTR EnumKeyValue(LPCSTR, CStringX&, CStringX&) const;
+
     template <class T>
     CProfile(const T*, CProfile* (__thiscall *)(const T*, CProfile*));
 
@@ -241,6 +271,14 @@ public:
     static LPDrawSzText& FetchDrawSzText();
 };
 
+class CDatabase : public CRio
+{
+public:
+    DECLARE_DYNAMIC_RIO(CDatabase)
+
+    CProfile m_profile;
+};
+
 class CObjectOcean : public CRio
 {
 public:
@@ -251,6 +289,8 @@ class CrelicUnitedGameProject : public CObjectOcean
 {
 public:
     DECLARE_DYNAMIC_RIO(CrelicUnitedGameProject)
+
+    CDatabase* GetGameProfile();
 
     static CrelicUnitedGameProject* GetGlobal();
 };
@@ -346,13 +386,9 @@ public:
 
     public:
         explicit Iterator(COceanNode* node);
-
         COceanNode* operator*() const;
-
         Iterator& operator++();
-
         Iterator operator++(int count);
-
         bool operator!=(const Iterator& other) const;
     };
 

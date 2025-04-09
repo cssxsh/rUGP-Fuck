@@ -236,16 +236,41 @@ CStringX::operator LPCSTR() const
 }
 
 template <class T>
-CStringX::CStringX(const T* src, CStringX* (__thiscall *fetch)(const T*, CStringX*))
+CStringX::CStringX(
+    const T* src,
+    CStringX* (__thiscall *fetch)(const T*, CStringX*))
 {
     if (this != fetch(src, this)) __debugbreak();
     if (m_pszData == nullptr) __debugbreak();
 }
 
-inline CStringX CStringX::Fetch(const CVmVar* var, CStringX* (__thiscall *fetch)(const CVmVar*, CStringX*))
+template <class T>
+CStringX::CStringX(
+    const T* src,
+    LPCSTR const p1,
+    LPCSTR const p2,
+    CStringX* (__thiscall *fetch)(const T*, CStringX*, LPCSTR, LPCSTR))
+{
+    if (this != fetch(src, this, p1, p2)) __debugbreak();
+    if (m_pszData == nullptr) __debugbreak();
+}
+
+inline CStringX CStringX::Fetch(
+    const CVmVar* var,
+    CStringX* (__thiscall *fetch)(const CVmVar*, CStringX*))
 {
     return {var, fetch};
 }
+
+inline CStringX CStringX::Fetch(
+    const CProfile* profile,
+    LPCSTR const key,
+    LPCSTR const value,
+    CStringX*(__thiscall *fetch)(const CProfile*, CStringX*, LPCSTR, LPCSTR))
+{
+    return {profile, key, value, fetch};
+}
+
 
 BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
 {
@@ -359,14 +384,70 @@ CProfile& CProfile::operator=(const CProfile& other)
     return *this;
 }
 
-CProfile::operator CStringX&()
+CStringX CProfile::operator[](LPCSTR const key) const
 {
-    return *reinterpret_cast<CStringX*>(this);
+    using LPGet = CStringX* (__thiscall *)(const CProfile*, CStringX*, LPCSTR, LPCSTR);
+    const auto name = "?ReadProfileString@CProfile@@QBE?AVCString@@PBD0@Z";
+    auto& proc = reinterpret_cast<LPGet&>(cache[name]);
+    if (proc == nullptr) proc = reinterpret_cast<LPGet>(GetProcAddress(GetModuleHandleA("GMfc"), name));
+    return CStringX::Fetch(this, key, "", proc);
 }
 
 CProfile::operator LPCSTR() const
 {
     return *reinterpret_cast<const LPCSTR*>(this);
+}
+
+LPCSTR CProfile::EnumKeyValue(LPCSTR const pos, CStringX& key, CStringX& value) const
+{
+    using LPEnum = LPCSTR (__thiscall *)(const CProfile*, LPCSTR, CStringX&, CStringX&);
+    const auto name = "?EnumProfile@CProfile@@QBEPBEPBEAAVCString@@1@Z";
+    auto& proc = reinterpret_cast<LPEnum&>(cache[name]);
+    if (proc == nullptr) proc = reinterpret_cast<LPEnum>(GetProcAddress(GetModuleHandleA("GMfc"), name));
+    return proc(this, pos, key, value);
+}
+
+auto CProfile::begin() const -> Iterator
+{
+    return Iterator(this, *this);
+}
+
+auto CProfile::end() const -> Iterator
+{
+    return Iterator(this, nullptr);
+}
+
+CProfile::Iterator::Iterator(const CProfile* profile, LPCSTR const pos)
+{
+    m_profile = profile;
+    m_pos = pos;
+}
+
+auto CProfile::Iterator::operator*() const -> std::pair<CStringX, CStringX>
+{
+    std::pair<CStringX, CStringX> result;
+    m_profile->EnumKeyValue(m_pos, result.first, result.second);
+    return result;
+}
+
+auto CProfile::Iterator::operator++() -> Iterator&
+{
+    if (m_pos == nullptr) return *this;
+    std::pair<CStringX, CStringX> result;
+    m_pos = m_profile->EnumKeyValue(m_pos, result.first, result.second);
+    return *this;
+}
+
+auto CProfile::Iterator::operator++(int const count) -> Iterator
+{
+    const Iterator iterator = *this;
+    for (auto i = 0; i < count; i++) this->operator++();
+    return iterator;
+}
+
+auto CProfile::Iterator::operator!=(const Iterator& other) const -> bool
+{
+    return (m_profile != other.m_profile) || (m_pos != other.m_pos);
 }
 
 template <class T>
@@ -992,6 +1073,33 @@ CImgBox::LPDrawSzText& CImgBox::FetchDrawSzText()
     return address = nullptr;
 }
 
+const CRuntimeClass* CDatabase::GetClassCDatabase()
+{
+    const auto name = "?classCStdb@CStdb@@2UCRioRTC@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(859)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static struct CRioRTC CStdb::classCStdb
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
 const CRuntimeClass* CObjectOcean::GetClassCObjectOcean()
 {
     const auto name = "?classCObjectOcean@CObjectOcean@@2UCRioRTC@@A";
@@ -1030,10 +1138,10 @@ const CRuntimeClass* CrelicUnitedGameProject::GetClassCrelicUnitedGameProject()
     case 0x0600:
     case 0x0C00:
         {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+            const auto Vm60 = GetModuleHandleA("Vm60");
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
             if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(199)));
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(199)));
             if (address != nullptr) return address;
         }
         break;
@@ -1044,6 +1152,22 @@ const CRuntimeClass* CrelicUnitedGameProject::GetClassCrelicUnitedGameProject()
     }
     __debugbreak();
     return nullptr;
+}
+
+CDatabase* CrelicUnitedGameProject::GetGameProfile()
+{
+    switch (GetClassCrelicUnitedGameProject()->m_nObjectSize)
+    {
+    case 0x00A8:
+    case 0x00CC:
+        return *reinterpret_cast<CRef*>(reinterpret_cast<LPBYTE>(this) + 0x0020);
+    case 0x00F4:
+        return *reinterpret_cast<CRef*>(reinterpret_cast<LPBYTE>(this) + 0x0024);
+    default:
+        break;
+    }
+    __debugbreak();
+    throw std::exception("CrelicUnitedGameProject::GetGameProfile no match");
 }
 
 CrelicUnitedGameProject* CrelicUnitedGameProject::GetGlobal()
