@@ -254,6 +254,8 @@ public:
     DECLARE_DYNAMIC_RIO(CObjectArcMan)
 
     CInstallSource* GetSourceObject(INT_PTR);
+
+    static CObjectArcMan* GetGlobal();
 };
 
 class CProcessOcean : public CObjectOcean
@@ -397,7 +399,7 @@ class CUuiGlobals
 
 public:
     UINT m_dwSchema;
-    LPVOID field_0004;
+    FARPROC field_0004;
     CStringX m_strInstallDriver;
     CStringX m_strGameFolder;
     DWORD field_0010;

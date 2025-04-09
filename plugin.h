@@ -8,7 +8,7 @@
 
 extern "C" {
 __declspec(dllexport) const AFX_EXTENSION_MODULE* PluginThisLibrary();
-__declspec(dllexport) LPCSTR WINAPIV GetPluginString(DWORD param1, DWORD param2);
+__declspec(dllexport) LPCSTR WINAPIV GetPluginString();
 __declspec(dllexport) BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
 }
 
@@ -20,8 +20,6 @@ std::string WINAPI AnsiX(LPCSTR lpText, UINT from, UINT to);
 
 std::wstring GetUUID(const COceanNode* node);
 
-std::wstring GetMergeFilePath(const COceanNode* node);
-
 std::wstring GetGameName();
 
 struct CodePatchRecord
@@ -31,6 +29,7 @@ struct CodePatchRecord
         PVOID target;
         SIZE_T block_size;
     };
+
     BYTE codes[];
 };
 
@@ -71,7 +70,8 @@ protected:
     static void __fastcall Merge(CVmMsg*& message, Json::Value& text);
     static void __fastcall Merge(CVmGenericMsg*& generic, Json::Value& obj);
     static void __fastcall Merge(CVmCall*& call, Json::Value& arr);
-    static int __stdcall CharacterByteSize(LPCSTR);
+    static int __fastcall CharacterByteSize(LPCSTR);
+    static std::wstring __fastcall GetPatchFilePath(const COceanNode* node);
 
     static std::remove_pointer_t<CRio::LPLibrarySupport> HookSupportRio;
     static std::remove_pointer_t<CRio::LPDestructor> HookDestructor;

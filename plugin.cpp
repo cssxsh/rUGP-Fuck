@@ -142,7 +142,7 @@ const AFX_EXTENSION_MODULE* PluginThisLibrary()
     return &R514783_PLUGIN;
 }
 
-LPCSTR WINAPIV GetPluginString(const DWORD /*param1*/, const DWORD /*param2*/)
+LPCSTR WINAPIV GetPluginString()
 {
     return "Fuck rUGP! Version 0.1.0\r\n"
         "\tThis is unofficial plugin.\r\n"
@@ -185,16 +185,6 @@ std::wstring GetUUID(const COceanNode* const node)
     wchar_t buffer[MAX_PATH];
     const auto name = UnicodeX(node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, CP_SHIFT_JIS);
     swprintf(buffer, MAX_PATH, L"%s@%08X", name.c_str(), node->GetAddress());
-    return buffer;
-}
-
-std::wstring GetMergeFilePath(const COceanNode* const node)
-{
-    wchar_t buffer[MAX_PATH];
-    auto format = UnicodeX(node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin", CP_SHIFT_JIS);
-    if (format[0] == L'C') format.erase(0, 1);
-    for (auto& ch : format) ch = towlower(ch);
-    swprintf(buffer, MAX_PATH, L"./%s/%08X.%s", GetGameName().c_str(), node->GetAddress(), format.c_str());
     return buffer;
 }
 
@@ -833,6 +823,16 @@ int CObjectProxy::CharacterByteSize(LPCSTR const text)
     return 2;
 }
 
+std::wstring CObjectProxy::GetPatchFilePath(const COceanNode* const node)
+{
+    wchar_t buffer[MAX_PATH];
+    auto format = UnicodeX(node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin", CP_SHIFT_JIS);
+    if (format[0] == L'C') format.erase(0, 1);
+    for (auto& ch : format) ch = towlower(ch);
+    swprintf(buffer, MAX_PATH, L"./%s/%08X.%s", GetGameName().c_str(), node->GetAddress(), format.c_str());
+    return buffer;
+}
+
 CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)
 {
     auto result = static_cast<CVmCommand*>(nullptr);
@@ -1045,7 +1045,7 @@ void CObjectProxy::Merge(CVmCall*& call, Json::Value& arr)
         if (param.m_pValue == NULL) __debugbreak();
         arr[i + 1] = AnsiX(param.ToSerialString(), CP_SHIFT_JIS, CP_UTF8);
         if ((param.m_pValue & 0x03) != 0x01) continue;
-        auto temp = param.m_pValue ^ 0x01;
+        auto temp = reinterpret_cast<LPCSTR>(param.m_pValue ^ 0x01);
         auto& str = *reinterpret_cast<CStringX*>(&temp);
         str = AnsiX(str, CP_SHIFT_JIS, CP_ACP).c_str();
     }
@@ -1082,7 +1082,7 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
     if (ecx->m_pNode->m_dwResAddr == 0x00000000) return ecx->FetchSerialize()(ecx, archive);
     wprintf(L"Hook %s::Serialize(this=%s)\n", name.c_str(), uuid.c_str());
 
-    const auto path = GetMergeFilePath(ecx->m_pNode);
+    const auto path = GetPatchFilePath(ecx->m_pNode);
     const auto hFile = CreateFileW(
         path.c_str(),
         GENERIC_READ,
@@ -1118,7 +1118,7 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
     wprintf(L"Hook %s::GetNextCommand(this=%s)\n", name.c_str(), uuid.c_str());
     const auto value = ecx->GetNextCommand();
 
-    const auto path = GetMergeFilePath(ecx->m_pNode) + L".json";
+    const auto path = GetPatchFilePath(ecx->m_pNode) + L".json";
     const auto hFile = CreateFileW(
         path.c_str(),
         GENERIC_READ | GENERIC_WRITE,
@@ -1158,7 +1158,8 @@ CStringX* CObjectProxy::HookGetLocalFullPathName(const COceanNode* node, CString
 {
     if (node->m_strName[0x01] == ':' && node->m_pRTC == CObjectArcMan::GetClassCObjectArcMan())
     {
-        const auto path = fmt::format(".\\{}\\{}",
+        const auto path = fmt::format(
+            ".\\{}\\{}",
             AnsiX(GetGameName().c_str(), CP_ACP),
             strrchr(const_cast<COceanNode*>(node)->m_strName, '\\') + 1);
         CopyFileA(node->m_strName, path.c_str(), true);
@@ -1208,11 +1209,12 @@ void CObjectProxy::HookStep(CBootTracer* ecx, INT_PTR const index)
     wprintf(L"Hook CBootTracer::Step(index=%d)\n", index);
     switch (index)
     {
+    case 6:
+        if (UnicodeX(CUuiGlobals::GetGlobal()->m_strGameName, CP_ACP) != GetGameName()) __debugbreak();
+        break;
     case 7:
-        {
-            const auto uui = CUuiGlobals::GetGlobal();
-            if (uui != nullptr) uui->m_nInstallType = 2;
-        }
+        // To skip the installation check
+        CUuiGlobals::GetGlobal()->m_nInstallType = 2;
         break;
     default:
         break;
@@ -1226,10 +1228,7 @@ UINT CObjectProxy::HookBeginProcess(CProcessOcean* ecx, CView* view)
     // {
     //     if (node->m_pRTC->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
     //     {
-    //         // const auto rio = const_cast<COceanNode*>(node)->FetchRef();
-    //         // const auto vtbl = *reinterpret_cast<FARPROC**>(rio);
-    //         // const auto fetch = reinterpret_cast<CCommandRef::LPGetNextCommand>(vtbl[0x000B]);
-    //         // fetch(reinterpret_cast<CCommandRef*>(rio));
+    //         HookGetNextCommand(reinterpret_cast<CCommandRef*>(node->Fetch()));
     //     }
     // }
     return CProcessOcean::FetchBeginProcess()(ecx, view);

@@ -236,7 +236,7 @@ CStringX::operator LPCSTR() const
 }
 
 template <class T>
-CStringX::CStringX(const T* src, CStringX* (__thiscall * fetch)(const T*, CStringX*))
+CStringX::CStringX(const T* src, CStringX* (__thiscall *fetch)(const T*, CStringX*))
 {
     if (this != fetch(src, this)) __debugbreak();
     if (m_pszData == nullptr) __debugbreak();
@@ -370,13 +370,13 @@ CProfile::operator LPCSTR() const
 }
 
 template <class T>
-CProfile::CProfile(const T* src, CProfile* (__thiscall * fetch)(const T*, CProfile*))
+CProfile::CProfile(const T* src, CProfile* (__thiscall *fetch)(const T*, CProfile*))
 {
     fetch(src, this);
     if (m_pszData == nullptr) __debugbreak();
 }
 
-inline CProfile CProfile::Fetch(const CRioMsg* msg, CProfile* (__thiscall * fetch)(const CRioMsg*, CProfile*))
+inline CProfile CProfile::Fetch(const CRioMsg* msg, CProfile* (__thiscall *fetch)(const CRioMsg*, CProfile*))
 {
     return {msg, fetch};
 }
@@ -1102,6 +1102,13 @@ CInstallSource* CObjectArcMan::GetSourceObject(INT_PTR const index)
     return nullptr;
 }
 
+CObjectArcMan* CObjectArcMan::GetGlobal()
+{
+    const auto node = COceanNode::GetRoot()->FindChildrenTypeOf(GetClassCObjectArcMan());
+    if (node == nullptr) return nullptr;
+    return reinterpret_cast<CObjectArcMan*>(node->Fetch());
+}
+
 const CRuntimeClass* CProcessOcean::GetClassCProcessOcean()
 {
     const auto name = "?classCProcessOcean@CProcessOcean@@2UCRioRTC@@A";
@@ -1621,7 +1628,7 @@ CRef::operator T*() const
 }
 
 template <class C, typename P>
-CRef::CRef(const C* src, const P* p1, CRef* (__thiscall * fetch)(const C*, CRef*, const P*)) : CRef()
+CRef::CRef(const C* src, const P* p1, CRef* (__thiscall *fetch)(const C*, CRef*, const P*)) : CRef()
 {
     if (this != fetch(src, this, p1)) __debugbreak();
 }
@@ -1629,7 +1636,7 @@ CRef::CRef(const C* src, const P* p1, CRef* (__thiscall * fetch)(const C*, CRef*
 inline CRef CRef::Fetch(
     const COceanNode* const node,
     const CRuntimeClass* const rtc,
-    CRef* (__thiscall * fetch)(const COceanNode*, CRef*, const CRuntimeClass*))
+    CRef* (__thiscall *fetch)(const COceanNode*, CRef*, const CRuntimeClass*))
 {
     return {node, rtc, fetch};
 }
@@ -1846,11 +1853,11 @@ CStringX& CInstallSource::FetchName()
     switch (CObjectArcMan::GetClassCObjectArcMan()->m_nObjectSize)
     {
     case 0x00C0:
-        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x18);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x0018);
     case 0x00C8:
     case 0x00F0:
     case 0x0104:
-        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x20);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x0020);
     default:
         break;
     }
@@ -1863,13 +1870,13 @@ CStringX& CInstallSource::FetchSource()
     switch (CObjectArcMan::GetClassCObjectArcMan()->m_nObjectSize)
     {
     case 0x00C0:
-        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x30);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x0030);
     case 0x00C8:
-        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x40);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x0040);
     case 0x00F0:
-        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x48);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x0048);
     case 0x0104:
-        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x4C);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x004C);
     default:
         break;
     }
@@ -1882,13 +1889,13 @@ CStringX& CInstallSource::FetchTarget()
     switch (CObjectArcMan::GetClassCObjectArcMan()->m_nObjectSize)
     {
     case 0x00C0:
-        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x5C);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x005C);
     case 0x00C8:
-        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x68);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x0068);
     case 0x00F0:
-        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x70);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x0070);
     case 0x0104:
-        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x78);
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x0078);
     default:
         break;
     }
