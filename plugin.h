@@ -77,6 +77,7 @@ protected:
     static std::remove_pointer_t<CRio::LPDestructor> HookDestructor;
     static std::remove_pointer_t<CRio::LPSerialize> HookSerialize;
     static std::remove_pointer_t<CCommandRef::LPGetNextCommand> HookGetNextCommand;
+    static std::remove_pointer_t<COceanNode::LPGetLocalFullPathName> HookGetLocalFullPathName;
 
     static std::remove_pointer_t<GMfc::LPIsMBCS> HookIsMBCS;
     static std::remove_pointer_t<CS5i::LPDrawFont1> HookDrawFont1;

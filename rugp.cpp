@@ -1508,6 +1508,33 @@ const COceanNode* COceanNode::GetNull()
     return nullptr;
 }
 
+COceanNode::LPGetLocalFullPathName& COceanNode::FetchGetLocalFullPathName()
+{
+    const auto name = "?GetLocalFullPathName@COceanNode@@QBE?AVCString@@XZ";
+    auto& address = reinterpret_cast<LPGetLocalFullPathName&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<LPGetLocalFullPathName>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<LPGetLocalFullPathName>(GetProcAddress(UnivUI, MAKEINTRESOURCE(88)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: class CString __thiscall COceanNode::GetLocalFullPathName(void) const
+    default:
+        break;
+    }
+    __debugbreak();
+    return address = nullptr;
+}
+
 auto COceanNode::begin() -> Iterator
 {
     return Iterator(this);

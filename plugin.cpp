@@ -290,6 +290,10 @@ void CObjectProxy::AttachHook()
             DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
         }
     }
+    if (COceanNode::FetchGetLocalFullPathName())
+    {
+        DetourAttach(&reinterpret_cast<PVOID&>(COceanNode::FetchGetLocalFullPathName()), &HookGetLocalFullPathName);
+    }
     if (CS5i::FetchDrawFont1())
     {
         wprintf(L"DetourAttach: CS5i::DrawFont\n");
@@ -1148,6 +1152,20 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
     }
 
     return cache;
+}
+
+CStringX* CObjectProxy::HookGetLocalFullPathName(const COceanNode* node, CStringX* x)
+{
+    if (node->m_strName[0x01] == ':' && node->m_pRTC == CObjectArcMan::GetClassCObjectArcMan())
+    {
+        const auto path = fmt::format(".\\{}\\{}",
+            AnsiX(GetGameName().c_str(), CP_ACP),
+            strrchr(const_cast<COceanNode*>(node)->m_strName, '\\') + 1);
+        CopyFileA(node->m_strName, path.c_str(), true);
+        const_cast<COceanNode*>(node)->m_strName = path.c_str();
+    }
+    COceanNode::FetchGetLocalFullPathName()(node, x);
+    return x;
 }
 
 BOOL CObjectProxy::HookIsMBCS(CHAR const c)

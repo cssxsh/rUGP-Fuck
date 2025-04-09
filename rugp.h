@@ -314,6 +314,8 @@ protected:
     ~COceanNode();
 
 public:
+    using LPGetLocalFullPathName = CStringX* (__thiscall *)(const COceanNode*, CStringX*);
+
     BOOL IsDerivedFrom(const CRuntimeClass*) const;
     CRio* Fetch();
     void ReleaseRef();
@@ -324,6 +326,8 @@ public:
 
     static const COceanNode* GetRoot();
     static const COceanNode* GetNull();
+
+    static LPGetLocalFullPathName& FetchGetLocalFullPathName();
 
     class Iterator final
     {
