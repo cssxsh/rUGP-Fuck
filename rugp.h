@@ -282,7 +282,15 @@ class CDatabase : public CRio
 public:
     DECLARE_DYNAMIC_RIO(CDatabase)
 
-    CProfile m_profile;
+    using LPInitializeDatabase = void (__thiscall *)(CDatabase*);
+    using LPRead = CStringX* (__thiscall *)(const CDatabase*, CStringX*, LPCSTR, LPCSTR);
+    using LPWrite = void (__thiscall *)(CDatabase*, LPCSTR, LPCSTR);
+    using LPIsKeyExist = BOOL (__thiscall *)(CDatabase*, LPCSTR);
+
+    static LPInitializeDatabase& FetchInitialize();
+    static LPRead& FetchRead();
+    static LPWrite& FetchWrite();
+    static LPIsKeyExist& FetchIsExist();
 };
 
 class CObjectOcean : public CRio
@@ -607,6 +615,10 @@ struct CObject_vtbl
     void (__thiscall *Serialize)(CObject*, CArchive*);
     void (__thiscall *AssertValid)(CObject*);
     void (__thiscall *Dump)(CObject*, CDumpContext*);
+
+    // ReSharper disable CppNonExplicitConversionOperator
+    operator FARPROC const*() const; // NOLINT(*-explicit-constructor)
+    // ReSharper restore CppNonExplicitConversionOperator
 };
 
 struct CRio_vtbl : CObject_vtbl

@@ -1101,6 +1101,166 @@ const CRuntimeClass* CDatabase::GetClassCDatabase()
     return nullptr;
 }
 
+CDatabase::LPInitializeDatabase& CDatabase::FetchInitialize()
+{
+    const auto name = "?InitializeDatabase@CStdb@@UAEXXZ";
+    auto& address = reinterpret_cast<LPInitializeDatabase&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<LPInitializeDatabase>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            const auto clazz = GetClassCDatabase();
+            const auto vtbl = FindVisualTable(clazz);
+            switch (clazz->m_nObjectSize)
+            {
+            case 0x0014:
+                address = reinterpret_cast<LPInitializeDatabase>(vtbl->operator FARPROC const*()[0x0C]);
+                if (address != nullptr) return address;
+                break;
+            case 0x0010:
+                address = reinterpret_cast<LPInitializeDatabase>(vtbl->operator FARPROC const*()[0x0D]);
+                if (address != nullptr) return address;
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    case 0x0E00:
+        // TODO public: virtual void __thiscall CStdb::InitializeDatabase(void)
+    default:
+        break;
+    }
+    __debugbreak();
+    return address = nullptr;
+}
+
+CDatabase::LPRead& CDatabase::FetchRead()
+{
+    const auto name = "?Read@CStdb@@UAE?AVCString@@PBD0@Z";
+    auto& address = reinterpret_cast<LPRead&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<LPRead>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            const auto clazz = GetClassCDatabase();
+            const auto vtbl = FindVisualTable(clazz);
+            switch (clazz->m_nObjectSize)
+            {
+            case 0x0014:
+                address = reinterpret_cast<LPRead>(vtbl->operator FARPROC const*()[0x0D]);
+                if (address != nullptr) return address;
+                break;
+            case 0x0010:
+                address = reinterpret_cast<LPRead>(vtbl->operator FARPROC const*()[0x0E]);
+                if (address != nullptr) return address;
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    case 0x0E00:
+        // TODO public: virtual class CString __thiscall CStdb::Read(char const *, char const *)
+    default:
+        break;
+    }
+    __debugbreak();
+    return address = nullptr;
+}
+
+CDatabase::LPWrite& CDatabase::FetchWrite()
+{
+    const auto name = "?Write@CStdb@@UAEXPBD0@Z";
+    auto& address = reinterpret_cast<LPWrite&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<LPWrite>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            const auto clazz = GetClassCDatabase();
+            const auto vtbl = FindVisualTable(clazz);
+            switch (clazz->m_nObjectSize)
+            {
+            case 0x0014:
+                address = reinterpret_cast<LPWrite>(vtbl->operator FARPROC const*()[0x0E]);
+                if (address != nullptr) return address;
+                break;
+            case 0x0010:
+                address = reinterpret_cast<LPWrite>(vtbl->operator FARPROC const*()[0x0F]);
+                if (address != nullptr) return address;
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    case 0x0E00:
+        // TODO public: virtual void __thiscall CStdb::Write(char const *, char const *)
+    default:
+        break;
+    }
+    __debugbreak();
+    return address = nullptr;
+}
+
+CDatabase::LPIsKeyExist& CDatabase::FetchIsExist()
+{
+    const auto name = "?IsKeyExist@CStdb@@UAEHPBD@Z";
+    auto& address = reinterpret_cast<LPIsKeyExist&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<LPIsKeyExist>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            const auto clazz = GetClassCDatabase();
+            const auto vtbl = FindVisualTable(clazz);
+            switch (clazz->m_nObjectSize)
+            {
+            case 0x0014:
+                address = reinterpret_cast<LPIsKeyExist>(vtbl->operator FARPROC const*()[0x0F]);
+                if (address != nullptr) return address;
+                break;
+            case 0x0010:
+                address = reinterpret_cast<LPIsKeyExist>(vtbl->operator FARPROC const*()[0x10]);
+                if (address != nullptr) return address;
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    case 0x0E00:
+        // TODO public: virtual int __thiscall CStdb::IsKeyExist(char const *)
+    default:
+        break;
+    }
+    __debugbreak();
+    return address = nullptr;
+}
+
 const CRuntimeClass* CObjectOcean::GetClassCObjectOcean()
 {
     const auto name = "?classCObjectOcean@CObjectOcean@@2UCRioRTC@@A";
@@ -1307,15 +1467,15 @@ CProcessOcean::LPBeginProcess& CProcessOcean::FetchBeginProcess()
             switch (clazz->m_nObjectSize)
             {
             case 0x002C:
-                address = *reinterpret_cast<LPBeginProcess*>(reinterpret_cast<DWORD>(vtbl) + 0x38);
+                address = reinterpret_cast<LPBeginProcess>(vtbl->operator FARPROC const*()[0x0E]);
                 if (address != nullptr) return address;
                 break;
             case 0x0030:
-                address = *reinterpret_cast<LPBeginProcess*>(reinterpret_cast<DWORD>(vtbl) + 0x3C);
+                address = reinterpret_cast<LPBeginProcess>(vtbl->operator FARPROC const*()[0x0F]);
                 if (address != nullptr) return address;
                 break;
             case 0x0034:
-                address = *reinterpret_cast<LPBeginProcess*>(reinterpret_cast<DWORD>(vtbl) + 0x40);
+                address = reinterpret_cast<LPBeginProcess>(vtbl->operator FARPROC const*()[0x10]);
                 if (address != nullptr) return address;
                 break;
             default:
@@ -2105,14 +2265,13 @@ CCommandRef::LPGetNextCommand& CCommandRef::FetchGetNextCommand(const CRuntimeCl
 
 CCommandRef::LPGetNextCommand CCommandRef::FindGetNextCommand(const CRio_vtbl* vtbl)
 {
-    const auto arr = reinterpret_cast<FARPROC* const*>(vtbl);
     const auto mfc = GetMfc();
     switch (mfc.version)
     {
     case 0x0600:
-        return reinterpret_cast<LPGetNextCommand>(arr[0x000B]);
+        return reinterpret_cast<LPGetNextCommand>(vtbl->operator FARPROC const*()[0x000B]);
     case 0x0C00:
-        return reinterpret_cast<LPGetNextCommand>(arr[0x000C]);
+        return reinterpret_cast<LPGetNextCommand>(vtbl->operator FARPROC const*()[0x000C]);
     default:
         // TODO ?GetNextCommand@CCommandRef@@UBEPAVCVmCommand@@XZ
         break;
@@ -2283,4 +2442,9 @@ const HashBucket<CMsgRTC>* CMsgRTC::GetRegister()
     }
     __debugbreak();
     return nullptr;
+}
+
+CObject_vtbl::operator FARPROC const*() const
+{
+    return reinterpret_cast<FARPROC const*>(this);
 }
