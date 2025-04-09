@@ -1171,20 +1171,20 @@ BOOL CObjectProxy::HookIsMBCS(CHAR const c)
 }
 
 int CObjectProxy::HookDrawFont1(
-    LPVOID const ecx, // NOLINT(*-misplaced-const)
+    CS5i::Part* const ecx, // NOLINT(*-misplaced-const)
     SHORT const x, SHORT const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
 {
-    // const auto s5i = CS5i::Match(ecx);
+    // const auto& s5i = reinterpret_cast<CS5i&>(*ecx);
     if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];
     if (uChar != '\0') return CS5i::FetchDrawFont1()(ecx, x, y, rect, out, uChar, context);
     return 0;
 }
 
 LPINT CObjectProxy::HookDrawFont2(
-    LPVOID const ecx, LPINT const width, // NOLINT(*-misplaced-const)
+    CS5i::Part* const ecx, LPINT const width, // NOLINT(*-misplaced-const)
     SHORT const x, SHORT const y, WORD* const rect, WORD* const out, UINT uChar, CFontContext* const context)
 {
-    // const auto s5i = CS5i::Match(ecx);
+    // const auto& s5i = reinterpret_cast<CS5i&>(*ecx);
     if ((uChar & 0xFF00u) != 0x0000u && (uChar & 0x00FFu) <= 0x0039u) uChar = CHARACTER_MAP[uChar];
     if (uChar != '\0') return CS5i::FetchDrawFont2()(ecx, width, x, y, rect, out, uChar, context);
     *width = 0;

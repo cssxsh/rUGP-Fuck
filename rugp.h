@@ -216,13 +216,19 @@ class CS5i : public CVisual
 public:
     DECLARE_DYNAMIC_RIO(CS5i)
 
-    using LPDrawFont1 = int (__thiscall *)(LPVOID, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
-    using LPDrawFont2 = LPINT (__thiscall *)(LPVOID, LPINT, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
+    class Part final
+    {
+    public:
+        // ReSharper disable CppNonExplicitConversionOperator
+        operator CS5i&(); // NOLINT(*-explicit-constructor)
+        // ReSharper restore CppNonExplicitConversionOperator
+    };
+
+    using LPDrawFont1 = int (__thiscall *)(Part*, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
+    using LPDrawFont2 = LPINT (__thiscall *)(Part*, LPINT, SHORT, SHORT, WORD*, WORD*, UINT, CFontContext*);
 
     static LPDrawFont1& FetchDrawFont1();
     static LPDrawFont2& FetchDrawFont2();
-
-    static CS5i* Match(LPVOID);
 
 protected:
     static const CRio_vtbl* GetVisualTable();

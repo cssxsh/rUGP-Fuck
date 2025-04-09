@@ -695,6 +695,21 @@ const CRuntimeClass* CS5i::GetClassCS5i()
     return nullptr;
 }
 
+CS5i::Part::operator CS5i&()
+{
+    const auto vtbl = GetVisualTable();
+    const auto clazz = GetClassCS5i();
+    const auto start = reinterpret_cast<CRio_vtbl**>(this);
+    for (auto offset = start; start - offset < clazz->m_nObjectSize; offset--)
+    {
+        if (IsBadReadPtr(offset, sizeof(CRio_vtbl*))) break;
+        if (*offset != vtbl) continue;
+        return *reinterpret_cast<CS5i*>(offset);
+    }
+    __debugbreak();
+    throw std::exception("CS5i::Part no match");
+}
+
 CS5i::LPDrawFont1& CS5i::FetchDrawFont1()
 {
     const auto name = "?DrawFont@CS5i@@QAEHFFPBUtagRBDY@@PAUSQRBDY@@IPBVCFontContext@@@Z";
@@ -773,20 +788,6 @@ CS5i::LPDrawFont2& CS5i::FetchDrawFont2()
     }
     __debugbreak();
     return address = nullptr;
-}
-
-CS5i* CS5i::Match(LPVOID const part) // NOLINT(*-misplaced-const)
-{
-    const auto vtbl = GetVisualTable();
-    const auto start = static_cast<CRio_vtbl**>(part);
-    for (auto offset = start; start - offset < 0x0400; offset--)
-    {
-        if (IsBadReadPtr(part, sizeof(CRio_vtbl*))) break;
-        if (*offset != vtbl) continue;
-        return reinterpret_cast<CS5i*>(offset);
-    }
-    __debugbreak();
-    return nullptr;
 }
 
 const CRio_vtbl* CS5i::GetVisualTable()
