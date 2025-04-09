@@ -815,6 +815,33 @@ CS5RFont::LPGetFont& CS5RFont::FetchGetCachedFont()
     return address = nullptr;
 }
 
+const CRuntimeClass* CEditData::GetClassCEditData()
+{
+    const auto name = "?classCEditData@CEditData@@2UCRioRTC@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto UnivUI = GetModuleHandleA("UnivUI");
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+            if (address != nullptr) return address;
+            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(828)));
+            if (address != nullptr) return address;
+        }
+        break;
+    case 0x0E00:
+        // TODO public: static struct CRioRTC CEditData::classCEditData
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
 const CRuntimeClass* CUI::GetClassCUI()
 {
     const auto name = "?classCUI@CUI@@2UCRioRTC@@A";

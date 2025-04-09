@@ -16,6 +16,7 @@ class CVisual;
 class CRip;
 class CS5i;
 class CS5RFont;
+class CEditData;
 
 class CUI;
 class CImgBox;
@@ -208,6 +209,12 @@ public:
     LPVOID CreateNewFont(UINT, COceanNode*);
 
     static LPGetFont& FetchGetCachedFont();
+};
+
+class CEditData : public CVisual
+{
+public:
+    DECLARE_DYNAMIC_RIO(CEditData)
 };
 
 class CUI : public CRio
