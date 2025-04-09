@@ -191,8 +191,8 @@ std::wstring GetUUID(const COceanNode* const node)
 std::wstring GetGameName()
 {
     const auto command = GetCommandLineW();
-    const auto l = wcsrchr(command, '\\') + 1;
-    const auto r = wcschr(l, '}');
+    const auto l = wcsrchr(command, L'\\') + 1;
+    const auto r = wcschr(l, L'}');
     return {l, r};
 }
 
