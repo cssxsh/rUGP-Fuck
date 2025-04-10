@@ -422,6 +422,22 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         VirtualProtect(address, record->block_size, protect, &protect);
         PATCH_CACHE[address] = record;
     };
+    const auto trans = [hModule, lpszModuleName](LPBYTE const offset, LPCWSTR const str) // NOLINT(*-misplaced-const)
+    {
+        const auto address = reinterpret_cast<LPSTR>(offset);
+        if (AnsiX(str, CP_SHIFT_JIS) != address) return;
+        const auto diff = 0x10000000u - reinterpret_cast<DWORD>(hModule);
+        wprintf(L"Attach CharacterPatch 0x%p at %hs\n", offset + diff, lpszModuleName);
+        const auto size = strlen(address) + 0x04 & ~0x03;
+        const auto record = static_cast<CodePatchRecord*>(malloc(sizeof(CodePatchRecord) + size));
+        record->block_size = size;
+        memcpy(record->codes, address, record->block_size);
+        auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
+        VirtualProtect(address, record->block_size, protect, &protect);
+        strcpy(address, AnsiX(str, CP_GB18030).c_str());
+        VirtualProtect(address, record->block_size, protect, &protect);
+        PATCH_CACHE[address] = record;
+    };
     for (auto offset = start; offset < end; offset++)
     {
         if (IsBadCodePtr(reinterpret_cast<FARPROC>(offset))) break;
@@ -455,6 +471,14 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         // '─'
         case 0x0000849Fu:
             replace(offset, 0x0000A9A4u);
+            break;
+        // "_その他"
+        case 0x82BB825Fu:
+            trans(offset, L"_その他");
+            break;
+        // "（その他のキャラ）"
+        case 0xBB826981u:
+            trans(offset, L"（その他のキャラ）");
             break;
         default:
             if (offset[0x04] != 0x00 && offset[0x03] == 0x00 && offset[0x02] == 0x00 &&
