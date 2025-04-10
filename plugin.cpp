@@ -480,6 +480,10 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         case 0xBB826981u:
             trans(offset, L"（その他のキャラ）");
             break;
+        // "標準"
+        case 0x808F5795u:
+            trans(offset, L"標準");
+            break;
         default:
             if (offset[0x04] != 0x00 && offset[0x03] == 0x00 && offset[0x02] == 0x00 &&
                 ((offset[0x02] ^ 0x20) + 0x5F & 0xFF) <= 0x3B && offset[0x01] >= 0x40 &&

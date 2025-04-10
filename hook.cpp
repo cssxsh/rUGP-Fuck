@@ -12,12 +12,6 @@ void Win32Hook::AttachHook()
         wprintf(L"DetourAttach: CreateWindowExA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateWindowExA), &HookCreateWindowExA);
     }
-    if (pfnCreateMDIWindowA == nullptr)
-    {
-        pfnCreateMDIWindowA = &CreateMDIWindowA;
-        wprintf(L"DetourAttach: CreateMDIWindowA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateMDIWindowA), &HookCreateMDIWindowA);
-    }
     if (pfnSetWindowTextA == nullptr)
     {
         pfnSetWindowTextA = &SetWindowTextA;
@@ -65,6 +59,18 @@ void Win32Hook::AttachHook()
         pfnSetDlgItemTextA = &SetDlgItemTextA;
         wprintf(L"DetourAttach: SetDlgItemTextA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnSetDlgItemTextA), &HookSetDlgItemTextA);
+    }
+    if (pfnSendDlgItemMessageA == nullptr)
+    {
+        pfnSendDlgItemMessageA = &SendDlgItemMessageA;
+        wprintf(L"DetourAttach: SendDlgItemMessageA\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnSendDlgItemMessageA), &HookSendDlgItemMessageA);
+    }
+    if (pfnAppendMenuA == nullptr)
+    {
+        pfnAppendMenuA = &AppendMenuA;
+        wprintf(L"DetourAttach: AppendMenuA\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnAppendMenuA), &HookAppendMenuA);
     }
     if (pfnMessageBoxA == nullptr)
     {
@@ -127,12 +133,6 @@ void Win32Hook::DetachHook()
         DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateWindowExA), &HookCreateWindowExA);
         pfnCreateWindowExA = nullptr;
     }
-    if (pfnCreateMDIWindowA != nullptr)
-    {
-        wprintf(L"DetourDetach: CreateMDIWindowA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateMDIWindowA), &HookCreateMDIWindowA);
-        pfnCreateMDIWindowA = nullptr;
-    }
     if (pfnSetWindowTextA != nullptr)
     {
         wprintf(L"DetourDetach: SetWindowTextA\n");
@@ -165,24 +165,33 @@ void Win32Hook::DetachHook()
     }
     if (pfnDialogBoxParamA != nullptr)
     {
-        pfnDialogBoxParamA = DialogBoxParamA;
         wprintf(L"DetourDetach: DialogBoxParamA\n");
         DetourDetach(&reinterpret_cast<PVOID&>(pfnDialogBoxParamA), &HookDialogBoxParamA);
         pfnDialogBoxParamA = nullptr;
     }
     if (pfnDialogBoxIndirectParamA != nullptr)
     {
-        pfnDialogBoxIndirectParamA = DialogBoxIndirectParamA;
         wprintf(L"DetourDetach: DialogBoxIndirectParamA\n");
         DetourDetach(&reinterpret_cast<PVOID&>(pfnDialogBoxIndirectParamA), &HookDialogBoxIndirectParamA);
         pfnDialogBoxIndirectParamA = nullptr;
     }
     if (pfnSetDlgItemTextA != nullptr)
     {
-        pfnSetDlgItemTextA = SetDlgItemTextA;
         wprintf(L"DetourDetach: SetDlgItemTextA\n");
         DetourDetach(&reinterpret_cast<PVOID&>(pfnSetDlgItemTextA), &HookSetDlgItemTextA);
         pfnSetDlgItemTextA = nullptr;
+    }
+    if (pfnSendDlgItemMessageA == nullptr)
+    {
+        wprintf(L"DetourDetach: SendDlgItemMessageA\n");
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnSendDlgItemMessageA), &HookSendDlgItemMessageA);
+        pfnSendDlgItemMessageA = nullptr;
+    }
+    if (pfnAppendMenuA == nullptr)
+    {
+        wprintf(L"DetourDetach: AppendMenuA\n");
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnAppendMenuA), &HookAppendMenuA);
+        pfnAppendMenuA = nullptr;
     }
     if (pfnMessageBoxA != nullptr)
     {
@@ -237,8 +246,6 @@ void Win32Hook::DetachHook()
 
 decltype(CreateWindowExA)* Win32Hook::pfnCreateWindowExA = nullptr;
 
-decltype(CreateMDIWindowA)* Win32Hook::pfnCreateMDIWindowA = nullptr;
-
 decltype(SetWindowTextA)* Win32Hook::pfnSetWindowTextA = nullptr;
 
 decltype(CreatePropertySheetPageA)* Win32Hook::pfnCreatePropertySheetPageA = nullptr;
@@ -254,6 +261,10 @@ decltype(DialogBoxParamA)* Win32Hook::pfnDialogBoxParamA = nullptr;
 decltype(DialogBoxIndirectParamA)* Win32Hook::pfnDialogBoxIndirectParamA = nullptr;
 
 decltype(SetDlgItemTextA)* Win32Hook::pfnSetDlgItemTextA = nullptr;
+
+decltype(SendDlgItemMessageA)* Win32Hook::pfnSendDlgItemMessageA = nullptr;
+
+decltype(AppendMenuA)* Win32Hook::pfnAppendMenuA = nullptr;
 
 decltype(MessageBoxA)* Win32Hook::pfnMessageBoxA = nullptr;
 
@@ -298,36 +309,22 @@ HWND WINAPI Win32Hook::HookCreateWindowExA(
     return result;
 }
 
-HWND WINAPI Win32Hook::HookCreateMDIWindowA(
-    const LPCSTR lpClassName,
-    const LPCSTR lpWindowName,
-    const DWORD dwStyle,
-    const int X,
-    const int Y,
-    const int nWidth,
-    const int nHeight,
-    const HWND hWndParent, // NOLINT(*-misplaced-const)
-    const HINSTANCE hInstance, // NOLINT(*-misplaced-const)
-    const LPARAM lParam)
-{
-    const auto uuid = Unicode(lpClassName, CP_SHIFT_JIS);
-    const auto title = Unicode(lpWindowName, CP_SHIFT_JIS);
-    wprintf(L"Hook CreateMDIWindowA(lpClassName=%s, lpWindowName=%s, dwStyle=%08X)\n", uuid, title, dwStyle);
-    const auto result = CreateMDIWindowW(
-        uuid, title, dwStyle,
-        X, Y, nWidth, nHeight,
-        hWndParent, hInstance,
-        lParam);
-    free(uuid);
-    free(title);
-    return result;
-}
-
 BOOL WINAPI Win32Hook::HookSetWindowTextA(
     const HWND hWnd, // NOLINT(*-misplaced-const)
     const LPCSTR lpString)
 {
-    const auto unicode = Unicode(lpString, CP_SHIFT_JIS);
+    auto cp = CP_SHIFT_JIS;
+    switch (*reinterpret_cast<const DWORD*>(lpString))
+    {
+    // 標準
+    case 0xCA9CCB98u:
+        cp = CP_ACP;
+        break;
+    default:
+        break;
+    }
+    const auto unicode = Unicode(lpString, cp);
+    // const auto unicode = Unicode(lpString, CP_SHIFT_JIS);
     wprintf(L"Hook SetWindowTextA(hWnd=0x%p, lpString=%s)\n", hWnd, unicode);
     const auto result = SetWindowTextW(hWnd, unicode);
     free(unicode);
@@ -432,6 +429,55 @@ BOOL WINAPI Win32Hook::HookSetDlgItemTextA(
     return result;
 }
 
+LRESULT Win32Hook::HookSendDlgItemMessageA(
+    const HWND hDlg, // NOLINT(*-misplaced-const)
+    const int nIDDlgItem,
+    const UINT Msg,
+    const WPARAM wParam,
+    const LPARAM lParam)
+{
+    switch (Msg)
+    {
+    case LB_ADDSTRING:
+    case CB_ADDSTRING:
+        {
+            const auto unicode = Unicode(reinterpret_cast<LPCSTR>(lParam), CP_SHIFT_JIS);
+            wprintf(L"Hook SendDlgItemMessageA(hDlg=0x%p, nIDDlgItem=%d, pszText=%s)\n", hDlg, nIDDlgItem, unicode);
+            const auto result = SendDlgItemMessageW(hDlg, nIDDlgItem, Msg, wParam, reinterpret_cast<LPARAM>(unicode));
+            free(unicode);
+            return result;
+        }
+    case CBEM_INSERTITEMA:
+        {
+            const auto pszText = reinterpret_cast<PCOMBOBOXEXITEMA>(lParam)->pszText;
+            const auto unicode = Unicode(pszText, CP_SHIFT_JIS);
+            wprintf(L"Hook SendDlgItemMessageA(hDlg=0x%p, nIDDlgItem=%d, pszText=%s)\n", hDlg, nIDDlgItem, unicode);
+            reinterpret_cast<PCOMBOBOXEXITEMW>(lParam)->pszText = unicode;
+            const auto result = SendDlgItemMessageW(hDlg, nIDDlgItem, Msg, wParam, lParam);
+            reinterpret_cast<PCOMBOBOXEXITEMA>(lParam)->pszText = pszText;
+            free(unicode);
+            return result;
+        }
+    default:
+        return SendDlgItemMessageW(hDlg, nIDDlgItem, Msg, wParam, lParam);
+    }
+}
+
+BOOL Win32Hook::HookAppendMenuA(
+    const HMENU hMenu, // NOLINT(*-misplaced-const)
+    const UINT uFlags,
+    const UINT_PTR uIDNewItem,
+    const LPCSTR lpNewItem)
+{
+    if (uFlags & MF_BITMAP) return AppendMenuW(hMenu, uFlags, uIDNewItem, MAKEINTRESOURCEW(lpNewItem));
+    if (uFlags & MF_OWNERDRAW) return AppendMenuW(hMenu, uFlags, uIDNewItem, MAKEINTRESOURCEW(lpNewItem));
+    const auto unicode = Unicode(lpNewItem, CP_SHIFT_JIS);
+    wprintf(L"Hook AppendMenuA(hMenu=0x%p, uIDNewItem=%d, lpNewItem=%s)\n", hMenu, uIDNewItem, unicode);
+    const auto result = AppendMenuW(hMenu, uFlags, uIDNewItem, unicode);
+    free(unicode);
+    return result;
+}
+
 int WINAPI Win32Hook::HookMessageBoxA(
     const HWND hWnd, // NOLINT(*-misplaced-const)
     const LPCSTR lpText,
@@ -482,7 +528,9 @@ HFONT WINAPI Win32Hook::HookCreateFontA(
     auto cp = CP_ACP;
     switch (*reinterpret_cast<const DWORD*>(pszFaceName))
     {
+    // ＭＳ
     case 0x72826C82u:
+    // FOT-
     case 0x2D544F46u:
         cp = CP_SHIFT_JIS;
         break;

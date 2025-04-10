@@ -17,8 +17,6 @@ public:
 protected:
     static decltype(CreateWindowExA)* pfnCreateWindowExA;
 
-    static decltype(CreateMDIWindowA)* pfnCreateMDIWindowA;
-
     static decltype(SetWindowTextA)* pfnSetWindowTextA;
 
     static decltype(CreatePropertySheetPageA)* pfnCreatePropertySheetPageA;
@@ -34,6 +32,10 @@ protected:
     static decltype(DialogBoxIndirectParamA)* pfnDialogBoxIndirectParamA;
 
     static decltype(SetDlgItemTextA)* pfnSetDlgItemTextA;
+
+    static decltype(SendDlgItemMessageA)* pfnSendDlgItemMessageA;
+
+    static decltype(AppendMenuA)* pfnAppendMenuA;
 
     static decltype(MessageBoxA)* pfnMessageBoxA;
 
@@ -53,8 +55,6 @@ protected:
 
     static decltype(CreateWindowExA) HookCreateWindowExA;
 
-    static decltype(CreateMDIWindowA) HookCreateMDIWindowA;
-
     static decltype(SetWindowTextA) HookSetWindowTextA;
 
     static decltype(CreatePropertySheetPageA) HookCreatePropertySheetPageA;
@@ -70,6 +70,10 @@ protected:
     static decltype(DialogBoxIndirectParamA) HookDialogBoxIndirectParamA;
 
     static decltype(SetDlgItemTextA) HookSetDlgItemTextA;
+
+    static decltype(SendDlgItemMessageA) HookSendDlgItemMessageA;
+
+    static decltype(AppendMenuA) HookAppendMenuA;
 
     static decltype(MessageBoxA) HookMessageBoxA;
 
