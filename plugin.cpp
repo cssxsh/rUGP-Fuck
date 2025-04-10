@@ -627,10 +627,6 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
 
     switch (reinterpret_cast<DWORD>(start) + offset)
     {
-    // 5.81.03   UnivUI .text:1002A2BE ?x2C@CUser@@UBE_NPBD@Z
-    case 0x1002A2BEu:
-    // 5.95.05   UnivUI .text:1002BA4E ?x2C@CUser@@UBE_NPBD@Z
-    case 0x1002BA4Eu:
     // 6.23.02   UnivUI .text:10025C68 ?GetSwitch@CRioRTC@@QBEHPBD@Z
     case 0x10025C68u:
     // 6.23.02   UnivUI .text:100363F6 ?x2C@CUser@@UBE_NPBD@Z
@@ -705,6 +701,22 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
             // shl     edx, 8
             // or      edx, eax
             // cmp     edx, 817Ah
+            return;
+        }
+        if (start[0x00] == 0x33u && start[0x01] == 0xC0u &&
+            start[0x02] == 0x33u && start[0x03] == 0xD2u &&
+            start[0x04] == 0x8Au && start[0x05] == 0x07u &&
+            start[0x06] == 0x8Au && start[0x07] == 0x14u && start[0x08] == 0x0Eu &&
+            start[0x09] == 0x47u &&
+            start[0x0A] == 0x46u)
+        {
+            // ?x2C@CUser@@UBE_NPBD@Z
+            // xor eax, eax
+            // xor edx, edx
+            // mov al, byte ptr [edi]
+            // mov dl, byte ptr [esi + ecx]
+            // inc edi
+            // inc esi
             return;
         }
         break;
