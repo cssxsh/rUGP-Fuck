@@ -77,6 +77,8 @@ protected:
     static std::remove_pointer_t<COceanNode::LPGetLocalFullPathName> HookGetLocalFullPathName;
 
     static std::remove_pointer_t<GMfc::LPIsMBCS> HookIsMBCS;
+    static std::remove_pointer_t<CDatabase::LPRead> HookRead;
+    static std::remove_pointer_t<CDatabase::LPWrite> HookWrite;
     static std::remove_pointer_t<CS5i::LPDrawFont1> HookDrawFont1;
     static std::remove_pointer_t<CS5i::LPDrawFont2> HookDrawFont2;
     static std::remove_pointer_t<CS5RFont::LPGetFont> HookGetCachedFont;

@@ -280,6 +280,16 @@ void CObjectProxy::AttachHook()
     {
         DetourAttach(&reinterpret_cast<PVOID&>(COceanNode::FetchGetLocalFullPathName()), &HookGetLocalFullPathName);
     }
+    if (CDatabase::FetchRead())
+    {
+        wprintf(L"DetourAttach: CDatabase::Read\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(CDatabase::FetchRead()), &HookRead);
+    }
+    if (CDatabase::FetchWrite())
+    {
+        wprintf(L"DetourAttach: CDatabase::Write\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(CDatabase::FetchWrite()), &HookWrite);
+    }
     if (CS5i::FetchDrawFont1())
     {
         wprintf(L"DetourAttach: CS5i::DrawFont\n");
@@ -1220,6 +1230,29 @@ CStringX* CObjectProxy::HookGetLocalFullPathName(const COceanNode* node, CString
 BOOL CObjectProxy::HookIsMBCS(CHAR const c)
 {
     return (c & 0x80u) == 0x80u;
+}
+
+CStringX* CObjectProxy::HookRead(
+    const CDatabase* const ecx,
+    CStringX* const result, LPCSTR const key, LPCSTR const value)
+{
+    CDatabase::FetchRead()(ecx, result, key, value);
+    if (strcmp(key, "CTxtStDlg_arraySerifSetting") == 0)
+    {
+        *result = AnsiX(*result, CP_SHIFT_JIS, CP_GB18030).c_str();
+    }
+    return result;
+}
+
+void CObjectProxy::HookWrite(
+    CDatabase* const ecx,
+    LPCSTR const key, LPCSTR value)
+{
+    if (strcmp(key, "CTxtStDlg_arraySerifSetting") == 0)
+    {
+        value = AnsiX(value, CP_GB18030, CP_SHIFT_JIS).c_str();
+    }
+    CDatabase::FetchWrite()(ecx, key, value);
 }
 
 int CObjectProxy::HookDrawFont1(
