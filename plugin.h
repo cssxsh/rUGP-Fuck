@@ -58,6 +58,7 @@ protected:
     static std::map<std::wstring, CVmCommand*> COMMAND_MAP;
     static std::map<HMODULE, const AFX_EXTENSION_MODULE*> MODULE_MAP;
     static std::map<LPVOID, CodePatchRecord*> PATCH_CACHE;
+    static std::map<LPVOID, CodePatchRecord*> SPLIT_CACHE;
     static std::map<WORD, UINT> CHARACTER_MAP;
     static std::map<UINT, LPVOID> FONT_CACHE;
 

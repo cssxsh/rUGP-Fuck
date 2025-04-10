@@ -418,6 +418,50 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
         if (IsBadReadPtr(offset, sizeof(DWORD))) continue;
         switch (*reinterpret_cast<const DWORD*>(offset))
         {
+        // '　'
+        case 0x00008140u:
+            replace(offset, 0x0000A1A1u);
+            break;
+        // '「'
+        case 0x00008175u:
+            replace(offset, 0x0000A1B8u);
+            break;
+        // '」'
+        case 0x00008176u:
+            replace(offset, 0x0000A1B9u);
+            break;
+        // '【'
+        case 0x00008179u:
+            replace(offset, 0x0000A1BEu);
+            break;
+        // '】'
+        case 0x0000817Au:
+            replace(offset, 0x0000A1BFu);
+            break;
+        // '―'
+        case 0x0000815Cu:
+            replace(offset, 0x0000A844u);
+            break;
+        // '─'
+        case 0x0000849Fu:
+            replace(offset, 0x0000A9A4u);
+            break;
+        default:
+            if (offset[0x04] != 0x00 && offset[0x03] == 0x00 && offset[0x02] == 0x00 &&
+                ((offset[0x02] ^ 0x20) + 0x5F & 0xFF) <= 0x3B && offset[0x01] >= 0x40 &&
+                (offset[-0x01] == 0x3D || offset[-0x02] == 0x81))
+            {
+                __debugbreak();
+            }
+            break;
+        }
+    }
+    for (auto offset = start; offset < end; offset++)
+    {
+        if (IsBadCodePtr(reinterpret_cast<FARPROC>(offset))) break;
+        if (IsBadReadPtr(offset, sizeof(DWORD))) continue;
+        switch (*reinterpret_cast<const DWORD*>(offset))
+        {
         // add     al, 5Fh
         // cmp     al, 3Bh
         case 0x3B3C5F04u:
@@ -480,34 +524,6 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
                 AttachCharacterSplit(address + 0x0Cu, lpszModuleName);
             }
             break;
-        // 0xA1A1
-        case 0x00008140u:
-            replace(offset, 0x0000A1A1u);
-            break;
-        // 0xA1B8
-        case 0x00008175u:
-            replace(offset, 0x0000A1B8u);
-            break;
-        // 0xA1B9
-        case 0x00008176u:
-            replace(offset, 0x0000A1B9u);
-            break;
-        // 0xA1BE
-        case 0x00008179u:
-            replace(offset, 0x0000A1BEu);
-            break;
-        // 0xA1BF
-        case 0x0000817Au:
-            replace(offset, 0x0000A1BFu);
-            break;
-        // 0xA844
-        case 0x0000815Cu:
-            replace(offset, 0x0000A844u);
-            break;
-        // 0xA9A4
-        case 0x0000849Fu:
-            replace(offset, 0x0000A9A4u);
-            break;
         default:
             break;
         }
@@ -516,28 +532,29 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
 
 void CObjectProxy::DetachCharacterPatch()
 {
+    for (auto& pair : SPLIT_CACHE)
+    {
+        const auto record = pair.second;
+        pair.second = nullptr;
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourDetach(&reinterpret_cast<PVOID&>(record->target), record->codes);
+        DetourTransactionCommit();
+        VirtualFree(record, 0, MEM_RELEASE);
+    }
+    SPLIT_CACHE.clear();
     for (auto& pair : PATCH_CACHE)
     {
         const auto address = pair.first;
         const auto record = pair.second;
         pair.second = nullptr;
 
-        if (IS_INTRESOURCE(record->target))
-        {
-            auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
-            VirtualProtect(address, record->block_size, protect, &protect);
-            memcpy(address, record->codes, record->block_size);
-            VirtualProtect(address, record->block_size, protect, &protect);
-            free(record);
-        }
-        else
-        {
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-            DetourDetach(&reinterpret_cast<PVOID&>(record->target), record->codes);
-            DetourTransactionCommit();
-            VirtualFree(record, 0, MEM_RELEASE);
-        }
+        auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
+        VirtualProtect(address, record->block_size, protect, &protect);
+        memcpy(address, record->codes, record->block_size);
+        VirtualProtect(address, record->block_size, protect, &protect);
+        free(record);
     }
     PATCH_CACHE.clear();
 }
@@ -620,16 +637,6 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     case 0x100363F6u:
         if (strcmp(lpszModuleName, "UnivUI") == 0) return;
         break;
-    // 5.60.32   Vm60   .text:10011467 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
-    case 0x10011467u:
-    // 5.73.01   Vm60   .text:10013CE6 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
-    case 0x10013CE6u:
-    // 5.80.20EC Vm60   .text:100146B6 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
-    case 0x100146B6u:
-    // 5.81.03   Vm60   .text:10014906 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
-    case 0x10014906u:
-    // 5.95.05   Vm60   .text:10016526 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
-    case 0x10016526u:
     // 6.23.02   Vm60   .text:1001C4D2 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
     case 0x1001C4D2u:
     // 6.23.02   Vm60   .text:10023317 ?AttachInstructionText@CMessBox@@UAEXPBDVTRio@@1K@Z
@@ -668,12 +675,44 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
             // inc     ...
             return;
         }
+        if (start[0x00] == 0x8Bu && start[0x01] == 0xC3u &&
+            start[0x02] == 0x33u && start[0x03] == 0xC9u &&
+            start[0x04] == 0x8Au && start[0x05] == 0x0Eu &&
+            start[0x06] == 0xC1u && start[0x07] == 0xE0u && start[0x08] == 0x08u &&
+            start[0x09] == 0x0Bu && start[0x0A] == 0xC1u &&
+            start[0x0B] == 0x3Du)
+        {
+            // ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+            // mov     eax, ebx
+            // xor     ecx, ecx
+            // mov     cl, [esi]
+            // shl     eax, 8
+            // or      eax, ecx
+            // cmp     eax, 817Ah
+            return;
+        }
+        if (start[0x00] == 0x8Bu && start[0x01] == 0xD1u &&
+            start[0x02] == 0x33u && start[0x03] == 0xC0u &&
+            start[0x04] == 0x8Au && start[0x05] == 0x06u &&
+            start[0x06] == 0xC1u && start[0x07] == 0xE2u && start[0x08] == 0x08u &&
+            start[0x09] == 0x0Bu && start[0x0A] == 0xD0u &&
+            start[0x0B] == 0x81u && start[0x0C] == 0xFAu)
+        {
+            // ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+            // mov     edx, ecx
+            // xor     eax, eax
+            // mov     al, [esi]
+            // shl     edx, 8
+            // or      edx, eax
+            // cmp     edx, 817Ah
+            return;
+        }
         break;
     }
 
     const auto attach = [start, end](BYTE const tmp)
     {
-        auto& record = PATCH_CACHE[end];
+        auto& record = SPLIT_CACHE[end];
         if (record != nullptr) return;
         record = static_cast<CodePatchRecord*>(VirtualAlloc(
             nullptr,
@@ -689,9 +728,9 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         DetourTransactionCommit();
         auto index = 0x00;
         // cmp     @tmp, 0x39
-        codes[index++] = 0x83, codes[index++] = 0xF8 | tmp, codes[index++] = 0x39;
+        codes[index++] = 0x83u, codes[index++] = 0xF8u | tmp, codes[index++] = 0x39u;
         // ja      ...
-        codes[index++] = 0x0F, codes[index++] = 0x87;
+        codes[index++] = 0x0Fu, codes[index++] = 0x87u;
         *reinterpret_cast<int*>(codes + index) =
             reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
         index += 0x04;
@@ -702,7 +741,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         memcpy(codes + index, start, end - start);
         index += end - start;
         // jmp     ...
-        codes[index++] = 0xE9;
+        codes[index++] = 0xE9u;
         *reinterpret_cast<int*>(codes + index) =
             reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
         VirtualProtect(codes, 0x0040, PAGE_EXECUTE_READ, nullptr);
@@ -710,7 +749,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
 
     const auto attach_ = [start, end](BYTE const tmp)
     {
-        auto& record = PATCH_CACHE[end];
+        auto& record = SPLIT_CACHE[end];
         if (record != nullptr) return;
         record = static_cast<CodePatchRecord*>(VirtualAlloc(
             nullptr,
@@ -726,21 +765,21 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         DetourTransactionCommit();
         auto index = 0x00;
         // cmp     @tmp, 0x39
-        codes[index++] = 0x83, codes[index++] = 0xF8 | tmp, codes[index++] = 0x39;
+        codes[index++] = 0x83u, codes[index++] = 0xF8u | tmp, codes[index++] = 0x39u;
         // ja      ...
-        codes[index++] = 0x0F, codes[index++] = 0x87;
+        codes[index++] = 0x0Fu, codes[index++] = 0x87u;
         *reinterpret_cast<int*>(codes + index) =
             reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
         index += 0x04;
         // action
         memcpy(codes + index, start, end - start);
-        codes[index + 0x01] = 0xB7;
-        codes[index + 0x03] = 0x02;
-        codes[index + 0x06] = 0x10;
-        codes[index + 0x0C] = 0x04;
+        codes[index + 0x01] = 0xB7u;
+        codes[index + 0x03] = 0x02u;
+        codes[index + 0x06] = 0x10u;
+        codes[index + 0x0C] = 0x04u;
         index += end - start;
         // jmp     ...
-        codes[index++] = 0xE9;
+        codes[index++] = 0xE9u;
         *reinterpret_cast<int*>(codes + index) =
             reinterpret_cast<int>(hook) - reinterpret_cast<int>(codes + index + 0x04);
         VirtualProtect(codes, 0x0040, PAGE_EXECUTE_READ, nullptr);
@@ -779,8 +818,8 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
             attach((end[-0x03] == 0x0B ? end[-0x02] : end[-0x02] >> 0x03) & 0x07);
             return;
         }
-        if (end[-0x05] == 0xC1u && end[-0x03] == 0x08u &&
-            (end[-0x06] & 0xF8u) == 0x40u)
+        if ((end[-0x06] & 0xF8u) == 0x40u &&
+            end[-0x05] == 0xC1u && end[-0x03] == 0x08u)
         {
             // movzx   ..., byte ptr [...]
             // inc     ...
@@ -1238,6 +1277,8 @@ std::map<std::wstring, CVmCommand*> CObjectProxy::COMMAND_MAP;
 std::map<HMODULE, const AFX_EXTENSION_MODULE*> CObjectProxy::MODULE_MAP;
 
 std::map<LPVOID, CodePatchRecord*> CObjectProxy::PATCH_CACHE;
+
+std::map<LPVOID, CodePatchRecord*> CObjectProxy::SPLIT_CACHE;
 
 std::map<WORD, UINT> CObjectProxy::CHARACTER_MAP;
 
