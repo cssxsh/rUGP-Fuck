@@ -1314,12 +1314,10 @@ CStringX* CObjectProxy::HookGetLocalFullPathName(const COceanNode* node, CString
     if (node->m_strName[0x01] == ':' && node->m_pRTC == CObjectArcMan::GetClassCObjectArcMan())
     {
         auto& source = const_cast<COceanNode*>(node)->m_strName;
-        const auto path = CStringX::FormatX(
-            ".\\%s\\%s",
-            AnsiX(GetGameName().c_str(), CP_ACP).c_str(),
-            strrchr(source, '\\') + 1);
-        CopyFileA(source, path, true);
-        source = path;
+        const auto name = AnsiX(GetGameName().c_str(), CP_ACP);
+        const auto target = CStringX::FormatX(".\\%s\\%s", name.c_str(), strrchr(source, '\\') + 1);
+        CopyFileA(source, target, true);
+        source = target;
     }
     COceanNode::FetchGetLocalFullPathName()(node, x);
     return x;
@@ -1394,6 +1392,15 @@ void CObjectProxy::HookStep(CBootTracer* ecx, INT_PTR const index)
     case 7:
         // To skip the installation check
         CUuiGlobals::GetGlobal()->m_nInstallType = 2;
+        break;
+    case 8:
+        {
+            const auto rvmm = CRegistryCache::GetGlobal();
+            const auto path = rvmm->FetchString("rvmmInstallation", "strVirtuaRegistryAbsolutePath");
+            if (path == nullptr) break;
+            const auto name = AnsiX(GetGameName().c_str(), CP_ACP);
+            *path = CStringX::FormatX("./%s/Vmreg/", name.c_str());
+        }
         break;
     default:
         break;

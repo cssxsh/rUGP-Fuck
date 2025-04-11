@@ -8,6 +8,7 @@ struct MFC_MODULE;
 class CStringX;
 class GMfc;
 class CProfile;
+class CWinRegistry;
 
 class CObjectEx;
 class CRio;
@@ -37,6 +38,7 @@ class CFontContext;
 class CRioMsg;
 class CVmVar;
 class CInstallSource;
+class CRegistryCache;
 
 class CCommandRef;
 class CVmCommand;
@@ -46,6 +48,7 @@ class CVmVarObj;
 
 struct CMemberInfo;
 struct CMsgRTC;
+struct ProfileInfo;
 
 struct CObject_vtbl;
 struct CRio_vtbl;
@@ -524,6 +527,27 @@ public:
     CStringX& FetchTarget();
 };
 
+class CRegistryCache
+{
+protected:
+    const ProfileInfo* m_pProfileInfo;
+    DWORD field_0x0008;
+    DWORD field_0x000C;
+    DWORD m_dwFlags;
+    
+    CRegistryCache();
+    ~CRegistryCache();
+
+    virtual void ReadRegistryToCache(CWinRegistry*) = 0;
+    virtual void WriteRegistryFromCache(CWinRegistry*) = 0;
+
+public:
+    LPINT FetchInt(LPCSTR, LPCSTR);
+    CStringX* FetchString(LPCSTR, LPCSTR);
+
+    static CRegistryCache* GetGlobal();
+};
+
 class CCommandRef : public CRio
 {
 public:
@@ -601,7 +625,7 @@ struct CMemberInfo
 {
     LPCSTR m_lpszName;
     const CRuntimeClass* m_pRTC;
-    DWORD m_dwOffset;
+    int m_nOffset;
 };
 
 struct CMsgRTC
@@ -613,6 +637,15 @@ struct CMsgRTC
     CMsgRTC* m_pNextClass;
 
     static const HashBucket<CMsgRTC>* GetRegister();
+};
+
+struct ProfileInfo
+{
+    int m_nOffset;
+    DWORD m_dwSchema;
+    LPCSTR m_lpszKey;
+    LPCSTR m_lpszSubKey;
+    int m_nType;
 };
 
 struct CObject_vtbl

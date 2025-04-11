@@ -2293,6 +2293,59 @@ CStringX& CInstallSource::FetchTarget()
     throw std::exception("CInstallSource::FetchTarget no match");
 }
 
+LPINT CRegistryCache::FetchInt(LPCSTR const lpszKey, LPCSTR const lpszSubKey)
+{
+    for (auto field = m_pProfileInfo; field->m_nType != 0; ++field)
+    {
+        if (field->m_nType != 1 && field->m_nType != 2) continue;
+        if (strcmp(field->m_lpszKey, lpszKey) != 0) continue;
+        if (strcmp(field->m_lpszSubKey, lpszSubKey) != 0) continue;
+        return reinterpret_cast<LPINT>(reinterpret_cast<LPBYTE>(this) + field->m_nOffset);
+    }
+
+    return nullptr;
+}
+
+CStringX* CRegistryCache::FetchString(LPCSTR const lpszKey, LPCSTR const lpszSubKey)
+{
+    for (auto field = m_pProfileInfo; field->m_nType != 0; ++field)
+    {
+        if (field->m_nType != 8) continue;
+        if (strcmp(field->m_lpszKey, lpszKey) != 0) continue;
+        if (strcmp(field->m_lpszSubKey, lpszSubKey) != 0) continue;
+        return reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + field->m_nOffset);
+    }
+
+    return nullptr;
+}
+
+CRegistryCache* CRegistryCache::GetGlobal()
+{
+    const auto name = "?_rvmmGLOBAL_registryCache@@3VRvmmRegistry@@A";
+    auto& global = reinterpret_cast<CRegistryCache*&>(cache[name]);
+    if (global != nullptr) return global;
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+    case 0x0C00:
+        {
+            const auto rvmm = GetModuleHandleA("rvmm");
+            global = reinterpret_cast<CRegistryCache*>(GetProcAddress(rvmm, name));
+            if (global != nullptr) return global;
+            // global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(901)));
+            // if (global != nullptr) return global;
+        }
+        break;
+    case 0x0E00:
+        // TODO class RvmmRegistry _rvmmGLOBAL_registryCache
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
 const CRuntimeClass* CCommandRef::GetClassCCommandRef()
 {
     const auto name = "?classCCommandRef@CCommandRef@@2UCRioRTC@@A";
