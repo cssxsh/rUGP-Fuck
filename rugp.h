@@ -251,6 +251,8 @@ class CEditData : public CVisual
 {
 public:
     DECLARE_DYNAMIC_RIO(CEditData)
+
+    CStringX& FetchText();
 };
 
 class CUI : public CRio

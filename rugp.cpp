@@ -924,6 +924,20 @@ const CRuntimeClass* CEditData::GetClassCEditData()
     return nullptr;
 }
 
+CStringX& CEditData::FetchText()
+{
+    switch (*reinterpret_cast<const DWORD*>(GetRuntimeClass()->m_lpszClassName))
+    {
+    // CCharVoiceRegistOb
+    case 0x61684343u:
+        return *reinterpret_cast<CStringX*>(reinterpret_cast<LPBYTE>(this) + 0x000C);
+    default:
+        break;
+    }
+    __debugbreak();
+    throw std::exception("CEditData::FetchText no match");
+}
+
 const CRuntimeClass* CUI::GetClassCUI()
 {
     const auto name = "?classCUI@CUI@@2UCRioRTC@@A";

@@ -272,6 +272,12 @@ void CObjectProxy::AttachHook()
             wprintf(L"DetourAttach: %s::Serialize\n", name.c_str());
             DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
         }
+
+        if (clazz->IsDerivedFrom(CEditData::GetClassCEditData()))
+        {
+            wprintf(L"DetourAttach: %s::Serialize\n", name.c_str());
+            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
+        }
     }
     if (COceanNode::FetchGetLocalFullPathName())
     {
@@ -341,6 +347,12 @@ void CObjectProxy::DetachHook()
         }
 
         if (clazz->IsDerivedFrom(CRip::GetClassCRip()))
+        {
+            wprintf(L"DetourDetach: %s::Serialize\n", name.c_str());
+            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
+        }
+
+        if (clazz->IsDerivedFrom(CEditData::GetClassCEditData()))
         {
             wprintf(L"DetourDetach: %s::Serialize\n", name.c_str());
             DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
@@ -1170,6 +1182,15 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
     const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
     if (ecx->m_pNode->m_dwResAddr == 0x00000000) return ecx->FetchSerialize()(ecx, archive);
     wprintf(L"Hook %s::Serialize(this=%s)\n", name.c_str(), uuid.c_str());
+
+    if (ecx->IsKindOf(CEditData::GetClassCEditData()))
+    {
+        auto& text = reinterpret_cast<CEditData*>(ecx)->FetchText();
+        if (archive->GetNative()->IsStoring()) text = AnsiX(text, CP_GB18030, CP_SHIFT_JIS).c_str();
+        ecx->FetchSerialize()(ecx, archive);
+        text = AnsiX(text, CP_SHIFT_JIS, CP_GB18030).c_str();
+        return;
+    }
 
     const auto path = GetPatchFilePath(ecx->m_pNode);
     const auto hFile = CreateFileW(
