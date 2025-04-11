@@ -644,6 +644,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
         wprintf(L"Attach CharacterSplit Error 0x%p at %hs\n", address + offset, lpszModuleName);
         return;
     }
+    if (SPLIT_CACHE[start] != nullptr) return;
     // jmp     ...
     if (start[0x01] == 0xEBu || start[0x01] == 0xE9u) end = start + 0x01;
     else if (start[0x05] == 0xEBu) end = start + 0x05;
@@ -680,106 +681,134 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
     else if (start[0x04] == 0x85u) end = start + 0x04;
     else if (start[0x09] == 0x85u) end = start + 0x09;
 
-    switch (reinterpret_cast<DWORD>(start) + offset)
+    // mov     .., [...+1]
+    // mov     .., [...+1]
+    // cmp     .., ..
+    if (start[0x00] == 0x8Au && start[0x02] == 0x01u &&
+        start[0x03] == 0x8Au && start[0x05] == 0x01u &&
+        start[0x06] == 0x3Au)
     {
-    // 6.23.02   UnivUI .text:10025C68 ?GetSwitch@CRioRTC@@QBEHPBD@Z
-    case 0x10025C68u:
-    // 6.23.02   UnivUI .text:100363F6 ?x2C@CUser@@UBE_NPBD@Z
-    case 0x100363F6u:
-        if (strcmp(lpszModuleName, "UnivUI") == 0) return;
-        break;
-    // 6.23.02   Vm60   .text:1001C4D2 ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
-    case 0x1001C4D2u:
-    // 6.23.02   Vm60   .text:10023317 ?AttachInstructionText@CMessBox@@UAEXPBDVTRio@@1K@Z
-    case 0x10023317u:
-    // 6.23.02   Vm60   .text:100C0341 ?ExecCommand@CVmMsg@@UAEPAVCVmCommand@@XZ
-    case 0x100C0341u:
-    // 6.23.02   Vm60   .text:100C0375 ?ExecCommand@CVmMsg@@UAEPAVCVmCommand@@XZ
-    case 0x100C0375u:
-        if (strcmp(lpszModuleName, "Vm60") == 0) return;
-        break;
-    default:
-        if (start[0x00] == 0x8Au && start[0x02] == 0x01u &&
-            start[0x03] == 0x8Au && start[0x05] == 0x01u &&
-            start[0x06] == 0x3Au)
-        {
-            // mov     .., [...+1]
-            // mov     .., [...+1]
-            // cmp     .., ..
-            return;
-        }
-        if (start[0x00] == 0x8Au && start[0x02] == 0x01u &&
-            (start[0x03] & 0xF8u) == 0x40u &&
-            start[0x04] == 0x3Au && start[0x06] == 0x01u)
-        {
-            // mov     .., [...+1]
-            // inc     ...
-            // cmp     .., [...+1]
-            return;
-        }
-        if (start[0x00] == 0x8Au &&
-            start[0x02] == 0x88u &&
-            (start[0x04] & 0xF8u) == 0x40u)
-        {
-            // mov     .., [...]
-            // mov     [...], ..
-            // inc     ...
-            return;
-        }
-        if (start[0x00] == 0x8Bu && start[0x01] == 0xC3u &&
-            start[0x02] == 0x33u && start[0x03] == 0xC9u &&
-            start[0x04] == 0x8Au && start[0x05] == 0x0Eu &&
-            start[0x06] == 0xC1u && start[0x07] == 0xE0u && start[0x08] == 0x08u &&
-            start[0x09] == 0x0Bu && start[0x0A] == 0xC1u &&
-            start[0x0B] == 0x3Du)
-        {
-            // ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
-            // mov     eax, ebx
-            // xor     ecx, ecx
-            // mov     cl, [esi]
-            // shl     eax, 8
-            // or      eax, ecx
-            // cmp     eax, 817Ah
-            return;
-        }
-        if (start[0x00] == 0x8Bu && start[0x01] == 0xD1u &&
-            start[0x02] == 0x33u && start[0x03] == 0xC0u &&
-            start[0x04] == 0x8Au && start[0x05] == 0x06u &&
-            start[0x06] == 0xC1u && start[0x07] == 0xE2u && start[0x08] == 0x08u &&
-            start[0x09] == 0x0Bu && start[0x0A] == 0xD0u &&
-            start[0x0B] == 0x81u && start[0x0C] == 0xFAu)
-        {
-            // ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
-            // mov     edx, ecx
-            // xor     eax, eax
-            // mov     al, [esi]
-            // shl     edx, 8
-            // or      edx, eax
-            // cmp     edx, 817Ah
-            return;
-        }
-        if (start[0x00] == 0x33u && start[0x01] == 0xC0u &&
-            start[0x02] == 0x33u && start[0x03] == 0xD2u &&
-            start[0x04] == 0x8Au && start[0x05] == 0x07u &&
-            start[0x06] == 0x8Au && start[0x07] == 0x14u && start[0x08] == 0x0Eu &&
-            start[0x09] == 0x47u &&
-            start[0x0A] == 0x46u)
-        {
-            // ?x2C@CUser@@UBE_NPBD@Z
-            // xor eax, eax
-            // xor edx, edx
-            // mov al, byte ptr [edi]
-            // mov dl, byte ptr [esi + ecx]
-            // inc edi
-            // inc esi
-            return;
-        }
-        break;
+        return;
+    }
+    // mov     .., [...+1]
+    // inc     ...
+    // cmp     .., [...+1]
+    if (start[0x00] == 0x8Au && start[0x02] == 0x01u &&
+        (start[0x03] & 0xF8u) == 0x40u &&
+        start[0x04] == 0x3Au && start[0x06] == 0x01u)
+    {
+        return;
+    }
+    // mov     .., [...]
+    // mov     [...], ..
+    // inc     ...
+    if (start[0x00] == 0x8Au &&
+        start[0x02] == 0x88u &&
+        (start[0x04] & 0xF8u) == 0x40u)
+    {
+        return;
+    }
+    // ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+    // mov     eax, ebx
+    // xor     ecx, ecx
+    // mov     cl, [esi]
+    // shl     eax, 8
+    // or      eax, ecx
+    // cmp     eax, 817Ah
+    if (start[0x00] == 0x8Bu && start[0x01] == 0xC3u &&
+        start[0x02] == 0x33u && start[0x03] == 0xC9u &&
+        start[0x04] == 0x8Au && start[0x05] == 0x0Eu &&
+        start[0x06] == 0xC1u && start[0x07] == 0xE0u && start[0x08] == 0x08u &&
+        start[0x09] == 0x0Bu && start[0x0A] == 0xC1u &&
+        start[0x0B] == 0x3Du)
+    {
+        return;
+    }
+    // ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+    // mov     edx, ecx
+    // xor     eax, eax
+    // mov     al, [esi]
+    // shl     edx, 8
+    // or      edx, eax
+    // cmp     edx, 817Ah
+    if (start[0x00] == 0x8Bu && start[0x01] == 0xD1u &&
+        start[0x02] == 0x33u && start[0x03] == 0xC0u &&
+        start[0x04] == 0x8Au && start[0x05] == 0x06u &&
+        start[0x06] == 0xC1u && start[0x07] == 0xE2u && start[0x08] == 0x08u &&
+        start[0x09] == 0x0Bu && start[0x0A] == 0xD0u &&
+        start[0x0B] == 0x81u && start[0x0C] == 0xFAu)
+    {
+        return;
+    }
+    // ?PrefetchNameTag@CMessBox@@IAE?AVCString@@PAE@Z
+    // movzx   eax, byte ptr [ebx]
+    // mov     ecx, edx
+    // shl     ecx, 8
+    // or      ecx, eax
+    // cmp     ecx, 817Ah
+    if (start[0x00] == 0x0Fu && start[0x01] == 0xB6u && start[0x02] == 0x03u &&
+        start[0x03] == 0x8Bu && start[0x04] == 0xCAu &&
+        start[0x05] == 0xC1u && start[0x06] == 0xE1u && start[0x07] == 0x08u &&
+        start[0x08] == 0x0Bu && start[0x09] == 0xC8u &&
+        start[0x0A] == 0x81u && start[0x0B] == 0xF9u)
+    {
+        return;
+    }
+    // ?x2C@CUser@@UBE_NPBD@Z
+    // xor eax, eax
+    // xor edx, edx
+    // mov al, byte ptr [edi]
+    // mov dl, byte ptr [esi + ecx]
+    // inc edi
+    // inc esi
+    if (start[0x00] == 0x33u && start[0x01] == 0xC0u &&
+        start[0x02] == 0x33u && start[0x03] == 0xD2u &&
+        start[0x04] == 0x8Au && start[0x05] == 0x07u &&
+        start[0x06] == 0x8Au && start[0x07] == 0x14u && start[0x08] == 0x0Eu &&
+        start[0x09] == 0x47u &&
+        start[0x0A] == 0x46u)
+    {
+        return;
+    }
+    // ?x2C@CUser@@UBE_NPBD@Z
+    // movzx   ecx, byte ptr [edi]
+    // inc     edi
+    // movzx   eax, byte ptr [esi+edx]
+    if (start[0x00] == 0x0Fu && start[0x01] == 0xB6u && start[0x02] == 0x0Fu &&
+        start[0x03] == 0x47u &&
+        start[0x04] == 0x0Fu && start[0x05] == 0xB6u && start[0x06] == 0x04u && start[0x07] == 0x16u)
+    {
+        return;
+    }
+    // ?GetSwitch@CRioRTC@@QBEHPBD@Z
+    // xor     eax, eax
+    // pop     esi
+    // pop     ebp
+    // retn    4
+    if (start[0x00] == 0x33u && start[0x01] == 0xC0u &&
+        start[0x02] == 0x5Eu &&
+        start[0x03] == 0x5Du &&
+        start[0x04] == 0xC2u && start[0x05] == 0x04u && start[0x06] == 0x00u)
+    {
+        return;
+    }
+    // ?AttachInstructionText@CMessBox@@UAEXPBDVTRio@@1K@Z
+    // mov     eax, 1
+    // pop     esi
+    // pop     ebp
+    // retn
+    if (start[0x00] == 0xB8u &&
+        start[0x01] == 0x01u & start[0x02] == 0x00u && start[0x03] == 0x00u && start[0x04] == 0x00u &&
+        start[0x05] == 0x5Eu &&
+        start[0x06] == 0x5Du &&
+        start[0x07] == 0xC3u)
+    {
+        return;
     }
 
     const auto attach = [start, end](BYTE const tmp)
     {
-        auto& record = SPLIT_CACHE[end];
+        auto& record = SPLIT_CACHE[start];
         if (record != nullptr) return;
         record = static_cast<CodePatchRecord*>(VirtualAlloc(
             nullptr,
@@ -816,7 +845,7 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
 
     const auto attach_ = [start, end](BYTE const tmp)
     {
-        auto& record = SPLIT_CACHE[end];
+        auto& record = SPLIT_CACHE[start];
         if (record != nullptr) return;
         record = static_cast<CodePatchRecord*>(VirtualAlloc(
             nullptr,
@@ -891,6 +920,18 @@ void CObjectProxy::AttachCharacterSplit(LPBYTE const address, LPCSTR const lpszM
             // movzx   ..., byte ptr [...]
             // inc     ...
             // shl     ..., 8
+            // or      ..., ...
+            wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
+            attach((end[-0x02] == 0x0B ? end[-0x01] : end[-0x01] >> 0x03) & 0x07);
+            return;
+        }
+        if (end[-0x06] == 0xC1u && end[-0x04] == 0x08u &&
+            (end[-0x03] & 0xF8u) == 0x40u)
+        {
+            // movzx   ..., byte ptr [...]
+            // mov     ..., ...
+            // shl     ..., 8
+            // inc     ...
             // or      ..., ...
             wprintf(L"Attach CharacterSplit 0x%p at %hs\n", address + offset, lpszModuleName);
             attach((end[-0x02] == 0x0B ? end[-0x01] : end[-0x01] >> 0x03) & 0x07);
