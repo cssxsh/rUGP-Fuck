@@ -18,6 +18,12 @@ void Win32Hook::AttachHook()
         wprintf(L"DetourAttach: SetWindowTextA\n");
         DetourAttach(&reinterpret_cast<PVOID&>(pfnSetWindowTextA), &HookSetWindowTextA);
     }
+    if (pfnSendMessageA == nullptr)
+    {
+        pfnSendMessageA = &SendMessageA;
+        wprintf(L"DetourAttach: SendMessageA\n");
+        DetourAttach(&reinterpret_cast<PVOID&>(pfnSendMessageA), &HookSendMessageA);
+    }
     if (pfnCreatePropertySheetPageA == nullptr)
     {
         pfnCreatePropertySheetPageA = &CreatePropertySheetPageA;
@@ -139,6 +145,12 @@ void Win32Hook::DetachHook()
         DetourDetach(&reinterpret_cast<PVOID&>(pfnSetWindowTextA), &HookSetWindowTextA);
         pfnSetWindowTextA = nullptr;
     }
+    if (pfnSendMessageA == nullptr)
+    {
+        wprintf(L"DetourDetach: SendMessageA\n");
+        DetourDetach(&reinterpret_cast<PVOID&>(pfnSendMessageA), &HookSendMessageA);
+        pfnSendMessageA = nullptr;
+    }
     if (pfnCreatePropertySheetPageA != nullptr)
     {
         wprintf(L"DetourDetach: CreatePropertySheetPageA\n");
@@ -248,6 +260,8 @@ decltype(CreateWindowExA)* Win32Hook::pfnCreateWindowExA = nullptr;
 
 decltype(SetWindowTextA)* Win32Hook::pfnSetWindowTextA = nullptr;
 
+decltype(SendMessageA)* Win32Hook::pfnSendMessageA = nullptr;
+
 decltype(CreatePropertySheetPageA)* Win32Hook::pfnCreatePropertySheetPageA = nullptr;
 
 decltype(PropertySheetA)* Win32Hook::pfnPropertySheetA = nullptr;
@@ -318,17 +332,46 @@ BOOL WINAPI Win32Hook::HookSetWindowTextA(
     {
     // 標準
     case 0xCA9CCB98u:
-        cp = CP_ACP;
+        cp = CP_GB18030;
         break;
     default:
         break;
     }
     const auto unicode = Unicode(lpString, cp);
-    // const auto unicode = Unicode(lpString, CP_SHIFT_JIS);
     wprintf(L"Hook SetWindowTextA(hWnd=0x%p, lpString=%s)\n", hWnd, unicode);
     const auto result = SetWindowTextW(hWnd, unicode);
     free(unicode);
     return result;
+}
+
+LRESULT Win32Hook::HookSendMessageA(
+    const HWND hWnd, // NOLINT(*-misplaced-const)
+    const UINT Msg,
+    const WPARAM wParam,
+    const LPARAM lParam)
+{
+    switch (Msg)
+    {
+    case LB_ADDSTRING:
+        {
+            const auto unicode = Unicode(reinterpret_cast<LPCSTR>(lParam), CP_GB18030);
+            wprintf(L"Hook SendMessageA(hWnd=0x%p, Msg=LB_ADDSTRING, lParam=%s)\n", hWnd, unicode);
+            const auto result = SendMessageW(hWnd, Msg, wParam, reinterpret_cast<LPARAM>(unicode));
+            free(unicode);
+            return result;
+        }
+    case CB_ADDSTRING:
+        {
+            const auto unicode = Unicode(reinterpret_cast<LPCSTR>(lParam), CP_SHIFT_JIS);
+            wprintf(L"Hook SendMessageA(hWnd=0x%p, Msg=CB_ADDSTRING, lParam=%s)\n", hWnd, unicode);
+            const auto result = SendMessageW(hWnd, Msg, wParam, reinterpret_cast<LPARAM>(unicode));
+            free(unicode);
+            return result;
+        }
+    default:
+        // TODO SendMessageW
+        return pfnSendMessageA(hWnd, Msg, wParam, lParam);
+    }
 }
 
 HPROPSHEETPAGE WINAPI Win32Hook::HookCreatePropertySheetPageA(
@@ -442,7 +485,7 @@ LRESULT Win32Hook::HookSendDlgItemMessageA(
     case CB_ADDSTRING:
         {
             const auto unicode = Unicode(reinterpret_cast<LPCSTR>(lParam), CP_SHIFT_JIS);
-            wprintf(L"Hook SendDlgItemMessageA(hDlg=0x%p, nIDDlgItem=%d, pszText=%s)\n", hDlg, nIDDlgItem, unicode);
+            wprintf(L"Hook SendDlgItemMessageA(hDlg=0x%p, nIDDlgItem=%d, lParam=%s)\n", hDlg, nIDDlgItem, unicode);
             const auto result = SendDlgItemMessageW(hDlg, nIDDlgItem, Msg, wParam, reinterpret_cast<LPARAM>(unicode));
             free(unicode);
             return result;
@@ -570,7 +613,9 @@ HFONT WINAPI Win32Hook::HookCreateFontIndirectA(
     auto cp = CP_ACP;
     switch (*reinterpret_cast<const DWORD*>(lpLogFont->lfFaceName))
     {
+    // ＭＳ
     case 0x72826C82u:
+    // FOT-
     case 0x2D544F46u:
         cp = CP_SHIFT_JIS;
         break;
@@ -704,7 +749,7 @@ int CALLBACK Win32Hook::HookEnumFontCallback(
         lpLogFont->lfQuality,
         lpLogFont->lfPitchAndFamily
     };
-    const auto ansi = Ansi(lpLogFont->lfFaceName, CP_ACP);
+    const auto ansi = Ansi(lpLogFont->lfFaceName, CP_GB18030);
     strcpy(font.lfFaceName, ansi);
     free(ansi);
     const auto metric = TEXTMETRICA

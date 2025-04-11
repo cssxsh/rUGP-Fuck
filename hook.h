@@ -19,6 +19,8 @@ protected:
 
     static decltype(SetWindowTextA)* pfnSetWindowTextA;
 
+    static decltype(SendMessageA)* pfnSendMessageA;
+
     static decltype(CreatePropertySheetPageA)* pfnCreatePropertySheetPageA;
 
     static decltype(PropertySheetA)* pfnPropertySheetA;
@@ -56,6 +58,8 @@ protected:
     static decltype(CreateWindowExA) HookCreateWindowExA;
 
     static decltype(SetWindowTextA) HookSetWindowTextA;
+
+    static decltype(SendMessageA) HookSendMessageA;
 
     static decltype(CreatePropertySheetPageA) HookCreatePropertySheetPageA;
 
