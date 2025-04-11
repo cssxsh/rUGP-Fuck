@@ -275,6 +275,7 @@ void CObjectProxy::AttachHook()
 
         if (clazz->IsDerivedFrom(CEditData::GetClassCEditData()))
         {
+            if (name != L"CCharVoiceRegistOb") continue;
             wprintf(L"DetourAttach: %s::Serialize\n", name.c_str());
             DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
         }
@@ -354,6 +355,7 @@ void CObjectProxy::DetachHook()
 
         if (clazz->IsDerivedFrom(CEditData::GetClassCEditData()))
         {
+            if (name != L"CCharVoiceRegistOb") continue;
             wprintf(L"DetourDetach: %s::Serialize\n", name.c_str());
             DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
         }
