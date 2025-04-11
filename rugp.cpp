@@ -225,6 +225,34 @@ CStringX& CStringX::operator=(const LPCSTR pszSrc)
     return *this;
 }
 
+CStringX& CStringX::operator=(const CStringX& strSrc)
+{
+    using LPSet = CStringX& (__thiscall *)(CStringX*, const CStringX&);
+    const auto name = "??4CString@@QAEABV0@ABV0@@Z";
+    auto& proc = reinterpret_cast<LPSet&>(cache[name]);
+    if (proc != nullptr) return proc(this, strSrc); // NOLINT(*-unconventional-assign-operator)
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(858)));
+        if (proc != nullptr) return proc(this, strSrc); // NOLINT(*-unconventional-assign-operator)
+        break;
+    case 0x0C00:
+        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1521)));
+        if (proc != nullptr) return proc(this, strSrc); // NOLINT(*-unconventional-assign-operator)
+        break;
+    case 0x0E00:
+        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1526)));
+        if (proc != nullptr) return proc(this, strSrc); // NOLINT(*-unconventional-assign-operator)
+        break;
+    default:
+        break;
+    }
+    __debugbreak();
+    return *this;
+}
+
 CStringX::operator CStringA&()
 {
     return *reinterpret_cast<CStringA*>(this);
@@ -233,6 +261,43 @@ CStringX::operator CStringA&()
 CStringX::operator LPCSTR() const
 {
     return *reinterpret_cast<const LPCSTR*>(this);
+}
+
+void CStringX::FormatV(const LPCSTR pszFormat, const va_list args) // NOLINT(*-misplaced-const)
+{
+    using LPFormatV = void (__thiscall *)(CStringX*, LPCSTR, va_list);
+    const auto name = "?FormatV@CString@@QAEXPBDPAD@Z";
+    auto& proc = reinterpret_cast<LPFormatV&>(cache[name]);
+    if (proc != nullptr) return proc(this, pszFormat, args);
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+        proc = reinterpret_cast<LPFormatV>(GetProcAddress(mfc.native, MAKEINTRESOURCE(2827)));
+        if (proc != nullptr) return proc(this, pszFormat, args);
+        break;
+    case 0x0C00:
+        proc = reinterpret_cast<LPFormatV>(GetProcAddress(mfc.native, MAKEINTRESOURCE(4777)));
+        if (proc != nullptr) return proc(this, pszFormat, args);
+        break;
+    case 0x0E00:
+        proc = reinterpret_cast<LPFormatV>(GetProcAddress(mfc.native, MAKEINTRESOURCE(4820)));
+        if (proc != nullptr) return proc(this, pszFormat, args);
+        break;
+    default:
+        break;
+    }
+    __debugbreak();
+}
+
+CStringX CStringX::FormatX(LPCSTR pszFormat, ...)
+{
+    CStringX text;
+    va_list argList;
+    va_start(argList, pszFormat);
+    text.FormatV(pszFormat, argList);
+    va_end(argList);
+    return text;
 }
 
 template <class T>

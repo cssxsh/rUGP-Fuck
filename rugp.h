@@ -77,10 +77,15 @@ public:
     ~CStringX();
 
     CStringX& operator=(LPCSTR);
+    CStringX& operator=(const CStringX&);
     // ReSharper disable CppNonExplicitConversionOperator
     operator CStringA&(); // NOLINT(*-explicit-constructor)
     operator LPCSTR() const; // NOLINT(*-explicit-constructor)
     // ReSharper restore CppNonExplicitConversionOperator
+
+    void FormatV(_Printf_format_string_ LPCSTR, va_list);
+
+    static CStringX FormatX(_Printf_format_string_ LPCSTR, ...);
 
 protected:
     template <class T>

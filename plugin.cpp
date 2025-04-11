@@ -1143,7 +1143,7 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
         case 0x00004690u:
         // _VCOLOR
         case 0x4F43565Fu:
-            obj[key] = fmt::format("#{:08X}", *reinterpret_cast<DWORD*>(address));
+            obj[key] = CStringX::FormatX("#%08X", *reinterpret_cast<DWORD*>(address)).operator LPCSTR();
             break;
         // 仮想マシン汎用値
         case 0x7A91BC89u:
@@ -1313,12 +1313,13 @@ CStringX* CObjectProxy::HookGetLocalFullPathName(const COceanNode* node, CString
 {
     if (node->m_strName[0x01] == ':' && node->m_pRTC == CObjectArcMan::GetClassCObjectArcMan())
     {
-        const auto path = fmt::format(
-            ".\\{}\\{}",
-            AnsiX(GetGameName().c_str(), CP_ACP),
-            strrchr(const_cast<COceanNode*>(node)->m_strName, '\\') + 1);
-        CopyFileA(node->m_strName, path.c_str(), true);
-        const_cast<COceanNode*>(node)->m_strName = path.c_str();
+        auto& source = const_cast<COceanNode*>(node)->m_strName;
+        const auto path = CStringX::FormatX(
+            ".\\%s\\%s",
+            AnsiX(GetGameName().c_str(), CP_ACP).c_str(),
+            strrchr(source, '\\') + 1);
+        CopyFileA(source, path, true);
+        source = path;
     }
     COceanNode::FetchGetLocalFullPathName()(node, x);
     return x;
