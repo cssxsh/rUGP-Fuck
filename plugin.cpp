@@ -1149,6 +1149,8 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
         case 0x7A91BC89u:
         // 基本汎用値
         case 0x7B96EE8Au:
+        // 汎用値
+        case 0x7097C494u:
         // _CVmVar
         case 0x6D56435Fu:
             // if (strcmp(member->m_pRTC->m_lpszClassName, "_CVmVar64") == 0) __debugbreak();
