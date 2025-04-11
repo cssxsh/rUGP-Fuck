@@ -2309,6 +2309,7 @@ int CVmCommand::GetVariableAreaSize() const
         proc = reinterpret_cast<LPGetVariableAreaSize>(vtbl[0x0007]);
         return proc(this);
     case 0xA0000011u:
+    case 0xA0000014u:
     case 0xA0000015u:
         proc = reinterpret_cast<LPGetVariableAreaSize>(vtbl[0x0009]);
         return proc(this);
