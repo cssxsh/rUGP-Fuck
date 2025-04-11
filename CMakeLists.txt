@@ -21,6 +21,7 @@ find_package(jsoncpp CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 
 add_library(r514783 SHARED plugin.cpp rugp.cpp hook.cpp)
+target_compile_options(r514783 PRIVATE /EHa)
 
 target_include_directories(r514783 PRIVATE ${DETOURS_INCLUDE_DIRS})
 target_link_libraries(r514783 PRIVATE ${DETOURS_LIBRARY})

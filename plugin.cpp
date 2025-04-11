@@ -198,17 +198,14 @@ std::wstring GetGameName()
 
 StructuredException::StructuredException(const UINT u, const EXCEPTION_POINTERS* pExp) : m_pExceptionPointers(pExp)
 {
-    const auto data = reinterpret_cast<__std_exception_data*>(this);
-    const auto record = pExp->ExceptionRecord;
-    const auto module = DetourGetContainingModule(record->ExceptionAddress);
+    const auto address = static_cast<LPBYTE>(pExp->ExceptionRecord->ExceptionAddress);
+    const auto module = DetourGetContainingModule(address);
     char filename[MAX_PATH];
-    GetModuleFileNameA(module, filename, MAX_PATH);
-    const auto buffer = static_cast<LPSTR>(malloc(0x0100));
+    GetModuleFileNameA(module, filename, sizeof(filename));
+    char buffer[MAX_PATH];
     sprintf(buffer, "StructuredException 0x%08X at address 0x%p module %s",
-            u, record->ExceptionAddress, strrchr(filename, '\\') + 1);
-    const __std_exception_data temp = { buffer, true };
-    __std_exception_copy(&temp, data);
-    free(buffer);
+        u, address - reinterpret_cast<DWORD>(module) + 0x10000000u, strrchr(filename, '\\') + 1);
+    *reinterpret_cast<std::exception*>(this) = std::exception(buffer);
 }
 
 void StructuredException::Trans(UINT const u, PEXCEPTION_POINTERS const pExp) // NOLINT(*-misplaced-const)
