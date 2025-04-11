@@ -62,9 +62,21 @@
 * `[080328][age] 君が望む永遠 another episode 悲しみは風のように`
   * MFC Version 6.0
   * rUGP System Version 5.81.03
+* `[080829][φage] ぴこぴこ～恋する気持の眠る場所～ 初回版`
+  * MFC Version 6.0
+  * rUGP System Version 5.81.06
+* `[090724][φage] 終わりなき夏 永遠なる音律`
+  * MFC Version 6.0
+  * rUGP System Version 5.90.07
+* `[100129][φage] シェイプシフター`
+  * MFC Version 6.0
+  * rUGP System Version 5.91.04
 * `[111028][age] 君がいた季節 初回限定生産版`
   * MFC Version 6.0
   * rUGP System Version 5.95.05
+* `[140926][age] マブラヴ オルタネイティヴ トータル・イクリプス 初回限定版`
+  * MFC Version 12.0
+  * rUGP System Version 6.23.00P
 * `[151127][age] シュヴァルツェスマーケン 紅血の紋章`
   * MFC Version 12.0
   * rUGP System Version 6.23.02
