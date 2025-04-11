@@ -22,7 +22,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
         setlocale(LC_ALL, ".UTF8");
         freopen("CON", "w", stdout);
 
-        wprintf(L"MFC Version %hs\n", GetMfcVersion());
+        wprintf(L"MFC Version %hs\n", GetMfc().GetVersionString());
         wprintf(L"rUGP System Version %hs\n", CrUGP::GetGlobal()->GetVersion());
         wprintf(L"JsonCpp Version %hs\n", JSONCPP_VERSION_STRING);
         wprintf(L"Detours Version %x\n", DETOURS_VERSION);
@@ -203,8 +203,8 @@ StructuredException::StructuredException(const UINT u, const EXCEPTION_POINTERS*
     char filename[MAX_PATH];
     GetModuleFileNameA(module, filename, sizeof(filename));
     char buffer[MAX_PATH];
-    sprintf(buffer, "StructuredException 0x%08X at address 0x%p module %s",
-        u, address - reinterpret_cast<DWORD>(module) + 0x10000000u, strrchr(filename, '\\') + 1);
+    sprintf(buffer, "StructuredException(nCode=0x%08X) at address 0x%p module %s",
+            u, address - reinterpret_cast<DWORD>(module) + 0x10000000u, strrchr(filename, '\\') + 1);
     *reinterpret_cast<std::exception*>(this) = std::exception(buffer);
 }
 
@@ -1344,11 +1344,11 @@ CStringX* CObjectProxy::HookRead(
 
 void CObjectProxy::HookWrite(
     CDatabase* const ecx,
-    LPCSTR const key, LPCSTR value)
+    LPCSTR const key, LPCSTR const value)
 {
     if (strcmp(key, "CTxtStDlg_arraySerifSetting") == 0)
     {
-        value = AnsiX(value, CP_GB18030, CP_SHIFT_JIS).c_str();
+        return CDatabase::FetchWrite()(ecx, key, AnsiX(value, CP_GB18030, CP_SHIFT_JIS).c_str());
     }
     CDatabase::FetchWrite()(ecx, key, value);
 }

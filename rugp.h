@@ -58,11 +58,11 @@ struct MFC_MODULE
     HMODULE native;
     int version;
     BOOL unicode;
+
+    LPCSTR GetVersionString() const;
 };
 
 MFC_MODULE GetMfc();
-
-LPCSTR GetMfcVersion();
 
 class CStringX
 {

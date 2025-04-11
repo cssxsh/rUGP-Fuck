@@ -24,17 +24,16 @@ MFC_MODULE GetMfc()
     return {};
 }
 
-LPCSTR GetMfcVersion()
+LPCSTR MFC_MODULE::GetVersionString() const
 {
-    const auto mfc = GetMfc();
-    switch (mfc.version)
+    switch (version)
     {
     case 0x0600:
-        return mfc.unicode ? "6.0 Unicode" : "6.0";
+        return unicode ? "6.0 Unicode" : "6.0 Ansi";
     case 0x0C00:
-        return mfc.unicode ? "12.0 Unicode" : "12.0";
+        return unicode ? "12.0 Unicode" : "12.0 Ansi";
     case 0x0E00:
-        return mfc.unicode ? "14.0 Unicode" : "14.0";
+        return unicode ? "14.0 Unicode" : "14.0 Ansi";
     default:
         break;
     }
