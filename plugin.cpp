@@ -38,7 +38,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
         }
         catch (StructuredException& se)
         {
-            wprintf(L"CreateMergeDirectory Fail: %hs\n", se.what());
+            wprintf(L"CreateDirectory Fail: %hs\n", se.what());
         }
 
         try
@@ -365,6 +365,16 @@ void CObjectProxy::DetachHook()
     {
         wprintf(L"DetourDetach: IsDBCS\n");
         DetourDetach(&reinterpret_cast<PVOID&>(GMfc::FetchIsMBCS()), &HookIsMBCS);
+    }
+    if (CUuiGlobals::FetchStep())
+    {
+        wprintf(L"DetourDetach: CBootTracer::Step\n");
+        DetourDetach(&reinterpret_cast<PVOID&>(CUuiGlobals::FetchStep()), &HookStep);
+    }
+    if (CProcessOcean::FetchBeginProcess())
+    {
+        wprintf(L"DetourDetach: CProcessOcean::BeginProcess\n");
+        DetourDetach(&reinterpret_cast<PVOID&>(CProcessOcean::FetchBeginProcess()), &HookBeginProcess);
     }
     DetourTransactionCommit();
 }
