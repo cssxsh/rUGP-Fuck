@@ -34,15 +34,6 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserv
 
         try
         {
-            CreateDirectoryW(GetGameName().c_str(), nullptr);
-        }
-        catch (StructuredException& se)
-        {
-            wprintf(L"CreateDirectory Fail: %hs\n", se.what());
-        }
-
-        try
-        {
             Win32Hook::AttachHook();
         }
         catch (StructuredException& se)
@@ -186,14 +177,6 @@ std::wstring GetUUID(const COceanNode* const node)
     const auto name = UnicodeX(node->m_pRTC ? node->m_pRTC->m_lpszClassName : nullptr, CP_SHIFT_JIS);
     swprintf(buffer, MAX_PATH, L"%s@%08X", name.c_str(), node->GetAddress());
     return buffer;
-}
-
-std::wstring GetGameName()
-{
-    const auto command = GetCommandLineW();
-    const auto l = wcsrchr(command, L'\\') + 1;
-    const auto r = wcschr(l, L'}');
-    return {l, r};
 }
 
 StructuredException::StructuredException(const UINT u, const EXCEPTION_POINTERS* pExp) : m_pExceptionPointers(pExp)
@@ -973,7 +956,8 @@ std::wstring CObjectProxy::GetPatchFilePath(const COceanNode* const node)
     auto format = UnicodeX(node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin", CP_SHIFT_JIS);
     if (format[0] == L'C') format.erase(0, 1);
     for (auto& ch : format) ch = towlower(ch);
-    swprintf(buffer, MAX_PATH, L"./%s/%08X.%s", GetGameName().c_str(), node->GetAddress(), format.c_str());
+    const auto name = UnicodeX(CUuiGlobals::GetGlobal()->m_strGameName, CP_ACP);
+    swprintf(buffer, MAX_PATH, L"./%s/%08X.%s", name.c_str(), node->GetAddress(), format.c_str());
     return buffer;
 }
 
@@ -1314,8 +1298,8 @@ CStringX* CObjectProxy::HookGetLocalFullPathName(const COceanNode* node, CString
     if (node->m_strName[0x01] == ':' && node->m_pRTC == CObjectArcMan::GetClassCObjectArcMan())
     {
         auto& source = const_cast<COceanNode*>(node)->m_strName;
-        const auto name = AnsiX(GetGameName().c_str(), CP_ACP);
-        const auto target = CStringX::FormatX(".\\%s\\%s", name.c_str(), strrchr(source, '\\') + 1);
+        const auto name = static_cast<LPCSTR>(CUuiGlobals::GetGlobal()->m_strGameName);
+        const auto target = CStringX::FormatX(".\\%s\\%s", name, strrchr(source, '\\') + 1);
         CopyFileA(source, target, true);
         source = target;
     }

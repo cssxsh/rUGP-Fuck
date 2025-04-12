@@ -20,8 +20,6 @@ std::string WINAPI AnsiX(LPCSTR lpText, UINT from, UINT to);
 
 std::wstring GetUUID(const COceanNode* node);
 
-std::wstring GetGameName();
-
 struct CodePatchRecord
 {
     union
