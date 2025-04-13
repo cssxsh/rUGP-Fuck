@@ -1246,9 +1246,9 @@ BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
     return FALSE;
 }
 
-CRio* COceanNode::Fetch()
+CRio* COceanNode::Fetch() const
 {
-    using LPGetPointer = CRio* (__thiscall *)(COceanNode*);
+    using LPGetPointer = CRio* (__thiscall *)(const COceanNode*);
     const auto name = "?__GetPointer@COceanNode@@QBEPAVCRio@@XZ";
     auto& proc = reinterpret_cast<LPGetPointer&>(cache[name]);
     if (proc != nullptr) return proc(this);
@@ -1275,7 +1275,7 @@ void COceanNode::ReleaseRef()
     __debugbreak();
 }
 
-COceanNode* COceanNode::FindChildrenTypeOf(const CRuntimeClass* rtc) const
+const COceanNode* COceanNode::FindChildrenTypeOf(const CRuntimeClass* rtc) const
 {
     if (rtc == nullptr) return nullptr;
     using LPFindChildrenTypeOf = CRef* (__thiscall *)(const COceanNode*, CRef*, const CRuntimeClass*);
@@ -1291,7 +1291,7 @@ COceanNode* COceanNode::FindChildrenTypeOf(const CRuntimeClass* rtc) const
     return nullptr;
 }
 
-COceanNode* COceanNode::FindParentTypeOf(const CRuntimeClass* rtc) const
+const COceanNode* COceanNode::FindParentTypeOf(const CRuntimeClass* rtc) const
 {
     if (rtc == nullptr) return nullptr;
     using LPFindChildrenTypeOf = CRef* (__thiscall *)(const COceanNode*, CRef*, const CRuntimeClass*);
@@ -1307,7 +1307,7 @@ COceanNode* COceanNode::FindParentTypeOf(const CRuntimeClass* rtc) const
     return nullptr;
 }
 
-COceanNode* COceanNode::GetNextAssocRef(POS& pos, CStringX& key) const
+const COceanNode* COceanNode::GetNextAssocRef(POS& pos, CStringX& key) const
 {
     using LPGetManageRef = COceanNode* (__thiscall *)(const COceanNode*, POS&, CStringX&);
     const auto name = "?GetNextAssocRef@COceanNode@@QBEPAV1@AAUPOS@1@AAVCString@@@Z";
@@ -1322,7 +1322,22 @@ COceanNode* COceanNode::GetNextAssocRef(POS& pos, CStringX& key) const
     return nullptr;
 }
 
-DWORD COceanNode::GetAddress() const
+BOOL COceanNode::AccessChildNodes() const
+{
+    using LPAccessChildNodes = BOOL (__thiscall *)(const COceanNode*);
+    const auto name = "?AccessChildNodes@COceanNode@@IBEHXZ";
+    auto& proc = reinterpret_cast<LPAccessChildNodes&>(cache[name]);
+    if (proc != nullptr) return proc(this);
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPAccessChildNodes>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(this);
+    proc = reinterpret_cast<LPAccessChildNodes>(GetProcAddress(UnivUI, MAKEINTRESOURCE(152)));
+    if (proc != nullptr) return proc(this);
+    __debugbreak();
+    return FALSE;
+}
+
+UINT_PTR COceanNode::GetAddress() const
 {
     const auto globals = CUuiGlobals::GetGlobal();
     if (globals == nullptr) return m_dwResAddr;
@@ -1387,15 +1402,15 @@ auto COceanNode::begin() -> Iterator
 
 auto COceanNode::end() -> Iterator
 {
-    return Iterator(const_cast<COceanNode*>(GetNull()));
+    return Iterator(GetNull());
 }
 
-COceanNode::Iterator::Iterator(COceanNode* node)
+COceanNode::Iterator::Iterator(const COceanNode* node)
 {
     m_ptr = node;
 }
 
-auto COceanNode::Iterator::operator*() const -> COceanNode*
+auto COceanNode::Iterator::operator*() const -> const COceanNode*
 {
     return m_ptr;
 }
