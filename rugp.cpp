@@ -9,16 +9,10 @@ MFC_MODULE GetMfc()
 {
     MFC_MODULE module = {};
     module.version = 0x0600;
-    module.unicode = FALSE;
     module.native = GetModuleHandleA("MFC42");
     if (module.native != nullptr) return module;
     module.version = 0x0C00;
-    module.unicode = FALSE;
     module.native = GetModuleHandleA("MFC120");
-    if (module.native != nullptr) return module;
-    module.version = 0x0E00;
-    module.unicode = TRUE;
-    module.native = GetModuleHandleA("MFC140U");
     if (module.native != nullptr) return module;
     __debugbreak();
     return {};
@@ -29,11 +23,9 @@ LPCSTR MFC_MODULE::GetVersionString() const
     switch (version)
     {
     case 0x0600:
-        return unicode ? "6.0 Unicode" : "6.0 Ansi";
+        return "6.0";
     case 0x0C00:
-        return unicode ? "12.0 Unicode" : "12.0 Ansi";
-    case 0x0E00:
-        return unicode ? "14.0 Unicode" : "14.0 Ansi";
+        return "12.0";
     default:
         break;
     }
@@ -57,10 +49,6 @@ BOOL AFXAPI AfxInitExtensionModule(AFX_EXTENSION_MODULE& extension, const HMODUL
         break;
     case 0x0C00:
         init = reinterpret_cast<LPAfxInitExtensionModule>(GetProcAddress(mfc.native, MAKEINTRESOURCE(2221)));
-        if (init != nullptr) return init(extension, hMod);
-        break;
-    case 0x0E00:
-        init = reinterpret_cast<LPAfxInitExtensionModule>(GetProcAddress(mfc.native, MAKEINTRESOURCE(2268)));
         if (init != nullptr) return init(extension, hMod);
         break;
     default:
@@ -87,10 +75,6 @@ void AFXAPI AfxTermExtensionModule(AFX_EXTENSION_MODULE& extension, const BOOL b
         term = reinterpret_cast<LPAfxTermExtensionModule>(GetProcAddress(mfc.native, MAKEINTRESOURCE(2328)));
         if (term != nullptr) return term(extension, bAll);
         break;
-    case 0x0E00:
-        term = reinterpret_cast<LPAfxTermExtensionModule>(GetProcAddress(mfc.native, MAKEINTRESOURCE(2374)));
-        if (term != nullptr) return term(extension, bAll);
-        break;
     default:
         break;
     }
@@ -111,7 +95,6 @@ CStringX::CStringX(const CStringX& strSrc)
         if (proc != nullptr && proc(this, strSrc)) return;
         break;
     case 0x0C00:
-    case 0x0E00:
         proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(300)));
         if (proc != nullptr && proc(this, strSrc)) return;
         break;
@@ -135,7 +118,6 @@ CStringX::CStringX(const LPCSTR pszSrc)
         if (proc != nullptr && proc(this, pszSrc)) return;
         break;
     case 0x0C00:
-    case 0x0E00:
         proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(310)));
         if (proc != nullptr && proc(this, pszSrc)) return;
         break;
@@ -159,7 +141,6 @@ CStringX::CStringX()
         if (proc != nullptr && proc(this)) return;
         break;
     case 0x0C00:
-    case 0x0E00:
         proc = reinterpret_cast<LPConstructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(316)));
         if (proc != nullptr && proc(this)) return;
         break;
@@ -186,10 +167,6 @@ CStringX::~CStringX()
         proc = reinterpret_cast<LPDestructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1041)));
         if (proc != nullptr && (proc(this), proc)) return;
         break;
-    case 0x0E00:
-        proc = reinterpret_cast<LPDestructor>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1044)));
-        if (proc != nullptr && (proc(this), proc)) return;
-        break;
     default:
         break;
     }
@@ -211,10 +188,6 @@ CStringX& CStringX::operator=(const LPCSTR pszSrc)
         break;
     case 0x0C00:
         proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1524)));
-        if (proc != nullptr) return proc(this, pszSrc); // NOLINT(*-unconventional-assign-operator)
-        break;
-    case 0x0E00:
-        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1529)));
         if (proc != nullptr) return proc(this, pszSrc); // NOLINT(*-unconventional-assign-operator)
         break;
     default:
@@ -239,10 +212,6 @@ CStringX& CStringX::operator=(const CStringX& strSrc)
         break;
     case 0x0C00:
         proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1521)));
-        if (proc != nullptr) return proc(this, strSrc); // NOLINT(*-unconventional-assign-operator)
-        break;
-    case 0x0E00:
-        proc = reinterpret_cast<LPSet>(GetProcAddress(mfc.native, MAKEINTRESOURCE(1526)));
         if (proc != nullptr) return proc(this, strSrc); // NOLINT(*-unconventional-assign-operator)
         break;
     default:
@@ -277,10 +246,6 @@ void CStringX::FormatV(const LPCSTR pszFormat, const va_list args) // NOLINT(*-m
         break;
     case 0x0C00:
         proc = reinterpret_cast<LPFormatV>(GetProcAddress(mfc.native, MAKEINTRESOURCE(4777)));
-        if (proc != nullptr) return proc(this, pszFormat, args);
-        break;
-    case 0x0E00:
-        proc = reinterpret_cast<LPFormatV>(GetProcAddress(mfc.native, MAKEINTRESOURCE(4820)));
         if (proc != nullptr) return proc(this, pszFormat, args);
         break;
     default:
@@ -353,10 +318,6 @@ BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
         proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(mfc.native, MAKEINTRESOURCE(8006)));
         if (proc != nullptr) return proc(this, pBaseClass);
         break;
-    case 0x0E00:
-        proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(mfc.native, MAKEINTRESOURCE(8161)));
-        if (proc != nullptr) return proc(this, pBaseClass);
-        break;
     default:
         break;
     }
@@ -379,10 +340,6 @@ BOOL CObject::IsKindOf(const CRuntimeClass* pClass) const
         break;
     case 0x0C00:
         proc = reinterpret_cast<LPIsKindOf>(GetProcAddress(mfc.native, MAKEINTRESOURCE(8070)));
-        if (proc != nullptr) return proc(this, pClass);
-        break;
-    case 0x0E00:
-        proc = reinterpret_cast<LPIsKindOf>(GetProcAddress(mfc.native, MAKEINTRESOURCE(8225)));
         if (proc != nullptr) return proc(this, pClass);
         break;
     default:
@@ -531,24 +488,11 @@ const CRuntimeClass* CObjectEx::GetClassCObjectEx()
     const auto name = "?classCObjEx@CObjEx@@2UCRtcEx@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(837)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRtcEx CObjEx::classCObjEx
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(837)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -558,24 +502,11 @@ const CRuntimeClass* CRio::GetClassCRio()
     const auto name = "?classCRio@CRio@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(843)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CRio::classCRio
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(843)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -683,24 +614,11 @@ const CRuntimeClass* CVisual::GetClassCVisual()
     const auto name = "?classCVisual@CVisual@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(867)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CVisual::classCVisual
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(867)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -710,24 +628,11 @@ const CRuntimeClass* CRip::GetClassCRip()
     const auto name = "?classCRip@CRip@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(845)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CRip::classCRip
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(845)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -737,24 +642,11 @@ const CRuntimeClass* CS5i::GetClassCS5i()
     const auto name = "?classCS5i@CS5i@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(851)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CS5i::classCS5i
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(851)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -801,7 +693,6 @@ CS5i::LPDrawFont1& CS5i::FetchDrawFont1()
         }
         return address;
     case 0x0C00:
-    case 0x0E00:
         // @see FetchDrawFont2
         return address = nullptr;
     default:
@@ -845,8 +736,6 @@ CS5i::LPDrawFont2& CS5i::FetchDrawFont2()
             }
         }
         return address;
-    case 0x0E00:
-        // TODO public: int * __thiscall CS5i::DrawFont(int *, short, short, struct tagRBDY const *, struct SQRBDY *, unsigned int, class CFontContext const *)
     default:
         break;
     }
@@ -867,24 +756,11 @@ const CRuntimeClass* CS5RFont::GetClassCS5RFont()
     const auto name = "?classCS5RFont@CS5RFont@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(850)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CS5RFont::classCS5RFont
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(850)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -900,35 +776,22 @@ LPVOID CS5RFont::CreateNewFont(UINT const uChar, COceanNode* const node)
         "?CreateNewFont@CS5RFont@@IAEPAUCS5RFontEntry@@IV?$CRef@VCFontAttr@@VCFontAttr_ome@@VTFontAttr@@@@@Z";
     auto& proc = reinterpret_cast<LPGetFont&>(cache[name]);
     if (proc != nullptr) return proc(this, uChar, node);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPGetFont>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(this, uChar, node);
+    const auto pfn_GetCachedFont = reinterpret_cast<LPBYTE>(GetProcAddress(UnivUI, MAKEINTRESOURCE(472)));
+    const auto pfn_GetPointer = reinterpret_cast<LPBYTE>(GetProcAddress(UnivUI, MAKEINTRESOURCE(75)));
+    for (auto offset = pfn_GetCachedFont; offset - pfn_GetCachedFont < 0x0400; offset++)
     {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPGetFont>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(this, uChar, node);
-            const auto pfn_GetCachedFont = reinterpret_cast<LPBYTE>(GetProcAddress(UnivUI, MAKEINTRESOURCE(472)));
-            const auto pfn_GetPointer = reinterpret_cast<LPBYTE>(GetProcAddress(UnivUI, MAKEINTRESOURCE(75)));
-            for (auto offset = pfn_GetCachedFont; offset - pfn_GetCachedFont < 0x0400; offset++)
-            {
-                // call    ...
-                if (offset[0x00] != 0xE8u) continue;
-                const auto address = offset + 0x05 + *reinterpret_cast<int*>(offset + 0x01);
-                if (address == pfn_GetPointer) continue;
-                if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
-                proc = reinterpret_cast<LPGetFont>(address);
-                break;
-            }
-            if (proc != nullptr) return proc(this, uChar, node);
-        }
-        break;
-    case 0x0E00:
-        // TODO protected: struct CS5RFontEntry * __thiscall CS5RFont::CreateNewFont(unsigned int, class CRef<class CFontAttr, class CFontAttr_ome, class TFontAttr>)
-    default:
+        // call    ...
+        if (offset[0x00] != 0xE8u) continue;
+        const auto address = offset + 0x05 + *reinterpret_cast<int*>(offset + 0x01);
+        if (address == pfn_GetPointer) continue;
+        if (IsBadCodePtr(reinterpret_cast<FARPROC>(address))) continue;
+        proc = reinterpret_cast<LPGetFont>(address);
         break;
     }
+    if (proc != nullptr) return proc(this, uChar, node);
     __debugbreak();
     return nullptr;
 }
@@ -939,24 +802,11 @@ CS5RFont::LPGetFont& CS5RFont::FetchGetCachedFont()
         "?GetCachedFont@CS5RFont@@QAEPAUCS5RFontEntry@@IV?$CRef@VCFontAttr@@VCFontAttr_ome@@VTFontAttr@@@@@Z";
     auto& address = reinterpret_cast<LPGetFont&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<LPGetFont>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<LPGetFont>(GetProcAddress(UnivUI, MAKEINTRESOURCE(472)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: struct CS5RFontEntry * __thiscall CS5RFont::GetCachedFont(unsigned int, class CRef<class CFontAttr, class CFontAttr_ome, class TFontAttr>)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<LPGetFont>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<LPGetFont>(GetProcAddress(UnivUI, MAKEINTRESOURCE(472)));
+    if (address != nullptr) return address;
     __debugbreak();
     return address = nullptr;
 }
@@ -966,24 +816,11 @@ const CRuntimeClass* CEditData::GetClassCEditData()
     const auto name = "?classCEditData@CEditData@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(828)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CEditData::classCEditData
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(828)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -1007,24 +844,11 @@ const CRuntimeClass* CUI::GetClassCUI()
     const auto name = "?classCUI@CUI@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto rvmm = GetModuleHandleA("rvmm");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(rvmm, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(rvmm, MAKEINTRESOURCE(639)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CUI::classCUI
-    default:
-        break;
-    }
+    const auto rvmm = GetModuleHandleA("rvmm");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(rvmm, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(rvmm, MAKEINTRESOURCE(639)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -1034,24 +858,11 @@ const CRuntimeClass* CImgBox::GetClassCImgBox()
     const auto name = "?classCImgBox@CImgBox@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto rvmm = GetModuleHandleA("rvmm");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(rvmm, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(rvmm, MAKEINTRESOURCE(613)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CImgBox::classCImgBox
-    default:
-        break;
-    }
+    const auto rvmm = GetModuleHandleA("rvmm");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(rvmm, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(rvmm, MAKEINTRESOURCE(613)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -1076,24 +887,11 @@ CImgBox::LPDrawFont& CImgBox::FetchDrawFont()
     const auto name = "?DrawFont@CImgBox@@QAEHFFIPAVCFontContext@@@Z";
     auto& address = reinterpret_cast<LPDrawFont&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto rvmm = GetModuleHandleA("rvmm");
-            address = reinterpret_cast<LPDrawFont>(GetProcAddress(rvmm, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<LPDrawFont>(GetProcAddress(rvmm, MAKEINTRESOURCE(251)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: int __thiscall CImgBox::DrawFont(short, short, unsigned int, class CFontContext *)
-    default:
-        break;
-    }
+    const auto rvmm = GetModuleHandleA("rvmm");
+    address = reinterpret_cast<LPDrawFont>(GetProcAddress(rvmm, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<LPDrawFont>(GetProcAddress(rvmm, MAKEINTRESOURCE(251)));
+    if (address != nullptr) return address;
     __debugbreak();
     return address = nullptr;
 }
@@ -1103,24 +901,11 @@ CImgBox::LPDrawSingleLineText& CImgBox::FetchDrawSingleLineText()
     const auto name = "?DrawSingleLineText@CImgBox@@QAEPBDFFPBDPAVCFontContext@@@Z";
     auto& address = reinterpret_cast<LPDrawSingleLineText&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto rvmm = GetModuleHandleA("rvmm");
-            address = reinterpret_cast<LPDrawSingleLineText>(GetProcAddress(rvmm, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<LPDrawSingleLineText>(GetProcAddress(rvmm, MAKEINTRESOURCE(264)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: char const * __thiscall CImgBox::DrawSingleLineText(short, short, char const *, class CFontContext *)
-    default:
-        break;
-    }
+    const auto rvmm = GetModuleHandleA("rvmm");
+    address = reinterpret_cast<LPDrawSingleLineText>(GetProcAddress(rvmm, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<LPDrawSingleLineText>(GetProcAddress(rvmm, MAKEINTRESOURCE(264)));
+    if (address != nullptr) return address;
     __debugbreak();
     return address = nullptr;
 }
@@ -1130,24 +915,11 @@ CImgBox::LPDrawSzText& CImgBox::FetchDrawSzText()
     const auto name = "?DrawSzText@CImgBox@@QAEXFFPBDPAVCFontContext@@@Z";
     auto& address = reinterpret_cast<LPDrawSzText&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto rvmm = GetModuleHandleA("rvmm");
-            address = reinterpret_cast<LPDrawSzText>(GetProcAddress(rvmm, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<LPDrawSzText>(GetProcAddress(rvmm, MAKEINTRESOURCE(265)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: void __thiscall CImgBox::DrawSzText(short, short, char const *, class CFontContext *)
-    default:
-        break;
-    }
+    const auto rvmm = GetModuleHandleA("rvmm");
+    address = reinterpret_cast<LPDrawSzText>(GetProcAddress(rvmm, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<LPDrawSzText>(GetProcAddress(rvmm, MAKEINTRESOURCE(265)));
+    if (address != nullptr) return address;
     __debugbreak();
     return address = nullptr;
 }
@@ -1157,24 +929,11 @@ const CRuntimeClass* CDatabase::GetClassCDatabase()
     const auto name = "?classCStdb@CStdb@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(859)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CStdb::classCStdb
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(859)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -1184,34 +943,21 @@ CDatabase::LPInitializeDatabase& CDatabase::FetchInitialize()
     const auto name = "?InitializeDatabase@CStdb@@UAEXXZ";
     auto& address = reinterpret_cast<LPInitializeDatabase&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<LPInitializeDatabase>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    const auto clazz = GetClassCDatabase();
+    const auto vtbl = FindVisualTable(clazz);
+    switch (clazz->m_nObjectSize)
     {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<LPInitializeDatabase>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            const auto clazz = GetClassCDatabase();
-            const auto vtbl = FindVisualTable(clazz);
-            switch (clazz->m_nObjectSize)
-            {
-            case 0x0014:
-                address = reinterpret_cast<LPInitializeDatabase>(vtbl->operator FARPROC const*()[0x0C]);
-                if (address != nullptr) return address;
-                break;
-            case 0x0010:
-                address = reinterpret_cast<LPInitializeDatabase>(vtbl->operator FARPROC const*()[0x0D]);
-                if (address != nullptr) return address;
-                break;
-            default:
-                break;
-            }
-        }
+    case 0x0014:
+        address = reinterpret_cast<LPInitializeDatabase>(vtbl->operator FARPROC const*()[0x0C]);
+        if (address != nullptr) return address;
         break;
-    case 0x0E00:
-        // TODO public: virtual void __thiscall CStdb::InitializeDatabase(void)
+    case 0x0010:
+        address = reinterpret_cast<LPInitializeDatabase>(vtbl->operator FARPROC const*()[0x0D]);
+        if (address != nullptr) return address;
+        break;
     default:
         break;
     }
@@ -1224,34 +970,21 @@ CDatabase::LPRead& CDatabase::FetchRead()
     const auto name = "?Read@CStdb@@UAE?AVCString@@PBD0@Z";
     auto& address = reinterpret_cast<LPRead&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<LPRead>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    const auto clazz = GetClassCDatabase();
+    const auto vtbl = FindVisualTable(clazz);
+    switch (clazz->m_nObjectSize)
     {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<LPRead>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            const auto clazz = GetClassCDatabase();
-            const auto vtbl = FindVisualTable(clazz);
-            switch (clazz->m_nObjectSize)
-            {
-            case 0x0014:
-                address = reinterpret_cast<LPRead>(vtbl->operator FARPROC const*()[0x0D]);
-                if (address != nullptr) return address;
-                break;
-            case 0x0010:
-                address = reinterpret_cast<LPRead>(vtbl->operator FARPROC const*()[0x0E]);
-                if (address != nullptr) return address;
-                break;
-            default:
-                break;
-            }
-        }
+    case 0x0014:
+        address = reinterpret_cast<LPRead>(vtbl->operator FARPROC const*()[0x0D]);
+        if (address != nullptr) return address;
         break;
-    case 0x0E00:
-        // TODO public: virtual class CString __thiscall CStdb::Read(char const *, char const *)
+    case 0x0010:
+        address = reinterpret_cast<LPRead>(vtbl->operator FARPROC const*()[0x0E]);
+        if (address != nullptr) return address;
+        break;
     default:
         break;
     }
@@ -1264,34 +997,21 @@ CDatabase::LPWrite& CDatabase::FetchWrite()
     const auto name = "?Write@CStdb@@UAEXPBD0@Z";
     auto& address = reinterpret_cast<LPWrite&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<LPWrite>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    const auto clazz = GetClassCDatabase();
+    const auto vtbl = FindVisualTable(clazz);
+    switch (clazz->m_nObjectSize)
     {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<LPWrite>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            const auto clazz = GetClassCDatabase();
-            const auto vtbl = FindVisualTable(clazz);
-            switch (clazz->m_nObjectSize)
-            {
-            case 0x0014:
-                address = reinterpret_cast<LPWrite>(vtbl->operator FARPROC const*()[0x0E]);
-                if (address != nullptr) return address;
-                break;
-            case 0x0010:
-                address = reinterpret_cast<LPWrite>(vtbl->operator FARPROC const*()[0x0F]);
-                if (address != nullptr) return address;
-                break;
-            default:
-                break;
-            }
-        }
+    case 0x0014:
+        address = reinterpret_cast<LPWrite>(vtbl->operator FARPROC const*()[0x0E]);
+        if (address != nullptr) return address;
         break;
-    case 0x0E00:
-        // TODO public: virtual void __thiscall CStdb::Write(char const *, char const *)
+    case 0x0010:
+        address = reinterpret_cast<LPWrite>(vtbl->operator FARPROC const*()[0x0F]);
+        if (address != nullptr) return address;
+        break;
     default:
         break;
     }
@@ -1304,34 +1024,21 @@ CDatabase::LPIsKeyExist& CDatabase::FetchIsExist()
     const auto name = "?IsKeyExist@CStdb@@UAEHPBD@Z";
     auto& address = reinterpret_cast<LPIsKeyExist&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<LPIsKeyExist>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    const auto clazz = GetClassCDatabase();
+    const auto vtbl = FindVisualTable(clazz);
+    switch (clazz->m_nObjectSize)
     {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<LPIsKeyExist>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            const auto clazz = GetClassCDatabase();
-            const auto vtbl = FindVisualTable(clazz);
-            switch (clazz->m_nObjectSize)
-            {
-            case 0x0014:
-                address = reinterpret_cast<LPIsKeyExist>(vtbl->operator FARPROC const*()[0x0F]);
-                if (address != nullptr) return address;
-                break;
-            case 0x0010:
-                address = reinterpret_cast<LPIsKeyExist>(vtbl->operator FARPROC const*()[0x10]);
-                if (address != nullptr) return address;
-                break;
-            default:
-                break;
-            }
-        }
+    case 0x0014:
+        address = reinterpret_cast<LPIsKeyExist>(vtbl->operator FARPROC const*()[0x0F]);
+        if (address != nullptr) return address;
         break;
-    case 0x0E00:
-        // TODO public: virtual int __thiscall CStdb::IsKeyExist(char const *)
+    case 0x0010:
+        address = reinterpret_cast<LPIsKeyExist>(vtbl->operator FARPROC const*()[0x10]);
+        if (address != nullptr) return address;
+        break;
     default:
         break;
     }
@@ -1344,24 +1051,11 @@ const CRuntimeClass* CObjectOcean::GetClassCObjectOcean()
     const auto name = "?classCObjectOcean@CObjectOcean@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(839)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CObjectOcean::classCObjectOcean
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(839)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -1371,24 +1065,11 @@ const CRuntimeClass* CrelicUnitedGameProject::GetClassCrelicUnitedGameProject()
     const auto name = "?classCrelicUnitedGameProject@CrelicUnitedGameProject@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(199)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CrelicUnitedGameProject::classCrelicUnitedGameProject
-    default:
-        break;
-    }
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(199)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -1414,24 +1095,11 @@ CrelicUnitedGameProject* CrelicUnitedGameProject::GetGlobal()
     const auto name = "?_GLOBAL_rLocalAppOcean@@3V?$CRef@VCObjectOcean@@VCObjectOcean_ome@@VTObjectOcean@@@@A";
     auto& global = reinterpret_cast<CRef*&>(cache[name]);
     if (global != nullptr) return *global;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto rvmm = GetModuleHandleA("rvmm");
-            global = reinterpret_cast<CRef*>(GetProcAddress(rvmm, name));
-            if (global != nullptr) return *global;
-            global = reinterpret_cast<CRef*>(GetProcAddress(rvmm, MAKEINTRESOURCE(595)));
-            if (global != nullptr) return *global;
-        }
-        break;
-    case 0x0E00:
-        // TODO class CRef<class CObjectOcean,class CObjectOcean_ome,class TObjectOcean> _GLOBAL_rLocalAppOcean
-    default:
-        break;
-    }
+    const auto rvmm = GetModuleHandleA("rvmm");
+    global = reinterpret_cast<CRef*>(GetProcAddress(rvmm, name));
+    if (global != nullptr) return *global;
+    global = reinterpret_cast<CRef*>(GetProcAddress(rvmm, MAKEINTRESOURCE(595)));
+    if (global != nullptr) return *global;
     __debugbreak();
     return nullptr;
 }
@@ -1441,25 +1109,12 @@ const CRuntimeClass* CObjectArcMan::GetClassCObjectArcMan()
     const auto name = "?classCObjectArcMan@CObjectArcMan@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            if (GetProcAddress(UnivUI, "?classCObjectOcean@CObjectOcean@@2UCRioRTC@@A") != nullptr) return nullptr;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(838)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CObjectArcMan::classCObjectArcMan
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    if (GetProcAddress(UnivUI, "?classCObjectOcean@CObjectOcean@@2UCRioRTC@@A") != nullptr) return nullptr;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(838)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -1470,24 +1125,11 @@ CInstallSource* CObjectArcMan::GetSourceObject(INT_PTR const index)
     const auto name = "?GetSourceObject@CObjectArcMan@@QAEPAVCInstallSource@@H@Z";
     auto& proc = reinterpret_cast<LPGetSourceObject&>(cache[name]);
     if (proc != nullptr) return proc(this, index);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPGetSourceObject>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(this, index);
-            proc = reinterpret_cast<LPGetSourceObject>(GetProcAddress(UnivUI, MAKEINTRESOURCE(546)));
-            if (proc != nullptr) return proc(this, index);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: class CInstallSource * __thiscall CObjectArcMan::GetSourceObject(int)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPGetSourceObject>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(this, index);
+    proc = reinterpret_cast<LPGetSourceObject>(GetProcAddress(UnivUI, MAKEINTRESOURCE(546)));
+    if (proc != nullptr) return proc(this, index);
     __debugbreak();
     return nullptr;
 }
@@ -1504,24 +1146,11 @@ const CRuntimeClass* CProcessOcean::GetClassCProcessOcean()
     const auto name = "?classCProcessOcean@CProcessOcean@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(178)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CProcessOcean::classCProcessOcean
-    default:
-        break;
-    }
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(178)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -1531,38 +1160,25 @@ CProcessOcean::LPBeginProcess& CProcessOcean::FetchBeginProcess()
     const auto name = "?BeginProcess@CProcessOcean@@QAEIPAVCVmmView@@@Z";
     auto& address = reinterpret_cast<LPBeginProcess&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<LPBeginProcess>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    const auto clazz = GetClassCProcessOcean();
+    const auto vtbl = FindVisualTable(clazz);
+    switch (clazz->m_nObjectSize)
     {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = reinterpret_cast<LPBeginProcess>(GetProcAddress(Vm60, name));
-            if (address != nullptr) return address;
-            const auto clazz = GetClassCProcessOcean();
-            const auto vtbl = FindVisualTable(clazz);
-            switch (clazz->m_nObjectSize)
-            {
-            case 0x002C:
-                address = reinterpret_cast<LPBeginProcess>(vtbl->operator FARPROC const*()[0x0E]);
-                if (address != nullptr) return address;
-                break;
-            case 0x0030:
-                address = reinterpret_cast<LPBeginProcess>(vtbl->operator FARPROC const*()[0x0F]);
-                if (address != nullptr) return address;
-                break;
-            case 0x0034:
-                address = reinterpret_cast<LPBeginProcess>(vtbl->operator FARPROC const*()[0x10]);
-                if (address != nullptr) return address;
-                break;
-            default:
-                break;
-            }
-        }
+    case 0x002C:
+        address = reinterpret_cast<LPBeginProcess>(vtbl->operator FARPROC const*()[0x0E]);
+        if (address != nullptr) return address;
         break;
-    case 0x0E00:
-        // TODO public: unsigned int __thiscall CProcessOcean::BeginProcess(class CVmmView *)
+    case 0x0030:
+        address = reinterpret_cast<LPBeginProcess>(vtbl->operator FARPROC const*()[0x0F]);
+        if (address != nullptr) return address;
+        break;
+    case 0x0034:
+        address = reinterpret_cast<LPBeginProcess>(vtbl->operator FARPROC const*()[0x10]);
+        if (address != nullptr) return address;
+        break;
     default:
         break;
     }
@@ -1591,24 +1207,11 @@ CPmArchive* CPmArchive::CreateLoadFilePmArchive(const LPCSTR path)
     const auto name = "?CreateLoadFilePmArchive@CPmArchive@@SAPAV1@PBD@Z";
     auto& proc = reinterpret_cast<LPLoadFilePmArchive&>(cache[name]);
     if (proc != nullptr) return proc(path);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPLoadFilePmArchive>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(path);
-            proc = reinterpret_cast<LPLoadFilePmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(396)));
-            if (proc != nullptr) return proc(path);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static class CPmArchive * __cdecl CPmArchive::CreateLoadFilePmArchive(char const *)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPLoadFilePmArchive>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(path);
+    proc = reinterpret_cast<LPLoadFilePmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(396)));
+    if (proc != nullptr) return proc(path);
     __debugbreak();
     return nullptr;
 }
@@ -1619,24 +1222,11 @@ CPmArchive* CPmArchive::CreateSaveFilePmArchive(const LPCSTR path)
     const auto name = "?CreateSaveFilePmArchive@CPmArchive@@SAPAV1@PBDK@Z";
     auto& proc = reinterpret_cast<LPSaveFilePmArchive&>(cache[name]);
     if (proc != nullptr) return proc(path, 0x00010000);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPSaveFilePmArchive>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(path, 0x00010000);
-            proc = reinterpret_cast<LPSaveFilePmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(406)));
-            if (proc != nullptr) return proc(path, 0x00010000);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static class CPmArchive * __cdecl CPmArchive::CreateSaveFilePmArchive(char const *, unsigned long)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPSaveFilePmArchive>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(path, 0x00010000);
+    proc = reinterpret_cast<LPSaveFilePmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(406)));
+    if (proc != nullptr) return proc(path, 0x00010000);
     __debugbreak();
     return nullptr;
 }
@@ -1648,24 +1238,11 @@ void CPmArchive::DestroyPmArchive(CPmArchive* archive)
     const auto name = "?DestroyPmArchive@CPmArchive@@SAXPAV1@H@Z";
     auto& proc = reinterpret_cast<LPDestroyPmArchive&>(cache[name]);
     if (proc != nullptr) return proc(archive, FALSE);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPDestroyPmArchive>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(archive, FALSE);
-            proc = reinterpret_cast<LPDestroyPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(426)));
-            if (proc != nullptr) return proc(archive, FALSE);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static void __cdecl CPmArchive::DestroyPmArchive(class CPmArchive *, int)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPDestroyPmArchive>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(archive, FALSE);
+    proc = reinterpret_cast<LPDestroyPmArchive>(GetProcAddress(UnivUI, MAKEINTRESOURCE(426)));
+    if (proc != nullptr) return proc(archive, FALSE);
     __debugbreak();
 }
 
@@ -1675,24 +1252,11 @@ BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
     const auto name = "?IsDerivedFrom@COceanNode@@IBEHPBUCRioRTC@@@Z";
     auto& proc = reinterpret_cast<LPIsDerivedFrom&>(cache[name]);
     if (proc != nullptr) return proc(this, rtc);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(this, rtc);
-            proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(UnivUI, MAKEINTRESOURCE(74)));
-            if (proc != nullptr) return proc(this, rtc);
-        }
-        break;
-    case 0x0E00:
-        // TODO protected: int __thiscall COceanNode::IsDerivedFrom(struct CRioRTC const *) const
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(this, rtc);
+    proc = reinterpret_cast<LPIsDerivedFrom>(GetProcAddress(UnivUI, MAKEINTRESOURCE(74)));
+    if (proc != nullptr) return proc(this, rtc);
     __debugbreak();
     return FALSE;
 }
@@ -1703,24 +1267,11 @@ CRio* COceanNode::Fetch()
     const auto name = "?__GetPointer@COceanNode@@QBEPAVCRio@@XZ";
     auto& proc = reinterpret_cast<LPGetPointer&>(cache[name]);
     if (proc != nullptr) return proc(this);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPGetPointer>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(this);
-            proc = reinterpret_cast<LPGetPointer>(GetProcAddress(UnivUI, MAKEINTRESOURCE(75)));
-            if (proc != nullptr) return proc(this);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: class CRio * __thiscall COceanNode::__GetPointer(void) const
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPGetPointer>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(this);
+    proc = reinterpret_cast<LPGetPointer>(GetProcAddress(UnivUI, MAKEINTRESOURCE(75)));
+    if (proc != nullptr) return proc(this);
     __debugbreak();
     return nullptr;
 }
@@ -1731,24 +1282,11 @@ void COceanNode::ReleaseRef()
     const auto name = "?_ReleaseRef@COceanNode@@QAEXX";
     auto& proc = reinterpret_cast<LPReleaseRef&>(cache[name]);
     if (proc != nullptr) return proc(this);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPReleaseRef>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(this);
-            proc = reinterpret_cast<LPReleaseRef>(GetProcAddress(UnivUI, MAKEINTRESOURCE(73)));
-            if (proc != nullptr) return proc(this);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: void __thiscall COceanNode::_ReleaseRef(void)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPReleaseRef>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(this);
+    proc = reinterpret_cast<LPReleaseRef>(GetProcAddress(UnivUI, MAKEINTRESOURCE(73)));
+    if (proc != nullptr) return proc(this);
     __debugbreak();
 }
 
@@ -1759,24 +1297,11 @@ COceanNode* COceanNode::FindChildrenTypeOf(const CRuntimeClass* rtc) const
     const auto name = "?__FindChildrenTypeof@COceanNode@@QBE?AVCRefBase@@PBUCRioRTC@@@Z";
     auto& proc = reinterpret_cast<LPFindChildrenTypeOf&>(cache[name]);
     if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
-            proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, MAKEINTRESOURCE(116)));
-            if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: class CRefBase __thiscall COceanNode::__FindChildrenTypeof(struct CRioRTC const *) const
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+    proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, MAKEINTRESOURCE(116)));
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
     __debugbreak();
     return nullptr;
 }
@@ -1788,24 +1313,11 @@ COceanNode* COceanNode::FindParentTypeOf(const CRuntimeClass* rtc) const
     const auto name = "?__FindParentTypeof@COceanNode@@QBE?AVCRefBase@@PBUCRioRTC@@@Z";
     auto& proc = reinterpret_cast<LPFindChildrenTypeOf&>(cache[name]);
     if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
-            proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, MAKEINTRESOURCE(115)));
-            if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: class CRefBase __thiscall COceanNode::__FindParentTypeof(struct CRioRTC const *) const
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+    proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, MAKEINTRESOURCE(115)));
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
     __debugbreak();
     return nullptr;
 }
@@ -1816,24 +1328,11 @@ COceanNode* COceanNode::GetNextAssocRef(POS& pos, CStringX& key) const
     const auto name = "?GetNextAssocRef@COceanNode@@QBEPAV1@AAUPOS@1@AAVCString@@@Z";
     auto& proc = reinterpret_cast<LPGetManageRef&>(cache[name]);
     if (proc != nullptr) return proc(this, pos, key);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPGetManageRef>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(this, pos, key);
-            proc = reinterpret_cast<LPGetManageRef>(GetProcAddress(UnivUI, MAKEINTRESOURCE(125)));
-            if (proc != nullptr) return proc(this, pos, key);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: class COceanNode * __thiscall COceanNode::GetNextAssocRef(struct COceanNode::POS &, class CString &) const
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPGetManageRef>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(this, pos, key);
+    proc = reinterpret_cast<LPGetManageRef>(GetProcAddress(UnivUI, MAKEINTRESOURCE(125)));
+    if (proc != nullptr) return proc(this, pos, key);
     __debugbreak();
     return nullptr;
 }
@@ -1851,28 +1350,18 @@ const COceanNode* COceanNode::GetRoot()
     const auto name = "?GetRoot@COceanNode@@SAPAV1@XZ";
     auto& proc = reinterpret_cast<LPGetRoot&>(cache[name]);
     if (proc != nullptr) return proc();
-    const auto mfc = GetMfc();
-    switch (mfc.version)
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc();
+    const auto temp = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, MAKEINTRESOURCE(500)));
+    if (temp != nullptr && reinterpret_cast<LPBYTE>(temp)[0x00] == 0xB8u) proc = temp;
+    if (proc != nullptr) return proc();
+    const auto is_root = GetProcAddress(UnivUI, MAKEINTRESOURCE(114));
+    if (is_root != nullptr)
     {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc();
-            const auto temp = reinterpret_cast<LPGetRoot>(GetProcAddress(UnivUI, MAKEINTRESOURCE(500)));
-            if (temp != nullptr && reinterpret_cast<LPBYTE>(temp)[0x00] == 0xB8u) proc = temp;
-            if (proc != nullptr) return proc();
-            const auto is_root = GetProcAddress(UnivUI, MAKEINTRESOURCE(114));
-            if (is_root == nullptr) break;
-            // cmp     ecx, offset ...
-            const auto address = reinterpret_cast<LPBYTE>(is_root);
-            return *reinterpret_cast<const COceanNode**>(address + 0x04);
-        }
-    case 0x0E00:
-        // TODO public: static class COceanNode * __cdecl COceanNode::GetRoot(void)
-    default:
-        break;
+        // cmp     ecx, offset ...
+        const auto address = reinterpret_cast<LPBYTE>(is_root);
+        return *reinterpret_cast<const COceanNode**>(address + 0x04);
     }
     __debugbreak();
     return nullptr;
@@ -1883,24 +1372,11 @@ const COceanNode* COceanNode::GetNull()
     const auto name = "?_GLOBAL_EnNull@@3VCNullEntry@@A";
     auto& address = reinterpret_cast<COceanNode*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<COceanNode*>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<COceanNode*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(784)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO class CNullEntry _GLOBAL_EnNull
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<COceanNode*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<COceanNode*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(784)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -1910,24 +1386,11 @@ COceanNode::LPGetLocalFullPathName& COceanNode::FetchGetLocalFullPathName()
     const auto name = "?GetLocalFullPathName@COceanNode@@QBE?AVCString@@XZ";
     auto& address = reinterpret_cast<LPGetLocalFullPathName&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<LPGetLocalFullPathName>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<LPGetLocalFullPathName>(GetProcAddress(UnivUI, MAKEINTRESOURCE(88)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: class CString __thiscall COceanNode::GetLocalFullPathName(void) const
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<LPGetLocalFullPathName>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<LPGetLocalFullPathName>(GetProcAddress(UnivUI, MAKEINTRESOURCE(88)));
+    if (address != nullptr) return address;
     __debugbreak();
     return address = nullptr;
 }
@@ -2062,8 +1525,6 @@ CrUGP* CrUGP::GetGlobal()
             if (global != nullptr) return global;
         }
         break;
-    case 0x0E00:
-        // TODO class CrUGP _GLOBAL_rUGP
     default:
         break;
     }
@@ -2076,26 +1537,13 @@ CUuiGlobals* CUuiGlobals::GetGlobal()
     const auto name = "?eUuiGlbs@@3UCUuiGlobals@@A";
     auto& global = reinterpret_cast<CUuiGlobals*&>(cache[name]);
     if (global != nullptr) return global;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, name));
-            if (global != nullptr) return global;
-            const auto rio = GetProcAddress(UnivUI, "?classCRio@CRio@@2UCRioRTC@@A");
-            if (rio != nullptr) break;
-            global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(901)));
-            if (global != nullptr) return global;
-        }
-        break;
-    case 0x0E00:
-        // TODO struct CUuiGlobals eUuiGlbs
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, name));
+    if (global != nullptr) return global;
+    const auto rio = GetProcAddress(UnivUI, "?classCRio@CRio@@2UCRioRTC@@A");
+    if (rio != nullptr) return nullptr;
+    global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(901)));
+    if (global != nullptr) return global;
     __debugbreak();
     return nullptr;
 }
@@ -2105,24 +1553,11 @@ CUuiGlobals::LPStep& CUuiGlobals::FetchStep()
     const auto name = "?Step@CBootTracer@@QAEXH@Z";
     auto& address = reinterpret_cast<LPStep&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            address = reinterpret_cast<LPStep>(GetProcAddress(UnivUI, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<LPStep>(GetProcAddress(UnivUI, MAKEINTRESOURCE(730)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: void __thiscall CBootTracer::Step(int)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<LPStep>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<LPStep>(GetProcAddress(UnivUI, MAKEINTRESOURCE(730)));
+    if (address != nullptr) return address;
     __debugbreak();
     return address = nullptr;
 }
@@ -2133,24 +1568,11 @@ CProfile CRioMsg::ToMsgString() const
     const auto name = "?ToMsgString@CRioMsg@@QAE?AVCProfile@@XZ";
     auto& proc = reinterpret_cast<LPToMsgString&>(cache[name]);
     if (proc != nullptr) return CProfile::Fetch(this, proc);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return CProfile::Fetch(this, proc);
-            proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(750)));
-            if (proc != nullptr) return CProfile::Fetch(this, proc);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: class CProfile __thiscall CRioMsg::ToMsgString(void)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return CProfile::Fetch(this, proc);
+    proc = reinterpret_cast<LPToMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(750)));
+    if (proc != nullptr) return CProfile::Fetch(this, proc);
     __debugbreak();
     return {};
 }
@@ -2161,24 +1583,11 @@ CRioMsg* CRioMsg::FromMsgString(LPCSTR const text)
     const auto name = "?FromMsgString@CRioMsg@@SAPAV1@PBD@Z";
     auto& proc = reinterpret_cast<LPFromMsgString&>(cache[name]);
     if (proc != nullptr) return proc(text);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPFromMsgString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(text);
-            proc = reinterpret_cast<LPFromMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(458)));
-            if (proc != nullptr) return proc(text);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static class CRioMsg * __cdecl CRioMsg::FromMsgString(char const *)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPFromMsgString>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(text);
+    proc = reinterpret_cast<LPFromMsgString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(458)));
+    if (proc != nullptr) return proc(text);
     __debugbreak();
     return nullptr;
 }
@@ -2189,24 +1598,11 @@ CStringX CVmVar::ToSerialString() const
     const auto name = "?ToSerialString@CVmVar@@QBE?AVCString@@XZ";
     auto& proc = reinterpret_cast<LPToSerialString&>(cache[name]);
     if (proc != nullptr) return CStringX::Fetch(this, proc);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return CStringX::Fetch(this, proc);
-            proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(754)));
-            if (proc != nullptr) return CStringX::Fetch(this, proc);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: class CString __thiscall CVmVar::ToSerialString(void) const
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return CStringX::Fetch(this, proc);
+    proc = reinterpret_cast<LPToSerialString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(754)));
+    if (proc != nullptr) return CStringX::Fetch(this, proc);
     __debugbreak();
     return "(null)";
 }
@@ -2217,24 +1613,11 @@ void CVmVar::FromSerialString(LPCSTR const text)
     const auto name = "?FromSerialString@CVmVar@@QAEXPBD@Z";
     auto& proc = reinterpret_cast<LPFromSerialString&>(cache[name]);
     if (proc != nullptr) return proc(this, text);
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPFromSerialString>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc(this, text);
-            proc = reinterpret_cast<LPFromSerialString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(462)));
-            if (proc != nullptr) return proc(this, text);
-        }
-        break;
-    case 0x0E00:
-        // TODO public: void __thiscall CVmVar::FromSerialString(char const *)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPFromSerialString>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc(this, text);
+    proc = reinterpret_cast<LPFromSerialString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(462)));
+    if (proc != nullptr) return proc(this, text);
     __debugbreak();
 }
 
@@ -2324,24 +1707,11 @@ CRegistryCache* CRegistryCache::GetGlobal()
     const auto name = "?_rvmmGLOBAL_registryCache@@3VRvmmRegistry@@A";
     auto& global = reinterpret_cast<CRegistryCache*&>(cache[name]);
     if (global != nullptr) return global;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto rvmm = GetModuleHandleA("rvmm");
-            global = reinterpret_cast<CRegistryCache*>(GetProcAddress(rvmm, name));
-            if (global != nullptr) return global;
-            // global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(901)));
-            // if (global != nullptr) return global;
-        }
-        break;
-    case 0x0E00:
-        // TODO class RvmmRegistry _rvmmGLOBAL_registryCache
-    default:
-        break;
-    }
+    const auto rvmm = GetModuleHandleA("rvmm");
+    global = reinterpret_cast<CRegistryCache*>(GetProcAddress(rvmm, name));
+    if (global != nullptr) return global;
+    global = reinterpret_cast<CRegistryCache*>(GetProcAddress(rvmm, MAKEINTRESOURCE(599)));
+    if (global != nullptr) return global;
     __debugbreak();
     return nullptr;
 }
@@ -2351,24 +1721,11 @@ const CRuntimeClass* CCommandRef::GetClassCCommandRef()
     const auto name = "?classCCommandRef@CCommandRef@@2UCRioRTC@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(168)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRioRTC CCommandRef::classCCommandRef
-    default:
-        break;
-    }
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(168)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -2445,24 +1802,11 @@ const CRuntimeClass* CVmMsg::GetClassCVmMsg()
     const auto name = "?classCVmMsg@CVmMsg@@2UCRtcEx@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(193)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRtcEx CVmMsg::classCVmMsg
-    default:
-        break;
-    }
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(193)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -2472,24 +1816,11 @@ const CRuntimeClass* CVmGenericMsg::GetClassCVmGenericMsg()
     const auto name = "?classCVmGenericMsg@CVmGenericMsg@@2UCRtcEx@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(189)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRtcEx CVmGenericMsg::classCVmMsg
-    default:
-        break;
-    }
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(189)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -2499,24 +1830,11 @@ const CRuntimeClass* CVmCall::GetClassCVmCall()
     const auto name = "?classCVmCall@CVmCall@@2UCRtcEx@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(186)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRtcEx CVmCall::classCVmCall
-    default:
-        break;
-    }
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(186)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -2526,24 +1844,11 @@ const CRuntimeClass* CVmVarObj::GetClassCVmGenericMsg()
     const auto name = "?classCVmVarObj@CVmVarObj@@2UCRtcEx@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto Vm60 = GetModuleHandleA("Vm60");
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
-            if (address != nullptr) return address;
-            address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(868)));
-            if (address != nullptr) return address;
-        }
-        break;
-    case 0x0E00:
-        // TODO public: static struct CRtcEx CVmVarObj::classCVmVarObj
-    default:
-        break;
-    }
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(868)));
+    if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
 }
@@ -2554,24 +1859,11 @@ const HashBucket<CMsgRTC>* CMsgRTC::GetRegister()
     const auto name = "?GetTheMsgRtcRegister@@YAPBVCMsgRTCRegister@@XZ";
     auto& proc = reinterpret_cast<LPGetTheMsgRtcRegister&>(cache[name]);
     if (proc != nullptr) return proc();
-    const auto mfc = GetMfc();
-    switch (mfc.version)
-    {
-    case 0x0600:
-    case 0x0C00:
-        {
-            const auto UnivUI = GetModuleHandleA("UnivUI");
-            proc = reinterpret_cast<LPGetTheMsgRtcRegister>(GetProcAddress(UnivUI, name));
-            if (proc != nullptr) return proc();
-            proc = reinterpret_cast<LPGetTheMsgRtcRegister>(GetProcAddress(UnivUI, MAKEINTRESOURCE(556)));
-            if (proc != nullptr) return proc();
-        }
-        break;
-    case 0x0E00:
-        // TODO class CMsgRTCRegister const * __cdecl GetTheMsgRtcRegister(void)
-    default:
-        break;
-    }
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    proc = reinterpret_cast<LPGetTheMsgRtcRegister>(GetProcAddress(UnivUI, name));
+    if (proc != nullptr) return proc();
+    proc = reinterpret_cast<LPGetTheMsgRtcRegister>(GetProcAddress(UnivUI, MAKEINTRESOURCE(556)));
+    if (proc != nullptr) return proc();
     __debugbreak();
     return nullptr;
 }

@@ -60,7 +60,6 @@ struct MFC_MODULE
 {
     HMODULE native;
     int version;
-    BOOL unicode;
 
     LPCSTR GetVersionString() const;
 };
@@ -349,8 +348,8 @@ public:
 
     const CArchive* GetNative() const;
 
-    static CPmArchive* CreateLoadFilePmArchive(LPCSTR path);
-    static CPmArchive* CreateSaveFilePmArchive(LPCSTR path);
+    static CPmArchive* CreateLoadFilePmArchive(LPCSTR);
+    static CPmArchive* CreateSaveFilePmArchive(LPCSTR);
     static void DestroyPmArchive(CPmArchive*);
 };
 
@@ -465,7 +464,7 @@ class CUuiGlobals
     CUuiGlobals();
 
 public:
-    UINT m_dwSchema;
+    DWORD m_dwSchema;
     FARPROC field_0004;
     CStringX m_strInstallDriver;
     CStringX m_strGameFolder;
@@ -534,7 +533,7 @@ protected:
     DWORD field_0x0008;
     DWORD field_0x000C;
     DWORD m_dwFlags;
-    
+
     CRegistryCache();
     ~CRegistryCache();
 

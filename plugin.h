@@ -9,7 +9,7 @@
 extern "C" {
 __declspec(dllexport) const AFX_EXTENSION_MODULE* PluginThisLibrary();
 __declspec(dllexport) LPCSTR WINAPIV GetPluginString();
-__declspec(dllexport) BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
+__declspec(dllexport) BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
 }
 
 std::wstring WINAPI UnicodeX(LPCSTR lpText, UINT nCodePage);

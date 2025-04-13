@@ -9,7 +9,7 @@
 static AFX_EXTENSION_MODULE R514783_PLUGIN = {FALSE, nullptr};
 
 // ReSharper disable once CppParameterMayBeConst
-BOOL WINAPI DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserved*/)
+BOOL APIENTRY DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpReserved*/)
 {
     switch (dwReason)
     {
@@ -1054,7 +1054,7 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
         map[UnicodeX(member->m_lpszName, CP_SHIFT_JIS)] = member;
         const auto key = AnsiX(member->m_lpszName, CP_SHIFT_JIS, CP_UTF8) + ":" +
             AnsiX(member->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
-        const auto address = reinterpret_cast<DWORD>(generic->m_pMsg) + member->m_dwOffset;
+        const auto address = reinterpret_cast<LPBYTE>(generic->m_pMsg) + member->m_nOffset;
         switch (*reinterpret_cast<const DWORD*>(member->m_pRTC->m_lpszClassName))
         {
         // 文字列
