@@ -60,8 +60,6 @@ struct MFC_MODULE
 {
     HMODULE native;
     int version;
-
-    LPCSTR GetVersionString() const;
 };
 
 MFC_MODULE GetMfc();

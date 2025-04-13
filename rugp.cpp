@@ -18,21 +18,6 @@ MFC_MODULE GetMfc()
     return {};
 }
 
-LPCSTR MFC_MODULE::GetVersionString() const
-{
-    switch (version)
-    {
-    case 0x0600:
-        return "6.0";
-    case 0x0C00:
-        return "12.0";
-    default:
-        break;
-    }
-    __debugbreak();
-    return nullptr;
-}
-
 BOOL AFXAPI AfxInitExtensionModule(AFX_EXTENSION_MODULE& extension, const HMODULE hMod)
 {
     cache.clear();
