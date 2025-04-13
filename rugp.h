@@ -361,11 +361,11 @@ public:
         INT m_nIndex = 0;
     };
 
-    CRio* m_pObject;
-    COceanNode* m_pNext;
+    const CRio* m_pObject;
+    const COceanNode* m_pNext;
     CStringX m_strName;
-    COceanNode* m_pParent;
-    COceanHashTable* m_pChildren;
+    const COceanNode* m_pParent;
+    const COceanHashTable* m_pChildren;
     const CRuntimeClass* m_pRTC;
     UINT m_nRefCount;
     DWORD m_dwFlags;
@@ -397,7 +397,8 @@ public:
     class Iterator final
     {
     protected:
-        const COceanNode* m_ptr;
+        const COceanNode* m_current;
+        const COceanNode* m_root;
         std::map<const COceanNode*, POS> m_record;
 
     public:
@@ -408,7 +409,7 @@ public:
         bool operator!=(const Iterator& other) const;
     };
 
-    Iterator begin();
+    Iterator begin() const;
     static Iterator end();
 };
 

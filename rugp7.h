@@ -26,6 +26,7 @@ class CProcessOcean;
 
 class CPolymorphicArchive;
 class COceanNode;
+class COceanHashTable;
 class CrUGP;
 class CUuiGlobals;
 
@@ -140,30 +141,17 @@ public:
 class COceanNode
 {
 public:
-    struct POS
-    {
-        COceanNode* m_pNode = nullptr;
-        INT m_nIndex = 0;
-    };
-
-    struct Children
-    {
-        UINT m_nCount;
-        COceanNode* m_arrBucket[0x0C];
-    };
-
-    CRio* m_pObject;
-    COceanNode* m_pNext;
+    const CRio* m_pObject;
+    const COceanNode* m_pNext;
     CString m_strName;
-    COceanNode* m_pParent;
-    Children* m_pChildren;
+    const COceanNode* m_pParent;
+    const COceanHashTable* m_pChildren;
     const CRuntimeClass* m_pRTC;
     UINT m_nRefCount;
     DWORD m_dwFlags;
-    const DWORD m_dwResAddr;
-    const DWORD m_dwResSize;
+    UINT_PTR m_dwResAddr;
+    UINT_PTR m_dwResSize;
     DWORD field_0028;
-    DWORD field_002C; // CObject
 
 protected:
     COceanNode();
@@ -171,11 +159,10 @@ protected:
 
 public:
     BOOL IsDerivedFrom(const CRuntimeClass*) const;
-    CRio* Fetch();
+    CRio* Fetch() const;
     void ReleaseRef();
-    COceanNode* FindChildrenTypeOf(const CRuntimeClass*) const;
-    COceanNode* FindParentTypeOf(const CRuntimeClass*) const;
-    COceanNode* GetNextAssocRef(POS&, CString&) const;
+    const COceanNode* FindChildrenTypeOf(const CRuntimeClass*) const;
+    const COceanNode* FindParentTypeOf(const CRuntimeClass*) const;
     UINT_PTR GetAddress() const;
 
     static const COceanNode* GetRoot();
@@ -184,19 +171,26 @@ public:
     class Iterator final
     {
     protected:
-        COceanNode* m_ptr;
-        std::map<COceanNode*, POS> m_record;
+        const COceanNode* m_current;
+        const COceanNode* m_root;
 
     public:
-        explicit Iterator(COceanNode* node);
-        COceanNode* operator*() const;
+        explicit Iterator(const COceanNode* node);
+        const COceanNode* operator*() const;
         Iterator& operator++();
         Iterator operator++(int count);
         bool operator!=(const Iterator& other) const;
     };
 
-    Iterator begin();
+    Iterator begin() const;
     static Iterator end();
+};
+
+class COceanHashTable
+{
+public:
+    UINT m_nCount;
+    const COceanNode* m_arrBucket[0x0C];
 };
 
 class CrUGP final

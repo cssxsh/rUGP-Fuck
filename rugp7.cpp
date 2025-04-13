@@ -304,6 +304,85 @@ const COceanNode* COceanNode::GetNull()
     return nullptr;
 }
 
+auto COceanNode::begin() const -> Iterator
+{
+    return Iterator(this);
+}
+
+auto COceanNode::end() -> Iterator
+{
+    return Iterator(GetNull());
+}
+
+COceanNode::Iterator::Iterator(const COceanNode* node)
+{
+    m_current = node;
+    m_root = node;
+}
+
+auto COceanNode::Iterator::operator*() const -> const COceanNode*
+{
+    return m_current;
+}
+
+auto COceanNode::Iterator::operator++() -> Iterator&
+{
+    auto table = m_current->m_pChildren;
+    if (table != nullptr)
+    {
+        for (auto index = 0; index < std::size(table->m_arrBucket); index++)
+        {
+            if (table->m_arrBucket[index] == nullptr) continue;
+            m_current = table->m_arrBucket[index];
+            return *this;
+        }
+    }
+    if (m_current->m_pNext != nullptr)
+    {
+        m_current = m_current->m_pNext;
+        return *this;
+    }
+    const auto null = GetNull();
+    auto current = m_current;
+    m_current = null;
+    while (current != nullptr && current != null)
+    {
+        table = current->m_pParent->m_pChildren;
+        if (table == nullptr) break;
+        auto flag = false;
+        for (auto index = 0; index < std::size(table->m_arrBucket); index++)
+        {
+            if (flag)
+            {
+                if (table->m_arrBucket[index] == nullptr) continue;
+                m_current = table->m_arrBucket[index];
+                return *this;
+            }
+            for (auto p = table->m_arrBucket[index]; p != nullptr; p = p->m_pNext)
+            {
+                if (current != p) continue;
+                flag = true;
+                break;
+            }
+        }
+        if (current == m_root) break;
+        current = current->m_pParent;
+    }
+    return *this;
+}
+
+auto COceanNode::Iterator::operator++(int const count) -> Iterator
+{
+    const Iterator iterator = *this;
+    for (auto i = 0; i < count; i++) this->operator++();
+    return iterator;
+}
+
+auto COceanNode::Iterator::operator!=(const Iterator& other) const -> bool
+{
+    return m_current != other.m_current;
+}
+
 const CrUGP* CrUGP::GetGlobal()
 {
     const auto module = GetModuleHandle(nullptr);

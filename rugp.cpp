@@ -1395,7 +1395,7 @@ COceanNode::LPGetLocalFullPathName& COceanNode::FetchGetLocalFullPathName()
     return address = nullptr;
 }
 
-auto COceanNode::begin() -> Iterator
+auto COceanNode::begin() const -> Iterator
 {
     return Iterator(this);
 }
@@ -1407,25 +1407,28 @@ auto COceanNode::end() -> Iterator
 
 COceanNode::Iterator::Iterator(const COceanNode* node)
 {
-    m_ptr = node;
+    m_current = node;
+    m_root = node;
 }
 
 auto COceanNode::Iterator::operator*() const -> const COceanNode*
 {
-    return m_ptr;
+    return m_current;
 }
 
 auto COceanNode::Iterator::operator++() -> Iterator&
 {
     CStringX name;
     const auto null = GetNull();
-    auto current = m_ptr;
+    auto current = m_current;
     while (current != nullptr && current != null)
     {
         auto& pos = m_record[current];
-        m_ptr = current->GetNextAssocRef(pos, name);
-        if (m_ptr != nullptr) break;
-        m_ptr = current = current->m_pParent;
+        m_current = current->GetNextAssocRef(pos, name);
+        if (m_current != nullptr) break;
+        m_current = null;
+        if (current == m_root) break;
+        current = current->m_pParent;
     }
     return *this;
 }
@@ -1439,7 +1442,7 @@ auto COceanNode::Iterator::operator++(int const count) -> Iterator
 
 auto COceanNode::Iterator::operator!=(const Iterator& other) const -> bool
 {
-    return m_ptr != other.m_ptr;
+    return m_current != other.m_current;
 }
 
 CRef::CRef(const CRef& refSrc) : CRef(refSrc.m_pNode)
