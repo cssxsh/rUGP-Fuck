@@ -160,9 +160,7 @@ protected:
 public:
     BOOL IsDerivedFrom(const CRuntimeClass*) const;
     CRio* Fetch() const;
-    void ReleaseRef();
-    const COceanNode* FindChildrenTypeOf(const CRuntimeClass*) const;
-    const COceanNode* FindParentTypeOf(const CRuntimeClass*) const;
+    BOOL AccessChildNodes() const;
     UINT_PTR GetAddress() const;
 
     static const COceanNode* GetRoot();

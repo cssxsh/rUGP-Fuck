@@ -246,6 +246,67 @@ void CPolymorphicArchive::DestroyArchive(CPolymorphicArchive* archive)
     __debugbreak();
 }
 
+BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
+{
+    return m_pRTC != nullptr && m_pRTC->IsDerivedFrom(rtc);
+}
+
+CRio* COceanNode::Fetch() const
+{
+    using FetchProc = CRio* (__thiscall *)(const COceanNode*);
+    const auto module = GetModuleHandle(nullptr);
+    switch (GetTimestampForLoadedLibrary(module))
+    {
+    // 2016-09-30 19:18:43
+    case 0x57EE4A13u:
+        {
+            const auto x005DAA30 = GetProcAddress(module, 0x005DAA30u);
+            if (x005DAA30 != nullptr) return reinterpret_cast<FetchProc>(x005DAA30)(this);
+        }
+        break;
+    // 2019-12-08 23:00:39
+    case 0x5DED1017u:
+        {
+            const auto x005C93B0 = GetProcAddress(module, 0x005C93B0u);
+            if (x005C93B0 != nullptr) return reinterpret_cast<FetchProc>(x005C93B0)(this);
+        }
+        break;
+    default:
+        break;
+    }
+    __debugbreak();
+    return nullptr;
+}
+
+BOOL COceanNode::AccessChildNodes() const
+{
+    if (m_pChildren == nullptr) return TRUE;
+    if (m_dwFlags & 0x00800000u) return FALSE;
+    using AccessProc = INT (__thiscall *)(const COceanNode*);
+    const auto module = GetModuleHandle(nullptr);
+    switch (GetTimestampForLoadedLibrary(module))
+    {
+    // 2016-09-30 19:18:43
+    case 0x57EE4A13u:
+        {
+            const auto x005DA200 = GetProcAddress(module, 0x005DA200u);
+            if (x005DA200 != nullptr) return reinterpret_cast<AccessProc>(x005DA200)(this) > 0;
+        }
+        break;
+    // 2019-12-08 23:00:39
+    case 0x5DED1017u:
+        {
+            const auto x005C8B50 = GetProcAddress(module, 0x005C8B50u);
+            if (x005C8B50 != nullptr) return reinterpret_cast<AccessProc>(x005C8B50)(this) > 0;
+        }
+        break;
+    default:
+        break;
+    }
+    __debugbreak();
+    return FALSE;
+}
+
 UINT_PTR COceanNode::GetAddress() const
 {
     return m_dwResAddr % CUuiGlobals::GetGlobal()->m_dwResKeyA;
