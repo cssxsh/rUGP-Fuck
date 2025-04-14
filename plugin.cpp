@@ -1386,11 +1386,12 @@ void CObjectProxy::HookStep(CBootTracer* ecx, INT_PTR const index)
         break;
     case 8:
         {
+            // Change Save Folder
             const auto rvmm = CRegistryCache::GetGlobal();
             const auto path = rvmm->FetchString("rvmmInstallation", "strVirtuaRegistryAbsolutePath");
             if (path == nullptr) break;
             const auto name = static_cast<LPCSTR>(CUuiGlobals::GetGlobal()->m_strGameName);
-            *path = CStringX::FormatX("./%s/Vmreg/", name);
+            *path = CStringX::FormatX(R"(.\%s\Vmreg\)", name);
         }
         break;
     default:
@@ -1401,7 +1402,7 @@ void CObjectProxy::HookStep(CBootTracer* ecx, INT_PTR const index)
 
 UINT CObjectProxy::HookBeginProcess(CProcessOcean* ecx, CView* view)
 {
-    // for (const auto node : *const_cast<COceanNode*>(COceanNode::GetRoot()))
+    // for (const auto node : *COceanNode::GetRoot())
     // {
     //     if (node->m_pRTC->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
     //     {
