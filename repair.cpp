@@ -70,23 +70,36 @@ LPSTR& __fastcall HookReadProfileString(
 {
     reinterpret_cast<decltype(HookReadProfileString)*>(ReadProfileString)(ecx, edx, result, key, value);
     if (strcmp(key, "UGPAPP") != 0) return result;
-    auto software = static_cast<HKEY>(nullptr);
-    auto status = ERROR_SUCCESS;
-    status = RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\relic UGP Applications", 0, KEY_READ, &software);
-    if (status != ERROR_SUCCESS) return result;
-    auto temp = static_cast<HKEY>(nullptr);
-    status = RegOpenKeyExA(software, result, 0, KEY_READ, &temp);
-    if (status == ERROR_SUCCESS) return RegCloseKey(temp), RegCloseKey(software), result;
     const auto unicode = Unicode(result, CP_SHIFT_JIS);
-    status = RegOpenKeyExW(software, unicode, 0, KEY_READ, &temp);
-    if (status == ERROR_SUCCESS)
+    WCHAR path[MAX_PATH] = {};
+    lstrcatW(path, L"SOFTWARE\\relic UGP Applications\\");
+    lstrcatW(path, unicode);
+    lstrcatW(path, L"\\Installation");
+    auto installation = static_cast<HKEY>(nullptr);
+    auto status = ERROR_SUCCESS;
+    status = RegOpenKeyExW(
+        HKEY_CURRENT_USER,
+        path,
+        0,
+        KEY_READ,
+        &installation);
+    if (status != ERROR_SUCCESS) return free(unicode), result;
+    BOOL bInstalled = FALSE;
+    SIZE_T cbData;
+    status = RegQueryValueExW(
+        installation,
+        L"bInstalled",
+        nullptr,
+        nullptr,
+        reinterpret_cast<LPBYTE>(&bInstalled),
+        &cbData);
+    RegCloseKey(installation);
+    if (status == ERROR_SUCCESS && bInstalled)
     {
-        RegCloseKey(temp);
         const auto ansi = Ansi(unicode, CP_ACP);
         strcpy(result, ansi);
         free(ansi);
     }
     free(unicode);
-    RegCloseKey(software);
     return result;
 }
