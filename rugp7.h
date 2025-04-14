@@ -121,10 +121,6 @@ public:
 
 class CPolymorphicArchive
 {
-protected:
-    CPolymorphicArchive();
-    ~CPolymorphicArchive();
-
 public:
     DWORD m_dwFlags;
     CArchive m_native;
@@ -136,6 +132,10 @@ public:
     static CPolymorphicArchive* __fastcall CreateLoadFileArchive(LPCTSTR);
     static CPolymorphicArchive* __fastcall CreateSaveFileArchive(LPCTSTR);
     static void __fastcall DestroyArchive(CPolymorphicArchive*);
+
+protected:
+    CPolymorphicArchive();
+    ~CPolymorphicArchive();
 };
 
 class COceanNode
@@ -195,11 +195,14 @@ class CrUGP final
 {
 public:
     TCHAR m_strVersion[0x20];
-    CString field_0x0040;
+    CString p_strPlatform;
     CString field_0x0044;
     DWORD m_dwFlags;
 
     static const CrUGP* GetGlobal();
+
+protected:
+    CrUGP();
 };
 
 class CUuiGlobals
@@ -216,7 +219,7 @@ public:
     CString m_strGameName;
     DWORD m_dwFlags;
     DWORD field_0028;
-    class CBootTracer* m_pBootTracer;
+    LPVOID m_pBootTracer;
     DWORD m_dwResKeyA;
     DWORD m_dwResKeyB;
     DWORD field_0038;
@@ -226,11 +229,6 @@ public:
 
 protected:
     CUuiGlobals();
-
-public:
-    using LPStep = void (__thiscall *)(CBootTracer*, INT_PTR);
-
-    static LPStep& FetchStep();
 };
 
 class CObjectProxy final

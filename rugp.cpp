@@ -1764,7 +1764,6 @@ CCommandRef::LPGetNextCommand CCommandRef::FindGetNextCommand(const CRio_vtbl* v
     case 0x0C00:
         return reinterpret_cast<LPGetNextCommand>(vtbl->operator FARPROC const*()[0x000C]);
     default:
-        // TODO ?GetNextCommand@CCommandRef@@UBEPAVCVmCommand@@XZ
         break;
     }
     __debugbreak();
@@ -1791,7 +1790,6 @@ int CVmCommand::GetVariableAreaSize() const
         proc = reinterpret_cast<LPGetVariableAreaSize>(vtbl[0x0009]);
         return proc(this);
     default:
-        // TODO ?GetValiableAreaSize@CVmCommand@@UAEHXZ
         break;
     }
     __debugbreak();

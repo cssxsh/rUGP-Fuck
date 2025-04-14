@@ -6,7 +6,9 @@
 #include <dbghelp.h>
 #include <detours/detours.h>
 
+#ifdef _DBGHELP_
 #pragma comment(lib, "dbghelp.lib")
+#endif // _DBGHELP_
 
 static const AFX_EXTENSION_MODULE* HookPluginThisLibrary();
 static FARPROC GetProcAddress(HMODULE, UINT_PTR);
