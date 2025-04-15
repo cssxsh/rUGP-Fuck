@@ -1705,6 +1705,11 @@ CStringX* CRegistryCache::FetchString(LPCSTR const lpszKey, LPCSTR const lpszSub
     return nullptr;
 }
 
+CStringX& CRegistryCache::FetchSaveFolder()
+{
+    return *FetchString("rvmmInstallation", "strVirtuaRegistryAbsolutePath");
+}
+
 CRegistryCache* CRegistryCache::GetGlobal()
 {
     const auto name = "?_rvmmGLOBAL_registryCache@@3VRvmmRegistry@@A";

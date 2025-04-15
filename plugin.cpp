@@ -28,6 +28,7 @@ BOOL APIENTRY DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpRese
         wprintf(L"Detours Version %x\n", DETOURS_VERSION);
         wprintf(L"\n");
         wprintf(L"CommandLine %s\n", GetCommandLineW());
+        wprintf(L"Save Folder %s\n", UnicodeX(CRegistryCache::GetGlobal()->FetchSaveFolder(), CP_ACP).c_str());
         wprintf(L"\n");
 
         AfxInitExtensionModule(R514783_PLUGIN, hInstance);
@@ -1387,11 +1388,9 @@ void CObjectProxy::HookStep(CBootTracer* ecx, INT_PTR const index)
     case 8:
         {
             // Change Save Folder
-            const auto rvmm = CRegistryCache::GetGlobal();
-            const auto path = rvmm->FetchString("rvmmInstallation", "strVirtuaRegistryAbsolutePath");
-            if (path == nullptr) break;
+            auto& path = CRegistryCache::GetGlobal()->FetchSaveFolder();
             const auto name = static_cast<LPCSTR>(CUuiGlobals::GetGlobal()->m_strGameName);
-            *path = CStringX::FormatX(R"(.\%s\Vmreg\)", name);
+            path = CStringX::FormatX(R"(.\%s\Vmreg\)", name);
         }
         break;
     default:

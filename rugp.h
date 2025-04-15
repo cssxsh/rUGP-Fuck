@@ -544,6 +544,7 @@ protected:
 public:
     LPINT FetchInt(LPCSTR, LPCSTR);
     CStringX* FetchString(LPCSTR, LPCSTR);
+    CStringX& FetchSaveFolder();
 
     static CRegistryCache* GetGlobal();
 };
