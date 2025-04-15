@@ -14,9 +14,6 @@ class CRio;
 
 class CVisual;
 class CRip;
-class CS5i;
-class CS5RFont;
-class CEditData;
 
 class CObjectOcean;
 class CStaticOceanRoot;
@@ -29,6 +26,9 @@ class COceanNode;
 class COceanHashTable;
 class CrUGP;
 class CUuiGlobals;
+
+class CCommandRef;
+class CVmCommand;
 
 class CObjectProxy;
 
@@ -75,6 +75,30 @@ class CRip : public CVisual
 {
 public:
     DECLARE_DYNAMIC_MOCK(CRip)
+};
+
+class CCommandRef : public CRio
+{
+public:
+    DECLARE_DYNAMIC_MOCK(CCommandRef)
+
+    virtual CVmCommand* GetNextCommand() = 0;
+    virtual BOOL GetNumberOfMessages(int&, int&) = 0;
+};
+
+class CVmCommand : public CObjectEx
+{
+public:
+    DECLARE_DYNAMIC_MOCK(CVmCommand)
+
+    CVmCommand* m_pNext;
+    DWORD m_dwFlags;
+
+    virtual CVmCommand* _(DWORD) = 0; // CCharVoiceOcean
+    virtual CVmCommand* ExecCommand() = 0;
+    virtual int AfterCreateOffsetToPtr(LPBYTE) = 0;
+    virtual int GetVariableAreaSize() const = 0;
+    virtual CVmCommand* _(const COceanNode*, DWORD) = 0; // CParseBgBox
 };
 
 class CObjectOcean : public CRio
@@ -245,6 +269,10 @@ protected:
     using SerializeProc = void (__thiscall *)(CRio*, CPolymorphicArchive*);
     static SerializeProc& FetchSerialize(CRuntimeClass*);
     static std::remove_pointer_t<SerializeProc> HookSerialize;
+
+    using GetNextCommandProc = CVmCommand* (__thiscall *)(CCommandRef*);
+    static GetNextCommandProc& FetchGetNextCommand(CRuntimeClass*);
+    static std::remove_pointer_t<GetNextCommandProc> HookGetNextCommand;
 };
 
 #endif // RUGP_7_H

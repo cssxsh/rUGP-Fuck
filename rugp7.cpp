@@ -99,12 +99,17 @@ void CObjectProxy::AttachHook()
 {
     auto list = AfxGetAppModuleState()->m_classList;
     const auto CRip_RTC = CRip::GetThisClass();
+    const auto CCommandRef_RTC = CCommandRef::GetThisClass();
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     for (auto clazz = list.GetHead(); clazz != nullptr; clazz = list.GetNext(clazz))
     {
         if (clazz->m_pfnCreateObject == nullptr) continue;
         if (clazz->IsDerivedFrom(CRip_RTC))
+        {
+            DetourAttach(&reinterpret_cast<PVOID&>(FetchSerialize(clazz)), &HookSerialize);
+        }
+        if (clazz->IsDerivedFrom(CCommandRef_RTC))
         {
             DetourAttach(&reinterpret_cast<PVOID&>(FetchSerialize(clazz)), &HookSerialize);
         }
@@ -144,7 +149,7 @@ CString CObjectProxy::GetPatchFilePath(const COceanNode* node)
     return path;
 }
 
-CObjectProxy::SerializeProc& CObjectProxy::FetchSerialize(CRuntimeClass* clazz)
+CObjectProxy::SerializeProc& CObjectProxy::FetchSerialize(CRuntimeClass* const clazz)
 {
     const auto name = "?Serialize@" + std::string(clazz->m_lpszClassName) + "@@UAEXAAVCPmArchive@@@Z";
     auto& proc = reinterpret_cast<SerializeProc&>(PROC_CACHE[name]);
@@ -168,6 +173,25 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPolymorphicArchive* const arc
         FetchSerialize(ecx->GetRuntimeClass())(ecx, save);
         CPolymorphicArchive::DestroyArchive(save);
     }
+}
+
+CObjectProxy::GetNextCommandProc& CObjectProxy::FetchGetNextCommand(CRuntimeClass* const clazz)
+{
+    const auto name = "?GetNextCommand@" + std::string(clazz->m_lpszClassName) + "@@UBEPAVCVmCommand@@XZ";
+    auto& proc = reinterpret_cast<GetNextCommandProc&>(PROC_CACHE[name]);
+    if (proc != nullptr) return proc;
+    if (clazz->m_pfnCreateObject == nullptr) return proc;
+    if (!clazz->IsDerivedFrom(CCommandRef::GetThisClass())) return proc;
+    const auto impl = clazz->CreateObject();
+    const auto vtbl = *reinterpret_cast<FARPROC**>(impl);
+    proc = reinterpret_cast<GetNextCommandProc>(vtbl[0x06]);
+    delete impl;
+    return proc;
+}
+
+CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
+{
+    return FetchGetNextCommand(ecx->GetRuntimeClass())(ecx);
 }
 
 CPolymorphicArchive* CPolymorphicArchive::CreateLoadFileArchive(LPCTSTR const path)
