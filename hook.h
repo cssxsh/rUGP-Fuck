@@ -15,85 +15,30 @@ public:
     static void DetachHook();
 
 protected:
-    static decltype(CreateWindowExA)* pfnCreateWindowExA;
-
-    static decltype(SetWindowTextA)* pfnSetWindowTextA;
-
-    static decltype(SendMessageA)* pfnSendMessageA;
-
-    static decltype(CreatePropertySheetPageA)* pfnCreatePropertySheetPageA;
-
-    static decltype(PropertySheetA)* pfnPropertySheetA;
-
-    static decltype(CreateDialogParamA)* pfnCreateDialogParamA;
-
-    static decltype(CreateDialogIndirectParamA)* pfnCreateDialogIndirectParamA;
-
-    static decltype(DialogBoxParamA)* pfnDialogBoxParamA;
-
-    static decltype(DialogBoxIndirectParamA)* pfnDialogBoxIndirectParamA;
-
-    static decltype(SetDlgItemTextA)* pfnSetDlgItemTextA;
-
-    static decltype(SendDlgItemMessageA)* pfnSendDlgItemMessageA;
-
-    static decltype(AppendMenuA)* pfnAppendMenuA;
-
-    static decltype(MessageBoxA)* pfnMessageBoxA;
-
-    static decltype(MessageBoxExA)* pfnMessageBoxExA;
-
-    static decltype(CreateFontA)* pfnCreateFontA;
-
-    static decltype(CreateFontIndirectA)* pfnCreateFontIndirectA;
-
-    static decltype(EnumFontFamiliesExA)* pfnEnumFontFamiliesExA;
-
-    static decltype(EnumFontFamiliesA)* pfnEnumFontFamiliesA;
-
-    static decltype(EnumFontsA)* pfnEnumFontsA;
-
-    static decltype(GetGlyphOutlineA)* pfnGetGlyphOutlineA;
-
-    static decltype(CreateWindowExA) HookCreateWindowExA;
-
-    static decltype(SetWindowTextA) HookSetWindowTextA;
-
-    static decltype(SendMessageA) HookSendMessageA;
-
-    static decltype(CreatePropertySheetPageA) HookCreatePropertySheetPageA;
-
-    static decltype(PropertySheetA) HookPropertySheetA;
-
-    static decltype(CreateDialogParamA) HookCreateDialogParamA;
-
-    static decltype(CreateDialogIndirectParamA) HookCreateDialogIndirectParamA;
-
-    static decltype(DialogBoxParamA) HookDialogBoxParamA;
-
-    static decltype(DialogBoxIndirectParamA) HookDialogBoxIndirectParamA;
-
-    static decltype(SetDlgItemTextA) HookSetDlgItemTextA;
-
-    static decltype(SendDlgItemMessageA) HookSendDlgItemMessageA;
-
-    static decltype(AppendMenuA) HookAppendMenuA;
-
-    static decltype(MessageBoxA) HookMessageBoxA;
-
-    static decltype(MessageBoxExA) HookMessageBoxExA;
-
-    static decltype(CreateFontA) HookCreateFontA;
-
-    static decltype(CreateFontIndirectA) HookCreateFontIndirectA;
-
-    static decltype(EnumFontFamiliesExA) HookEnumFontFamiliesExA;
-
-    static decltype(EnumFontFamiliesA) HookEnumFontFamiliesA;
-
-    static decltype(EnumFontsA) HookEnumFontsA;
-
-    static decltype(GetGlyphOutlineA) HookGetGlyphOutlineA;
+#define DETOUR(function) \
+        static decltype(function)* pfn##function; \
+        static decltype(function) Hook##function;
+    DETOUR(CreateWindowExA)
+    DETOUR(SetWindowTextA)
+    DETOUR(SendMessageA)
+    DETOUR(CreatePropertySheetPageA)
+    DETOUR(PropertySheetA)
+    DETOUR(CreateDialogParamA)
+    DETOUR(CreateDialogIndirectParamA)
+    DETOUR(DialogBoxParamA)
+    DETOUR(DialogBoxIndirectParamA)
+    DETOUR(SetDlgItemTextA)
+    DETOUR(SendDlgItemMessageA)
+    DETOUR(AppendMenuA)
+    DETOUR(MessageBoxA)
+    DETOUR(MessageBoxExA)
+    DETOUR(CreateFontA)
+    DETOUR(CreateFontIndirectA)
+    DETOUR(EnumFontFamiliesA)
+    DETOUR(EnumFontFamiliesExA)
+    DETOUR(EnumFontsA)
+    DETOUR(GetGlyphOutlineA)
+#undef DETOUR
 
 private:
     struct HookEnumFontContext

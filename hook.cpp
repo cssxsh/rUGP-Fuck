@@ -6,126 +6,34 @@ void Win32Hook::AttachHook()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    if (pfnCreateWindowExA == nullptr)
-    {
-        pfnCreateWindowExA = &CreateWindowExA;
-        wprintf(L"DetourAttach: CreateWindowExA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateWindowExA), &HookCreateWindowExA);
-    }
-    if (pfnSetWindowTextA == nullptr)
-    {
-        pfnSetWindowTextA = &SetWindowTextA;
-        wprintf(L"DetourAttach: SetWindowTextA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnSetWindowTextA), &HookSetWindowTextA);
-    }
-    if (pfnSendMessageA == nullptr)
-    {
-        pfnSendMessageA = &SendMessageA;
-        wprintf(L"DetourAttach: SendMessageA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnSendMessageA), &HookSendMessageA);
-    }
-    if (pfnCreatePropertySheetPageA == nullptr)
-    {
-        pfnCreatePropertySheetPageA = &CreatePropertySheetPageA;
-        wprintf(L"DetourAttach: CreatePropertySheetPageA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreatePropertySheetPageA), &HookCreatePropertySheetPageA);
-    }
-    if (pfnPropertySheetA == nullptr)
-    {
-        pfnPropertySheetA = &PropertySheetA;
-        wprintf(L"DetourAttach: PropertySheetA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnPropertySheetA), &HookPropertySheetA);
-    }
-    if (pfnCreateDialogParamA == nullptr)
-    {
-        pfnCreateDialogParamA = &CreateDialogParamA;
-        wprintf(L"DetourAttach: CreateDialogParamA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateDialogParamA), &HookCreateDialogParamA);
-    }
-    if (pfnCreateDialogIndirectParamA == nullptr)
-    {
-        pfnCreateDialogIndirectParamA = &CreateDialogIndirectParamA;
-        wprintf(L"DetourAttach: CreateDialogIndirectParamA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateDialogIndirectParamA), &HookCreateDialogIndirectParamA);
-    }
-    if (pfnDialogBoxParamA == nullptr)
-    {
-        pfnDialogBoxParamA = &DialogBoxParamA;
-        wprintf(L"DetourAttach: DialogBoxParamA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnDialogBoxParamA), &HookDialogBoxParamA);
-    }
-    if (pfnDialogBoxIndirectParamA == nullptr)
-    {
-        pfnDialogBoxIndirectParamA = &DialogBoxIndirectParamA;
-        wprintf(L"DetourAttach: DialogBoxIndirectParamA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnDialogBoxIndirectParamA), &HookDialogBoxIndirectParamA);
-    }
-    if (pfnSetDlgItemTextA == nullptr)
-    {
-        pfnSetDlgItemTextA = &SetDlgItemTextA;
-        wprintf(L"DetourAttach: SetDlgItemTextA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnSetDlgItemTextA), &HookSetDlgItemTextA);
-    }
-    if (pfnSendDlgItemMessageA == nullptr)
-    {
-        pfnSendDlgItemMessageA = &SendDlgItemMessageA;
-        wprintf(L"DetourAttach: SendDlgItemMessageA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnSendDlgItemMessageA), &HookSendDlgItemMessageA);
-    }
-    if (pfnAppendMenuA == nullptr)
-    {
-        pfnAppendMenuA = &AppendMenuA;
-        wprintf(L"DetourAttach: AppendMenuA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnAppendMenuA), &HookAppendMenuA);
-    }
-    if (pfnMessageBoxA == nullptr)
-    {
-        pfnMessageBoxA = &MessageBoxA;
-        wprintf(L"DetourAttach: MessageBoxA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnMessageBoxA), &HookMessageBoxA);
-    }
-    if (pfnMessageBoxExA == nullptr)
-    {
-        pfnMessageBoxExA = &MessageBoxExA;
-        wprintf(L"DetourAttach: MessageBoxExA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnMessageBoxExA), &HookMessageBoxExA);
-    }
-    if (pfnCreateFontA == nullptr)
-    {
-        pfnCreateFontA = &CreateFontA;
-        wprintf(L"DetourAttach: CreateFontA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateFontA), &HookCreateFontA);
-    }
-    if (pfnCreateFontIndirectA == nullptr)
-    {
-        pfnCreateFontIndirectA = &CreateFontIndirectA;
-        wprintf(L"DetourAttach: CreateFontIndirectA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnCreateFontIndirectA), &HookCreateFontIndirectA);
-    }
-    if (pfnEnumFontFamiliesExA == nullptr)
-    {
-        pfnEnumFontFamiliesExA = &EnumFontFamiliesExA;
-        wprintf(L"DetourAttach: EnumFontFamiliesExA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesExA), &HookEnumFontFamiliesExA);
-    }
-    if (pfnEnumFontFamiliesA == nullptr)
-    {
-        pfnEnumFontFamiliesA = &EnumFontFamiliesA;
-        wprintf(L"DetourAttach: EnumFontFamiliesA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesA), &HookEnumFontFamiliesA);
-    }
-    if (pfnEnumFontsA == nullptr)
-    {
-        pfnEnumFontsA = &EnumFontsA;
-        wprintf(L"DetourAttach: EnumFontsA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnEnumFontsA), &HookEnumFontsA);
-    }
-    if (pfnGetGlyphOutlineA == nullptr)
-    {
-        pfnGetGlyphOutlineA = &GetGlyphOutlineA;
-        wprintf(L"DetourAttach: GetGlyphOutlineA\n");
-        DetourAttach(&reinterpret_cast<PVOID&>(pfnGetGlyphOutlineA), &HookGetGlyphOutlineA);
-    }
+#define ATTACH(function) \
+        if (pfn##function == nullptr) \
+        { \
+            pfn##function = &function; \
+            wprintf(L"DetourAttach: " #function "\n"); \
+            DetourAttach(&reinterpret_cast<PVOID&>(pfn##function), reinterpret_cast<PVOID>(&Hook##function)); \
+        }
+    ATTACH(CreateWindowExA)
+    ATTACH(SetWindowTextA)
+    ATTACH(SendMessageA)
+    ATTACH(CreatePropertySheetPageA)
+    ATTACH(PropertySheetA)
+    ATTACH(CreateDialogParamA)
+    ATTACH(CreateDialogIndirectParamA)
+    ATTACH(DialogBoxParamA)
+    ATTACH(DialogBoxIndirectParamA)
+    ATTACH(SetDlgItemTextA)
+    ATTACH(SendDlgItemMessageA)
+    ATTACH(AppendMenuA)
+    ATTACH(MessageBoxA)
+    ATTACH(MessageBoxExA)
+    ATTACH(CreateFontA)
+    ATTACH(CreateFontIndirectA)
+    ATTACH(EnumFontFamiliesA)
+    ATTACH(EnumFontFamiliesExA)
+    ATTACH(EnumFontsA)
+    ATTACH(GetGlyphOutlineA)
+#undef ATTACH
     DetourTransactionCommit();
 }
 
@@ -133,168 +41,60 @@ void Win32Hook::DetachHook()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    if (pfnCreateWindowExA != nullptr)
-    {
-        wprintf(L"DetourDetach: CreateWindowExA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateWindowExA), &HookCreateWindowExA);
-        pfnCreateWindowExA = nullptr;
-    }
-    if (pfnSetWindowTextA != nullptr)
-    {
-        wprintf(L"DetourDetach: SetWindowTextA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnSetWindowTextA), &HookSetWindowTextA);
-        pfnSetWindowTextA = nullptr;
-    }
-    if (pfnSendMessageA == nullptr)
-    {
-        wprintf(L"DetourDetach: SendMessageA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnSendMessageA), &HookSendMessageA);
-        pfnSendMessageA = nullptr;
-    }
-    if (pfnCreatePropertySheetPageA != nullptr)
-    {
-        wprintf(L"DetourDetach: CreatePropertySheetPageA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreatePropertySheetPageA), &HookCreatePropertySheetPageA);
-        pfnCreatePropertySheetPageA = nullptr;
-    }
-    if (pfnPropertySheetA != nullptr)
-    {
-        wprintf(L"DetourDetach: PropertySheetA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnPropertySheetA), &HookPropertySheetA);
-        pfnPropertySheetA = nullptr;
-    }
-    if (pfnCreateDialogParamA != nullptr)
-    {
-        wprintf(L"DetourDetach: CreateDialogParamA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateDialogParamA), &HookCreateDialogParamA);
-        pfnCreateDialogParamA = nullptr;
-    }
-    if (pfnCreateDialogIndirectParamA != nullptr)
-    {
-        wprintf(L"DetourDetach: CreateDialogIndirectParamA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateDialogIndirectParamA), &HookCreateDialogIndirectParamA);
-        pfnCreateDialogIndirectParamA = nullptr;
-    }
-    if (pfnDialogBoxParamA != nullptr)
-    {
-        wprintf(L"DetourDetach: DialogBoxParamA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnDialogBoxParamA), &HookDialogBoxParamA);
-        pfnDialogBoxParamA = nullptr;
-    }
-    if (pfnDialogBoxIndirectParamA != nullptr)
-    {
-        wprintf(L"DetourDetach: DialogBoxIndirectParamA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnDialogBoxIndirectParamA), &HookDialogBoxIndirectParamA);
-        pfnDialogBoxIndirectParamA = nullptr;
-    }
-    if (pfnSetDlgItemTextA != nullptr)
-    {
-        wprintf(L"DetourDetach: SetDlgItemTextA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnSetDlgItemTextA), &HookSetDlgItemTextA);
-        pfnSetDlgItemTextA = nullptr;
-    }
-    if (pfnSendDlgItemMessageA == nullptr)
-    {
-        wprintf(L"DetourDetach: SendDlgItemMessageA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnSendDlgItemMessageA), &HookSendDlgItemMessageA);
-        pfnSendDlgItemMessageA = nullptr;
-    }
-    if (pfnAppendMenuA == nullptr)
-    {
-        wprintf(L"DetourDetach: AppendMenuA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnAppendMenuA), &HookAppendMenuA);
-        pfnAppendMenuA = nullptr;
-    }
-    if (pfnMessageBoxA != nullptr)
-    {
-        wprintf(L"DetourDetach: MessageBoxA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnMessageBoxA), &HookMessageBoxA);
-        pfnMessageBoxA = nullptr;
-    }
-    if (pfnMessageBoxExA != nullptr)
-    {
-        wprintf(L"DetourDetach: MessageBoxExA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnMessageBoxExA), &HookMessageBoxExA);
-        pfnMessageBoxExA = nullptr;
-    }
-    if (pfnCreateFontA != nullptr)
-    {
-        wprintf(L"DetourDetach: CreateFontA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateFontA), &HookCreateFontA);
-        pfnCreateFontA = nullptr;
-    }
-    if (pfnCreateFontIndirectA != nullptr)
-    {
-        wprintf(L"DetourDetach: CreateFontIndirectA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnCreateFontIndirectA), &HookCreateFontIndirectA);
-        pfnCreateFontIndirectA = nullptr;
-    }
-    if (pfnEnumFontFamiliesExA != nullptr)
-    {
-        wprintf(L"DetourDetach: EnumFontFamiliesExA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesExA), &HookEnumFontFamiliesExA);
-        pfnEnumFontFamiliesExA = nullptr;
-    }
-    if (pfnEnumFontFamiliesA != nullptr)
-    {
-        wprintf(L"DetourDetach: EnumFontFamiliesA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnEnumFontFamiliesA), &HookEnumFontFamiliesA);
-        pfnEnumFontFamiliesA = nullptr;
-    }
-    if (pfnEnumFontsA != nullptr)
-    {
-        wprintf(L"DetourDetach: EnumFontsA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnEnumFontsA), &HookEnumFontsA);
-        pfnEnumFontsA = nullptr;
-    }
-    if (pfnGetGlyphOutlineA != nullptr)
-    {
-        wprintf(L"DetourDetach: GetGlyphOutlineA\n");
-        DetourDetach(&reinterpret_cast<PVOID&>(pfnGetGlyphOutlineA), &HookGetGlyphOutlineA);
-        pfnGetGlyphOutlineA = nullptr;
-    }
+#define DETACH(function) \
+        if (pfn##function != nullptr) \
+        { \
+            wprintf(L"DetourDetach: " #function "\n"); \
+            DetourDetach(&reinterpret_cast<PVOID&>(pfn##function), reinterpret_cast<PVOID>(&Hook##function)); \
+            pfn##function = nullptr; \
+        }
+    DETACH(CreateWindowExA)
+    DETACH(SetWindowTextA)
+    DETACH(SendMessageA)
+    DETACH(CreatePropertySheetPageA)
+    DETACH(PropertySheetA)
+    DETACH(CreateDialogParamA)
+    DETACH(CreateDialogIndirectParamA)
+    DETACH(DialogBoxParamA)
+    DETACH(DialogBoxIndirectParamA)
+    DETACH(SetDlgItemTextA)
+    DETACH(SendDlgItemMessageA)
+    DETACH(AppendMenuA)
+    DETACH(MessageBoxA)
+    DETACH(MessageBoxExA)
+    DETACH(CreateFontA)
+    DETACH(CreateFontIndirectA)
+    DETACH(EnumFontFamiliesA)
+    DETACH(EnumFontFamiliesExA)
+    DETACH(EnumFontsA)
+    DETACH(GetGlyphOutlineA)
+#undef DETACH
     DetourTransactionCommit();
 }
 
-decltype(CreateWindowExA)* Win32Hook::pfnCreateWindowExA = nullptr;
-
-decltype(SetWindowTextA)* Win32Hook::pfnSetWindowTextA = nullptr;
-
-decltype(SendMessageA)* Win32Hook::pfnSendMessageA = nullptr;
-
-decltype(CreatePropertySheetPageA)* Win32Hook::pfnCreatePropertySheetPageA = nullptr;
-
-decltype(PropertySheetA)* Win32Hook::pfnPropertySheetA = nullptr;
-
-decltype(CreateDialogParamA)* Win32Hook::pfnCreateDialogParamA = nullptr;
-
-decltype(CreateDialogIndirectParamA)* Win32Hook::pfnCreateDialogIndirectParamA = nullptr;
-
-decltype(DialogBoxParamA)* Win32Hook::pfnDialogBoxParamA = nullptr;
-
-decltype(DialogBoxIndirectParamA)* Win32Hook::pfnDialogBoxIndirectParamA = nullptr;
-
-decltype(SetDlgItemTextA)* Win32Hook::pfnSetDlgItemTextA = nullptr;
-
-decltype(SendDlgItemMessageA)* Win32Hook::pfnSendDlgItemMessageA = nullptr;
-
-decltype(AppendMenuA)* Win32Hook::pfnAppendMenuA = nullptr;
-
-decltype(MessageBoxA)* Win32Hook::pfnMessageBoxA = nullptr;
-
-decltype(MessageBoxExA)* Win32Hook::pfnMessageBoxExA = nullptr;
-
-decltype(CreateFontA)* Win32Hook::pfnCreateFontA = nullptr;
-
-decltype(CreateFontIndirectA)* Win32Hook::pfnCreateFontIndirectA = nullptr;
-
-decltype(EnumFontFamiliesExA)* Win32Hook::pfnEnumFontFamiliesExA = nullptr;
-
-decltype(EnumFontFamiliesA)* Win32Hook::pfnEnumFontFamiliesA = nullptr;
-
-decltype(EnumFontsA)* Win32Hook::pfnEnumFontsA = nullptr;
-
-decltype(GetGlyphOutlineA)* Win32Hook::pfnGetGlyphOutlineA = nullptr;
+#define DETOUR(function) \
+    decltype(function)* Win32Hook::pfn##function = nullptr;
+DETOUR(CreateWindowExA)
+DETOUR(SetWindowTextA)
+DETOUR(SendMessageA)
+DETOUR(CreatePropertySheetPageA)
+DETOUR(PropertySheetA)
+DETOUR(CreateDialogParamA)
+DETOUR(CreateDialogIndirectParamA)
+DETOUR(DialogBoxParamA)
+DETOUR(DialogBoxIndirectParamA)
+DETOUR(SetDlgItemTextA)
+DETOUR(SendDlgItemMessageA)
+DETOUR(AppendMenuA)
+DETOUR(MessageBoxA)
+DETOUR(MessageBoxExA)
+DETOUR(CreateFontA)
+DETOUR(CreateFontIndirectA)
+DETOUR(EnumFontFamiliesA)
+DETOUR(EnumFontFamiliesExA)
+DETOUR(EnumFontsA)
+DETOUR(GetGlyphOutlineA)
+#undef DETOUR
 
 HWND WINAPI Win32Hook::HookCreateWindowExA(
     const DWORD dwExStyle,
@@ -407,7 +207,12 @@ HWND WINAPI Win32Hook::HookCreateDialogParamA(
     {
         const auto id = reinterpret_cast<DWORD>(lpTemplateName);
         wprintf(L"Hook CreateDialogParamA(lpTemplateName=MAKEINTRESOURCEA(%d), hWndParent=0x%p)\n", id, hWndParent);
-        return CreateDialogParamW(hInstance, MAKEINTRESOURCEW(lpTemplateName), hWndParent, lpDialogFunc, dwInitParam);
+        return CreateDialogParamW(
+            hInstance,
+            reinterpret_cast<LPCWSTR>(lpTemplateName),
+            hWndParent,
+            lpDialogFunc,
+            dwInitParam);
     }
 
     const auto unicode = Unicode(lpTemplateName, CP_SHIFT_JIS);
@@ -439,7 +244,12 @@ INT_PTR WINAPI Win32Hook::HookDialogBoxParamA(
     {
         const auto id = reinterpret_cast<DWORD>(lpTemplateName);
         wprintf(L"Hook DialogBoxParamA(lpTemplateName=MAKEINTRESOURCEA(%d), hWndParent=0x%p)\n", id, hWndParent);
-        return DialogBoxParamW(hInstance, MAKEINTRESOURCEW(lpTemplateName), hWndParent, lpDialogFunc, dwInitParam);
+        return DialogBoxParamW(
+            hInstance,
+            reinterpret_cast<LPCWSTR>(lpTemplateName),
+            hWndParent,
+            lpDialogFunc,
+            dwInitParam);
     }
 
     const auto unicode = Unicode(lpTemplateName, CP_SHIFT_JIS);
@@ -512,8 +322,8 @@ BOOL Win32Hook::HookAppendMenuA(
     const UINT_PTR uIDNewItem,
     const LPCSTR lpNewItem)
 {
-    if (uFlags & MF_BITMAP) return AppendMenuW(hMenu, uFlags, uIDNewItem, MAKEINTRESOURCEW(lpNewItem));
-    if (uFlags & MF_OWNERDRAW) return AppendMenuW(hMenu, uFlags, uIDNewItem, MAKEINTRESOURCEW(lpNewItem));
+    if (uFlags & MF_BITMAP) return AppendMenuW(hMenu, uFlags, uIDNewItem, reinterpret_cast<LPCWSTR>(lpNewItem));
+    if (uFlags & MF_OWNERDRAW) return AppendMenuW(hMenu, uFlags, uIDNewItem, reinterpret_cast<LPCWSTR>(lpNewItem));
     const auto unicode = Unicode(lpNewItem, CP_SHIFT_JIS);
     wprintf(L"Hook AppendMenuA(hMenu=0x%p, uIDNewItem=%d, lpNewItem=%s)\n", hMenu, uIDNewItem, unicode);
     const auto result = AppendMenuW(hMenu, uFlags, uIDNewItem, unicode);
@@ -630,6 +440,20 @@ HFONT WINAPI Win32Hook::HookCreateFontIndirectA(
     return CreateFontIndirectW(&font);
 }
 
+int WINAPI Win32Hook::HookEnumFontFamiliesA(
+    const HDC hdc, // NOLINT(*-misplaced-const)
+    const LPCSTR lpLogFont,
+    const FONTENUMPROCA lpProc,
+    const LPARAM lParam)
+{
+    const auto context = HookEnumFontContext{lpProc, lParam};
+    const auto unicode = Unicode(lpLogFont, CP_SHIFT_JIS);
+    wprintf(L"Hook EnumFontFamiliesA(lpLogFont=%s)\n", unicode);
+    const auto result = EnumFontFamiliesW(hdc, unicode, &HookEnumFontCallback, reinterpret_cast<LPARAM>(&context));
+    free(unicode);
+    return result;
+}
+
 int WINAPI Win32Hook::HookEnumFontFamiliesExA(
     const HDC hdc, // NOLINT(*-misplaced-const)
     const LPLOGFONTA lpLogFont, // NOLINT(*-misplaced-const)
@@ -660,20 +484,6 @@ int WINAPI Win32Hook::HookEnumFontFamiliesExA(
     wprintf(L"Hook EnumFontFamiliesExA(lfCharSet=0x%X, lfFaceName=%s)\n", font.lfCharSet, font.lfFaceName);
     font.lfCharSet = GB2312_CHARSET;
     return EnumFontFamiliesExW(hdc, &font, &HookEnumFontCallback, reinterpret_cast<LPARAM>(&context), dwFlags);
-}
-
-int WINAPI Win32Hook::HookEnumFontFamiliesA(
-    const HDC hdc, // NOLINT(*-misplaced-const)
-    const LPCSTR lpLogFont,
-    const FONTENUMPROCA lpProc,
-    const LPARAM lParam)
-{
-    const auto context = HookEnumFontContext{lpProc, lParam};
-    const auto unicode = Unicode(lpLogFont, CP_SHIFT_JIS);
-    wprintf(L"Hook EnumFontFamiliesA(lpLogFont=%s)\n", unicode);
-    const auto result = EnumFontFamiliesW(hdc, unicode, &HookEnumFontCallback, reinterpret_cast<LPARAM>(&context));
-    free(unicode);
-    return result;
 }
 
 int WINAPI Win32Hook::HookEnumFontsA(
