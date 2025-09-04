@@ -24,7 +24,7 @@ jobs:
 
       - name: Install ATL for VS 2019
         run: >
-          START /WAIT "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify
+          "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify
           --installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
           --add Microsoft.VisualStudio.Component.VC.14.29.16.11.x86.x64
           --add Microsoft.VisualStudio.Component.VC.14.29.16.11.ATL
