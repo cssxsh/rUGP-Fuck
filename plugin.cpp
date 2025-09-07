@@ -957,8 +957,16 @@ std::wstring CObjectProxy::GetPatchFilePath(const COceanNode* const node)
     auto format = UnicodeX(node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin", CP_SHIFT_JIS);
     if (format[0] == L'C') format.erase(0, 1);
     for (auto& ch : format) ch = towlower(ch);
-    const auto name = UnicodeX(CUuiGlobals::GetGlobal()->m_strGameName, CP_ACP);
-    swprintf(buffer, MAX_PATH, L"./%s/%08X.%s", name.c_str(), node->GetAddress(), format.c_str());
+    if (CUuiGlobals::GetGlobal() != nullptr)
+    {
+        const auto name = UnicodeX(CUuiGlobals::GetGlobal()->m_strGameName, CP_ACP);
+        swprintf(buffer, MAX_PATH, L"./%s/%08X.%s", name.c_str(), node->GetAddress(), format.c_str());
+    }
+    else
+    {
+        const auto folder = UnicodeX(CRegistryCache::GetGlobal()->FetchSaveFolder(), CP_ACP);
+        swprintf(buffer, MAX_PATH, L"%s/%08X.%s", folder.c_str(), node->GetAddress(), format.c_str());
+    }
     return buffer;
 }
 

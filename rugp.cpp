@@ -1559,6 +1559,8 @@ CUuiGlobals::LPStep& CUuiGlobals::FetchStep()
     const auto UnivUI = GetModuleHandleA("UnivUI");
     address = reinterpret_cast<LPStep>(GetProcAddress(UnivUI, name));
     if (address != nullptr) return address;
+    const auto rio = GetProcAddress(UnivUI, "?classCRio@CRio@@2UCRioRTC@@A");
+    if (rio != nullptr) return address = nullptr;
     address = reinterpret_cast<LPStep>(GetProcAddress(UnivUI, MAKEINTRESOURCE(730)));
     if (address != nullptr) return address;
     __debugbreak();
@@ -1681,6 +1683,18 @@ CStringX& CInstallSource::FetchTarget()
 
 LPINT CRegistryCache::FetchInt(LPCSTR const lpszKey, LPCSTR const lpszSubKey)
 {
+    // fix: unofficial 2002 11b
+    if (m_pProfileInfo == nullptr)
+    {
+        switch (reinterpret_cast<DWORD>(this) & 0x0000E878u)
+        {
+        case 0x0000E878u:
+            m_pProfileInfo = reinterpret_cast<ProfileInfo*>(reinterpret_cast<DWORD>(this) & 0xFFFF0000u | 0x000057B0u);
+            break;
+        default: 
+            return nullptr;
+        }
+    }
     for (auto field = m_pProfileInfo; field->m_nType != 0; ++field)
     {
         if (field->m_nType != 1 && field->m_nType != 2) continue;
@@ -1694,6 +1708,18 @@ LPINT CRegistryCache::FetchInt(LPCSTR const lpszKey, LPCSTR const lpszSubKey)
 
 CStringX* CRegistryCache::FetchString(LPCSTR const lpszKey, LPCSTR const lpszSubKey)
 {
+    // fix: unofficial 2002 11b
+    if (m_pProfileInfo == nullptr)
+    {
+        switch (reinterpret_cast<DWORD>(this) & 0x0000E878u)
+        {
+        case 0x0000E878u:
+            m_pProfileInfo = reinterpret_cast<ProfileInfo*>(reinterpret_cast<DWORD>(this) & 0xFFFF0000u | 0x000057B0u);
+            break;
+        default: 
+            return nullptr;
+        }
+    }
     for (auto field = m_pProfileInfo; field->m_nType != 0; ++field)
     {
         if (field->m_nType != 8) continue;
