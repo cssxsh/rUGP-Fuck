@@ -334,6 +334,29 @@ BOOL CObject::IsKindOf(const CRuntimeClass* pClass) const
     return FALSE;
 }
 
+void CArchive::SerializeClass(const CRuntimeClass* pClassRef)
+{
+    using LPSerializeClass = void (__thiscall *)(CArchive*, const CRuntimeClass*);
+    const auto name = "?SerializeClass@CArchive@@QAEXPBUCRuntimeClass@@@Z";
+    auto& proc = reinterpret_cast<LPSerializeClass&>(cache[name]);
+    if (proc != nullptr) return proc(this, pClassRef);
+    const auto mfc = GetMfc();
+    switch (mfc.version)
+    {
+    case 0x0600:
+        proc = reinterpret_cast<LPSerializeClass>(GetProcAddress(mfc.native, MAKEINTRESOURCE(5832)));
+        if (proc != nullptr) return proc(this, pClassRef);
+        break;
+    case 0x0C00:
+        proc = reinterpret_cast<LPSerializeClass>(GetProcAddress(mfc.native, MAKEINTRESOURCE(12978)));
+        if (proc != nullptr) return proc(this, pClassRef);
+        break;
+    default:
+        break;
+    }
+    __debugbreak();
+}
+
 GMfc::LPIsMBCS& GMfc::FetchIsMBCS()
 {
     const auto name = "?IsDBCS@@YAHD@Z";
@@ -1171,7 +1194,7 @@ CProcessOcean::LPBeginProcess& CProcessOcean::FetchBeginProcess()
     return address = nullptr;
 }
 
-const CArchive* CPmArchive::GetNative() const
+CArchive* CPmArchive::GetNative() const
 {
     const auto vtbl = *reinterpret_cast<FARPROC* const*>(this);
     const auto start = reinterpret_cast<LPBYTE>(vtbl[0x0000]);

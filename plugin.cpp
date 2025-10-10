@@ -1244,6 +1244,7 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
         CloseHandle(hFile);
         const auto ansi = AnsiX(path.c_str(), CP_ACP);
         const auto load = CPmArchive::CreateLoadFilePmArchive(ansi.c_str());
+        load->GetNative()->SerializeClass(ecx->GetRuntimeClass());
         ecx->FetchSerialize()(ecx, load);
         CPmArchive::DestroyPmArchive(load);
     }
@@ -1252,6 +1253,7 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
         ecx->FetchSerialize()(ecx, archive);
         const auto ansi = AnsiX(path.c_str(), CP_ACP);
         const auto save = CPmArchive::CreateSaveFilePmArchive(ansi.c_str());
+        save->GetNative()->SerializeClass(ecx->GetRuntimeClass());
         ecx->FetchSerialize()(ecx, save);
         CPmArchive::DestroyPmArchive(save);
     }
