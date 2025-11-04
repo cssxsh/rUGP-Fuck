@@ -4,7 +4,7 @@
 
 static HMODULE winmm = nullptr;
 
-static FARPROC ReadProfileString = nullptr;
+static FARPROC ReadProfileStringProc = nullptr;
 
 static void WINAPI AttachHook();
 
@@ -44,31 +44,31 @@ void WINAPI AttachHook()
     const auto GMfc = GetModuleHandleA("GMfc");
     if (GMfc == nullptr) return;
     // public: class CString __thiscall CCommandLineInfoSg::ReadProfileString(LPCSTR, LPCSTR)
-    ReadProfileString = GetProcAddress(GMfc, "?ReadProfileString@CCommandLineInfoSg@@QAE?AVCString@@PBD0@Z");
-    if (ReadProfileString == nullptr) return;
+    ReadProfileStringProc = GetProcAddress(GMfc, "?ReadProfileString@CCommandLineInfoSg@@QAE?AVCString@@PBD0@Z");
+    if (ReadProfileStringProc == nullptr) return;
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    DetourAttach(&reinterpret_cast<PVOID&>(ReadProfileString), HookReadProfileString);
+    DetourAttach(&reinterpret_cast<PVOID&>(ReadProfileStringProc), reinterpret_cast<PVOID>(&HookReadProfileString));
     DetourTransactionCommit();
 }
 
 void WINAPI DetachHook()
 {
-    if (ReadProfileString == nullptr) return;
+    if (ReadProfileStringProc == nullptr) return;
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    DetourDetach(&reinterpret_cast<PVOID&>(ReadProfileString), HookReadProfileString);
+    DetourDetach(&reinterpret_cast<PVOID&>(ReadProfileStringProc), reinterpret_cast<PVOID>(&HookReadProfileString));
     DetourTransactionCommit();
 }
 
 LPSTR& __fastcall HookReadProfileString(
-    CCommandLineInfo* ecx,
-    const DWORD edx,
+    CCommandLineInfo* const ecx,
+    DWORD const edx,
     LPSTR& result,
-    const LPCSTR key,
-    const LPCSTR value)
+    LPCSTR const key,
+    LPCSTR const value)
 {
-    reinterpret_cast<decltype(HookReadProfileString)*>(ReadProfileString)(ecx, edx, result, key, value);
+    reinterpret_cast<decltype(HookReadProfileString)*>(ReadProfileStringProc)(ecx, edx, result, key, value);
     if (strcmp(key, "UGPAPP") != 0) return result;
     const auto unicode = Unicode(result, CP_SHIFT_JIS);
     WCHAR path[MAX_PATH] = {};
