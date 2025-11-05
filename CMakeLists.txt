@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.29)
 project(rUGP-Fuck)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MFC_FLAG 2)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")

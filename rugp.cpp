@@ -1120,7 +1120,7 @@ const CRuntimeClass* CObjectArcMan::GetClassCObjectArcMan()
     const auto UnivUI = GetModuleHandleA("UnivUI");
     address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
     if (address != nullptr) return address;
-    if (GetProcAddress(UnivUI, "?classCObjectOcean@CObjectOcean@@2UCRioRTC@@A") != nullptr) return nullptr;
+    if (GetProcAddress(UnivUI, "?classCObjectOcean@CObjectOcean@@2UCRioRTC@@A")) return nullptr;
     address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(838)));
     if (address != nullptr) return address;
     __debugbreak();
@@ -1501,7 +1501,7 @@ CRef& CRef::operator=(COceanNode* const nodeSrc)
 template <class T>
 CRef::operator T*() const
 {
-    static_assert(std::is_base_of<CRio, T>::value, "T must be derived from CRio");
+    static_assert(std::is_base_of_v<CRio, T>, "T must be derived from CRio");
     if (m_pNode == nullptr) return nullptr;
     return reinterpret_cast<T*>(m_pNode->Fetch());
 }
@@ -1566,8 +1566,7 @@ CUuiGlobals* CUuiGlobals::GetGlobal()
     const auto UnivUI = GetModuleHandleA("UnivUI");
     global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, name));
     if (global != nullptr) return global;
-    const auto rio = GetProcAddress(UnivUI, "?classCRio@CRio@@2UCRioRTC@@A");
-    if (rio != nullptr) return nullptr;
+    if (GetProcAddress(UnivUI, "?classCRio@CRio@@2UCRioRTC@@A")) return nullptr;
     global = reinterpret_cast<CUuiGlobals*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(901)));
     if (global != nullptr) return global;
     __debugbreak();

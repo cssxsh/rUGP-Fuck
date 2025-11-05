@@ -205,13 +205,13 @@ BOOL CObjectProxy::LoadFromModule(LPCSTR const lpszModuleName)
     if (proc == nullptr) return FALSE;
 
     auto& module = MODULE_MAP[hModule] = nullptr;
-    if (CRio::FetchLibrarySupport() != nullptr)
+    if (CRio::FetchLibrarySupport())
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), &HookSupportRio);
         DetourTransactionCommit();
-        reinterpret_cast<const AFX_EXTENSION_MODULE*>(proc());
+        proc();
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchLibrarySupport()), &HookSupportRio);
@@ -235,13 +235,11 @@ void CObjectProxy::AttachHook()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    for (const auto& pair : RTC_MAP)
+    for (const auto& [name, clazz] : RTC_MAP)
     {
-        const auto clazz = pair.second;
         if (clazz->m_pfnCreateObject == nullptr) continue;
         // fix: CResourceClipOnlyRegion
         if (clazz->m_pfnGetBaseClass() == clazz) continue;
-        const auto name = UnicodeX(clazz->m_lpszClassName, CP_SHIFT_JIS);
 
         if (clazz->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
         {
@@ -315,13 +313,11 @@ void CObjectProxy::DetachHook()
 {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    for (const auto& pair : RTC_MAP)
+    for (const auto& [name, clazz] : RTC_MAP)
     {
-        const auto clazz = pair.second;
         if (clazz->m_pfnCreateObject == nullptr) continue;
         // fix: CResourceClipOnlyRegion
         if (clazz->m_pfnGetBaseClass() == clazz) continue;
-        const auto name = UnicodeX(clazz->m_lpszClassName, CP_SHIFT_JIS);
 
         if (clazz->IsDerivedFrom(CCommandRef::GetClassCCommandRef()))
         {
@@ -379,15 +375,15 @@ void CObjectProxy::DetachHook()
 
 void CObjectProxy::Clear()
 {
-    for (auto& pair : COMMAND_MAP)
+    for (auto& [name, command] : COMMAND_MAP)
     {
-        auto p = pair.second;
-        pair.second = nullptr;
+        auto p = command;
+        command = nullptr;
         while (p != nullptr)
         {
-            const auto command = p;
+            const auto t = p;
             p = p->m_pNext;
-            free(command);
+            free(t);
         }
     }
     COMMAND_MAP.clear();
@@ -396,12 +392,10 @@ void CObjectProxy::Clear()
 
     CHARACTER_MAP.clear();
 
-    for (auto& pair : FONT_CACHE)
+    for (auto& [nChar, font] : FONT_CACHE)
     {
-        const auto record = pair.second;
-        pair.second = nullptr;
-
-        free(record);
+        free(font);
+        font = nullptr;
     }
     FONT_CACHE.clear();
 }
@@ -571,29 +565,24 @@ void CObjectProxy::AttachCharacterPatch(LPCSTR const lpszModuleName)
 
 void CObjectProxy::DetachCharacterPatch()
 {
-    for (auto& pair : SPLIT_CACHE)
+    for (auto& [address, record] : SPLIT_CACHE)
     {
-        const auto record = pair.second;
-        pair.second = nullptr;
-
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourDetach(&reinterpret_cast<PVOID&>(record->target), record->codes);
         DetourTransactionCommit();
         VirtualFree(record, 0, MEM_RELEASE);
+        record = nullptr;
     }
     SPLIT_CACHE.clear();
-    for (auto& pair : PATCH_CACHE)
+    for (auto& [address, record] : PATCH_CACHE)
     {
-        const auto address = pair.first;
-        const auto record = pair.second;
-        pair.second = nullptr;
-
         auto protect = static_cast<DWORD>(PAGE_EXECUTE_READWRITE);
         VirtualProtect(address, record->block_size, protect, &protect);
         memcpy(address, record->codes, record->block_size);
         VirtualProtect(address, record->block_size, protect, &protect);
         free(record);
+        record = nullptr;
     }
     PATCH_CACHE.clear();
 }
@@ -979,7 +968,7 @@ CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)
     {
         const auto pClass = command->GetRuntimeClass();
         char name[0x20];
-        sprintf(name, "%08X:%s", command->m_dwFlags & 0x000FFFFF, pClass->m_lpszClassName);
+        sprintf(name, "%08X:%s", static_cast<UINT>(command->m_dwFlags & 0x000FFFFF), pClass->m_lpszClassName);
         next = const_cast<CVmCommand*>(command);
         switch (*reinterpret_cast<const DWORD*>(pClass->m_lpszClassName + 0x03))
         {
