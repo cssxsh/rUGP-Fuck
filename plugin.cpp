@@ -22,7 +22,7 @@ BOOL APIENTRY DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpRese
         setlocale(LC_ALL, ".UTF8");
         freopen("CON", "w", stdout);
 
-        wprintf(L"MFC Version %d.0\n", GetMfc().version >> 0x08);
+        wprintf(L"MFC Version %d.0\n", MFC_MODULE::GetCurrent().version >> 0x08);
         wprintf(L"rUGP System Version %hs\n", CrUGP::GetGlobal()->GetVersion());
         wprintf(L"JsonCpp Version %hs\n", JSONCPP_VERSION_STRING);
         wprintf(L"Detours Version %x\n", DETOURS_VERSION);

@@ -5,7 +5,7 @@
 
 static std::map<std::string, FARPROC> cache;
 
-MFC_MODULE GetMfc()
+MFC_MODULE MFC_MODULE::GetCurrent()
 {
     MFC_MODULE module = {};
     module.version = 0x0600;
@@ -23,7 +23,7 @@ BOOL AFXAPI AfxInitExtensionModule(AFX_EXTENSION_MODULE& extension, const HMODUL
     cache.clear();
     using LPAfxInitExtensionModule = decltype(AfxInitExtensionModule)*;
     const auto name = "?AfxInitExtensionModule@@YGHAAUAFX_EXTENSION_MODULE@@PAUHINSTANCE__@@@Z";
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     auto init = reinterpret_cast<LPAfxInitExtensionModule>(GetProcAddress(mfc.native, name));
     if (init != nullptr) return init(extension, hMod);
     switch (mfc.version)
@@ -47,7 +47,7 @@ void AFXAPI AfxTermExtensionModule(AFX_EXTENSION_MODULE& extension, const BOOL b
 {
     using LPAfxTermExtensionModule = decltype(AfxTermExtensionModule)*;
     const auto name = "?AfxTermExtensionModule@@YGXAAUAFX_EXTENSION_MODULE@@H@Z";
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     auto term = reinterpret_cast<LPAfxTermExtensionModule>(GetProcAddress(mfc.native, name));
     if (term != nullptr) return term(extension, bAll);
     switch (mfc.version)
@@ -72,7 +72,7 @@ CStringX::CStringX(const CStringX& strSrc)
     const auto name = "??0CString@@QAE@ABV0@@Z";
     auto& proc = reinterpret_cast<LPConstructor&>(cache[name]);
     if (proc != nullptr && proc(this, strSrc)) return;
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -95,7 +95,7 @@ CStringX::CStringX(const LPCSTR pszSrc)
     const auto name = "??0CString@@QAE@PBD@Z";
     auto& proc = reinterpret_cast<LPConstructor&>(cache[name]);
     if (proc != nullptr && proc(this, pszSrc)) return;
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -118,7 +118,7 @@ CStringX::CStringX()
     const auto name = "??0CString@@QAE@XZ";
     auto& proc = reinterpret_cast<LPConstructor&>(cache[name]);
     if (proc != nullptr && proc(this)) return;
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -141,7 +141,7 @@ CStringX::~CStringX()
     const auto name = "??1CString@@QAE@XZ";
     auto& proc = reinterpret_cast<LPDestructor&>(cache[name]);
     if (proc != nullptr && (proc(this), proc)) return;
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -164,7 +164,7 @@ CStringX& CStringX::operator=(const LPCSTR pszSrc)
     const auto name = "??4CString@@QAEABV0@PBD@Z";
     auto& proc = reinterpret_cast<LPSet&>(cache[name]);
     if (proc != nullptr) return proc(this, pszSrc); // NOLINT(*-unconventional-assign-operator)
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -188,7 +188,7 @@ CStringX& CStringX::operator=(const CStringX& strSrc)
     const auto name = "??4CString@@QAEABV0@ABV0@@Z";
     auto& proc = reinterpret_cast<LPSet&>(cache[name]);
     if (proc != nullptr) return proc(this, strSrc); // NOLINT(*-unconventional-assign-operator)
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -222,7 +222,7 @@ void CStringX::FormatV(const LPCSTR pszFormat, const va_list args) // NOLINT(*-m
     const auto name = "?FormatV@CString@@QAEXPBDPAD@Z";
     auto& proc = reinterpret_cast<LPFormatV&>(cache[name]);
     if (proc != nullptr) return proc(this, pszFormat, args);
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -291,7 +291,7 @@ BOOL CRuntimeClass::IsDerivedFrom(const CRuntimeClass* pBaseClass) const
     const auto name = "?IsDerivedFrom@CRuntimeClass@@QBEHPBU1@@Z";
     auto& proc = reinterpret_cast<LPIsDerivedFrom&>(cache[name]);
     if (proc != nullptr) return proc(this, pBaseClass);
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -315,7 +315,7 @@ BOOL CObject::IsKindOf(const CRuntimeClass* pClass) const
     const auto name = "?IsKindOf@CObject@@QBEHPBUCRuntimeClass@@@Z";
     auto& proc = reinterpret_cast<LPIsKindOf&>(cache[name]);
     if (proc != nullptr) return proc(this, pClass);
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -339,7 +339,7 @@ void CArchive::SerializeClass(const CRuntimeClass* pClassRef)
     const auto name = "?SerializeClass@CArchive@@QAEXPBUCRuntimeClass@@@Z";
     auto& proc = reinterpret_cast<LPSerializeClass&>(cache[name]);
     if (proc != nullptr) return proc(this, pClassRef);
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -680,7 +680,7 @@ CS5i::LPDrawFont1& CS5i::FetchDrawFont1()
     const auto name = "?DrawFont@CS5i@@QAEHFFPBUtagRBDY@@PAUSQRBDY@@IPBVCFontContext@@@Z";
     auto& address = reinterpret_cast<LPDrawFont1&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -716,7 +716,7 @@ CS5i::LPDrawFont2& CS5i::FetchDrawFont2()
     const auto name = "?DrawFont@CS5i@@QAEXPAHFFPBUtagRBDY@@PAUSQRBDY@@IPBVCFontContext@@@Z";
     auto& address = reinterpret_cast<LPDrawFont2&>(cache[name]);
     if (address != nullptr) return address;
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -1531,7 +1531,7 @@ CrUGP* CrUGP::GetGlobal()
     const auto name = "?_GLOBAL_rUGP@@3VCrUGP@@A";
     auto& global = reinterpret_cast<CrUGP*&>(cache[name]);
     if (global != nullptr) return global;
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:
@@ -1810,7 +1810,7 @@ CCommandRef::LPGetNextCommand& CCommandRef::FetchGetNextCommand(const CRuntimeCl
 
 CCommandRef::LPGetNextCommand CCommandRef::FindGetNextCommand(const CObject_vtbl* vtbl)
 {
-    const auto mfc = GetMfc();
+    const auto mfc = MFC_MODULE::GetCurrent();
     switch (mfc.version)
     {
     case 0x0600:

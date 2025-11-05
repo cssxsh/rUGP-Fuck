@@ -60,9 +60,9 @@ struct MFC_MODULE
 {
     HMODULE native;
     int version;
-};
 
-MFC_MODULE GetMfc();
+    static MFC_MODULE GetCurrent();
+};
 
 class CStringX
 {
