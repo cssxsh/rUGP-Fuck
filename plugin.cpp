@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include <detours/detours.h>
 #include <json/json.h>
-#include <spdlog/spdlog.h>
 #include "plugin.h"
 #include "rugp.h"
 #include "hook.h"
@@ -16,11 +15,11 @@ BOOL APIENTRY DllMain(HINSTANCE hInstance, const DWORD dwReason, LPVOID /*lpRese
     case DLL_PROCESS_ATTACH:
         _set_se_translator(&StructuredException::Trans);
         AllocConsole();
-        SetConsoleTitleA("r514783 Plugin Debug Console");
+        SetConsoleTitleW(L"r514783 Plugin Debug Console");
         SetConsoleCP(CP_UTF8);
         SetConsoleOutputCP(CP_UTF8);
-        setlocale(LC_ALL, ".UTF8");
-        freopen("CON", "w", stdout);
+        setlocale(LC_ALL, "zh_CN.UTF8");
+        freopen("CONOUT$", "w", stdout);
 
         wprintf(L"MFC Version %d.0\n", MFC_MODULE::GetCurrent().version >> 0x08);
         wprintf(L"rUGP System Version %hs\n", CrUGP::GetGlobal()->GetVersion());
