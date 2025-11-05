@@ -6,6 +6,8 @@
 #include <string>
 
 extern "C" {
+__declspec(dllexport) const AFX_EXTENSION_MODULE* PluginThisLibrary();
+__declspec(dllexport) BOOL PluginThisLibrary_Ages3Res();
 __declspec(dllexport) BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
 }
 
@@ -151,8 +153,6 @@ public:
 
     virtual LONG Seek(LONG, UINT) = 0;
 
-    const CArchive* GetNative() const;
-
     static CPolymorphicArchive* __fastcall CreateLoadFileArchive(LPCTSTR);
     static CPolymorphicArchive* __fastcall CreateSaveFileArchive(LPCTSTR);
     static void __fastcall DestroyArchive(CPolymorphicArchive*);
@@ -227,6 +227,7 @@ public:
 
 protected:
     CrUGP();
+    ~CrUGP();
 };
 
 class CUuiGlobals
@@ -253,6 +254,7 @@ public:
 
 protected:
     CUuiGlobals();
+    ~CUuiGlobals();
 };
 
 class CObjectProxy final
