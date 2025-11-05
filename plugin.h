@@ -69,9 +69,10 @@ protected:
     static std::wstring __fastcall GetPatchFilePath(const COceanNode* node);
 
     static std::remove_pointer_t<CRio::LPLibrarySupport> HookSupportRio;
-    static std::remove_pointer_t<CRio::LPDestructor> HookDestructor;
-    static std::remove_pointer_t<CRio::LPSerialize> HookSerialize;
+    static std::remove_pointer_t<CObjectEx::LPDestructor> HookDestructor;
+    static std::remove_pointer_t<CObjectEx::LPSerialize> HookSerialize;
     static std::remove_pointer_t<CCommandRef::LPGetNextCommand> HookGetNextCommand;
+    static std::remove_pointer_t<CVmCommand::LPExecCommand> HookExecCommand;
     static std::remove_pointer_t<COceanNode::LPGetLocalFullPathName> HookGetLocalFullPathName;
 
     static std::remove_pointer_t<GMfc::LPIsMBCS> HookIsMBCS;

@@ -52,7 +52,6 @@ struct CMsgRTC;
 struct ProfileInfo;
 
 struct CObject_vtbl;
-struct CRio_vtbl;
 
 template <typename T, int SIZE = 0x11>
 struct HashBucket;
@@ -167,7 +166,20 @@ class CObjectEx : public CObject
 public:
     DECLARE_DYNAMIC_EX(CObjectEx)
 
+    using LPDestructor = void (__thiscall *)(CRio*);
+    using LPSerialize = void (__thiscall *)(CRio*, CPmArchive*);
+
+    LPDestructor& FetchDestructor() const;
+    LPSerialize& FetchSerialize() const;
+
     virtual void Serialize(CPmArchive&) = 0;
+
+    static LPDestructor& FetchDestructor(const CRuntimeClass*);
+    static LPSerialize& FetchSerialize(const CRuntimeClass*);
+
+protected:
+    static CObject_vtbl* FindVisualTable(const CRuntimeClass*);
+    static LPDestructor FindDestructor(const CObject_vtbl*);
 };
 
 #define DECLARE_DYNAMIC_RIO(class_name) \
@@ -190,19 +202,8 @@ public:
     // virtual void SerializeUserCondition(CPmArchive&) = 0;
 
     using LPLibrarySupport = void (__cdecl *)(AFX_EXTENSION_MODULE&);
-    using LPDestructor = void (__thiscall *)(CRio*);
-    using LPSerialize = void (__thiscall *)(CRio*, CPmArchive*);
-
-    LPDestructor& FetchDestructor() const;
-    LPSerialize& FetchSerialize() const;
 
     static LPLibrarySupport& FetchLibrarySupport();
-    static LPDestructor& FetchDestructor(const CRuntimeClass*);
-    static LPSerialize& FetchSerialize(const CRuntimeClass*);
-
-protected:
-    static const CRio_vtbl* FindVisualTable(const CRuntimeClass*);
-    static LPDestructor FindDestructor(const CRio_vtbl*);
 };
 
 class CVisual : public CRio
@@ -237,7 +238,7 @@ public:
     static LPDrawFont2& FetchDrawFont2();
 
 protected:
-    static const CRio_vtbl* GetVisualTable();
+    static CObject_vtbl* GetVisualTable();
 };
 
 class CS5RFont : public CVisual
@@ -340,6 +341,7 @@ public:
 class CPmArchive
 {
 protected:
+    CPmArchive();
     ~CPmArchive();
 
 public:
@@ -462,7 +464,9 @@ protected:
 
 class CUuiGlobals
 {
+protected:
     CUuiGlobals();
+    ~CUuiGlobals();
 
 public:
     DWORD m_dwSchema;
@@ -561,7 +565,7 @@ public:
     static LPGetNextCommand& FetchGetNextCommand(const CRuntimeClass*);
 
 protected:
-    static LPGetNextCommand FindGetNextCommand(const CRio_vtbl*);
+    static LPGetNextCommand FindGetNextCommand(const CObject_vtbl*);
 };
 
 class CVmCommand : public CObjectEx
@@ -569,10 +573,18 @@ class CVmCommand : public CObjectEx
 public:
     DECLARE_DYNAMIC_EX(CVmCommand)
 
+    using LPExecCommand = CVmCommand* (__thiscall *)(CVmCommand*);
+
     CVmCommand* m_pNext;
     DWORD m_dwFlags;
 
     int GetVariableAreaSize() const;
+    CVmCommand* ExecCommand();
+
+    static LPExecCommand& FetchExecCommand(const CRuntimeClass*);
+
+protected:
+    static LPExecCommand FindExecCommand(const CObject_vtbl*);
 };
 
 class CVmMsg : public CVmCommand
@@ -658,13 +670,11 @@ struct CObject_vtbl
     void (__thiscall *Dump)(CObject*, CDumpContext*);
 
     // ReSharper disable CppNonExplicitConversionOperator
-    operator FARPROC const*() const; // NOLINT(*-explicit-constructor)
+    template <typename F>
+    F operator[](size_t i) const;
+    template <typename F>
+    F& operator[](size_t i);
     // ReSharper restore CppNonExplicitConversionOperator
-};
-
-struct CRio_vtbl : CObject_vtbl
-{
-    void (__thiscall *Serialize)(CRio*, CPmArchive*);
 };
 
 template <class T, int SIZE>

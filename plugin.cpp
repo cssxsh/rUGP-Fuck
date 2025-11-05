@@ -946,7 +946,7 @@ std::wstring CObjectProxy::GetPatchFilePath(const COceanNode* const node)
     auto format = UnicodeX(node->m_pRTC ? node->m_pRTC->m_lpszClassName : "bin", CP_SHIFT_JIS);
     if (format[0] == L'C') format.erase(0, 1);
     for (auto& ch : format) ch = towlower(ch);
-    if (CUuiGlobals::GetGlobal() != nullptr)
+    if (CUuiGlobals::GetGlobal())
     {
         const auto name = UnicodeX(CUuiGlobals::GetGlobal()->m_strGameName, CP_ACP);
         swprintf(buffer, MAX_PATH, L"./%s/%08X.%s", name.c_str(), node->GetAddress(), format.c_str());
@@ -1291,6 +1291,38 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
     }
 
     return cache;
+}
+
+CVmCommand* CObjectProxy::HookExecCommand(CVmCommand* command)
+{
+    const auto clazz = command->GetRuntimeClass();
+    switch (*reinterpret_cast<const DWORD*>(clazz->m_lpszClassName + 0x03))
+    {
+    // CVmMsg
+    case 0x0067734Du:
+        {
+            const auto message = reinterpret_cast<CVmMsg*>(command);
+            wprintf(L"%d -> %d\n", message->GetVariableAreaSize(), strlen(message->m_pVariableArea));
+            const auto ansi = AnsiX(message->m_pVariableArea, CP_SHIFT_JIS, CP_GB18030);
+            const auto size = ansi.length() + 0x04 & ~0x03;
+            const auto clone = static_cast<CVmMsg*>(malloc(clazz->m_nObjectSize + size));
+            memcpy(clone, message, clazz->m_nObjectSize);
+            memcpy(clone->m_pVariableArea, ansi.c_str(), size);
+            const auto next = clone->ExecCommand();
+            memcpy(message, clone, clazz->m_nObjectSize);
+            free(clone);
+            return next;
+        }
+    // CVmGenericMsg
+    case 0x656E6547:
+        break;
+    // CVmCall
+    case 0x6C6C6143:
+        break;
+    default:
+        break;
+    }
+    return command->ExecCommand();
 }
 
 CStringX* CObjectProxy::HookGetLocalFullPathName(const COceanNode* node, CStringX* x)
