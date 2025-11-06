@@ -53,7 +53,7 @@ public:
 
 protected:
     static std::map<std::wstring, const CRuntimeClass*> RTC_MAP;
-    static std::map<std::wstring, CVmCommand*> COMMAND_MAP;
+    static std::map<const void*, std::wstring> CACHE_MAP;
     static std::map<HMODULE, const AFX_EXTENSION_MODULE*> MODULE_MAP;
     static std::map<LPVOID, CodePatchRecord*> PATCH_CACHE;
     static std::map<LPVOID, CodePatchRecord*> SPLIT_CACHE;
@@ -61,18 +61,20 @@ protected:
     static std::map<UINT, LPVOID> FONT_CACHE;
 
     static void __fastcall AttachCharacterSplit(LPBYTE address, LPCSTR lpszModuleName);
-    static CVmCommand* __fastcall Fetch(const CVmCommand* ecx, Json::Value& edx);
-    static void __fastcall Merge(CVmMsg*& message, Json::Value& text);
-    static void __fastcall Merge(CVmGenericMsg*& generic, Json::Value& obj);
-    static void __fastcall Merge(CVmCall*& call, Json::Value& arr);
+    static void __fastcall Merge(const CVmMsg* message, Json::Value& text);
+    static void __fastcall Merge(const CVmGenericMsg* generic, Json::Value& obj);
+    static void __fastcall Merge(const CVmCall* call, Json::Value& arr);
     static int __fastcall CharacterByteSize(LPCSTR);
     static std::wstring __fastcall GetPatchFilePath(const COceanNode* node);
 
     static std::remove_pointer_t<CRio::LPLibrarySupport> HookSupportRio;
     static std::remove_pointer_t<CObjectEx::LPDestructor> HookDestructor;
-    static std::remove_pointer_t<CObjectEx::LPSerialize> HookSerialize;
+    static std::remove_pointer_t<CRip::LPSerialize> HookRipSerialize;
+    static std::remove_pointer_t<CEditData::LPSerialize> HookEditDataSerialize;
     static std::remove_pointer_t<CCommandRef::LPGetNextCommand> HookGetNextCommand;
-    static std::remove_pointer_t<CVmCommand::LPExecCommand> HookExecCommand;
+    static std::remove_pointer_t<CVmMsg::LPExecCommand> HookExecMessage;
+    static std::remove_pointer_t<CVmGenericMsg::LPExecCommand> HookExecGenericMessage;
+    static std::remove_pointer_t<CVmCall::LPExecCommand> HookExecCall;
     static std::remove_pointer_t<COceanNode::LPGetLocalFullPathName> HookGetLocalFullPathName;
 
     static std::remove_pointer_t<GMfc::LPIsMBCS> HookIsMBCS;

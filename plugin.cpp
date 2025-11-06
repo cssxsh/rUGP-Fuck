@@ -248,17 +248,39 @@ void CObjectProxy::AttachHook()
             DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchDestructor(clazz)), &HookDestructor);
         }
 
+        if (clazz->IsDerivedFrom(CVmCommand::GetClassCVmCommand()))
+        {
+            wprintf(L"DetourAttach: %s::ExecCommand\n", name.c_str());
+            switch (*reinterpret_cast<const DWORD*>(clazz->m_lpszClassName + 0x03))
+            {
+            // CVmMsg
+            case 0x0067734Du:
+                DetourAttach(&reinterpret_cast<PVOID&>(CVmCommand::FetchExecCommand(clazz)), &HookExecMessage);
+                break;
+            // CVmGenericMsg
+            case 0x656E6547:
+                DetourAttach(&reinterpret_cast<PVOID&>(CVmCommand::FetchExecCommand(clazz)), &HookExecGenericMessage);
+                break;
+            // CVmCall
+            case 0x6C6C6143:
+                DetourAttach(&reinterpret_cast<PVOID&>(CVmCommand::FetchExecCommand(clazz)), &HookExecCall);
+                break;
+            default:
+                break;
+            }
+        }
+
         if (clazz->IsDerivedFrom(CRip::GetClassCRip()))
         {
             wprintf(L"DetourAttach: %s::Serialize\n", name.c_str());
-            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
+            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookRipSerialize);
         }
 
         if (clazz->IsDerivedFrom(CEditData::GetClassCEditData()))
         {
             if (name != L"CCharVoiceRegistOb") continue;
             wprintf(L"DetourAttach: %s::Serialize\n", name.c_str());
-            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
+            DetourAttach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookEditDataSerialize);
         }
     }
     if (COceanNode::FetchGetLocalFullPathName())
@@ -326,17 +348,39 @@ void CObjectProxy::DetachHook()
             DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchDestructor(clazz)), &HookDestructor);
         }
 
+        if (clazz->IsDerivedFrom(CVmCommand::GetClassCVmCommand()))
+        {
+            wprintf(L"DetourDetach: %s::ExecCommand\n", name.c_str());
+            switch (*reinterpret_cast<const DWORD*>(clazz->m_lpszClassName + 0x03))
+            {
+            // CVmMsg
+            case 0x0067734Du:
+                DetourDetach(&reinterpret_cast<PVOID&>(CVmCommand::FetchExecCommand(clazz)), &HookExecMessage);
+                break;
+            // CVmGenericMsg
+            case 0x656E6547:
+                DetourDetach(&reinterpret_cast<PVOID&>(CVmCommand::FetchExecCommand(clazz)), &HookExecGenericMessage);
+                break;
+            // CVmCall
+            case 0x6C6C6143:
+                DetourDetach(&reinterpret_cast<PVOID&>(CVmCommand::FetchExecCommand(clazz)), &HookExecCall);
+                break;
+            default:
+                break;
+            }
+        }
+
         if (clazz->IsDerivedFrom(CRip::GetClassCRip()))
         {
             wprintf(L"DetourDetach: %s::Serialize\n", name.c_str());
-            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
+            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookRipSerialize);
         }
 
         if (clazz->IsDerivedFrom(CEditData::GetClassCEditData()))
         {
             if (name != L"CCharVoiceRegistOb") continue;
             wprintf(L"DetourDetach: %s::Serialize\n", name.c_str());
-            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookSerialize);
+            DetourDetach(&reinterpret_cast<PVOID&>(CRio::FetchSerialize(clazz)), &HookEditDataSerialize);
         }
     }
     if (CS5i::FetchDrawFont1())
@@ -374,28 +418,13 @@ void CObjectProxy::DetachHook()
 
 void CObjectProxy::Clear()
 {
-    for (auto& [name, command] : COMMAND_MAP)
-    {
-        auto p = command;
-        command = nullptr;
-        while (p != nullptr)
-        {
-            const auto t = p;
-            p = p->m_pNext;
-            free(t);
-        }
-    }
-    COMMAND_MAP.clear();
+    CACHE_MAP.clear();
     RTC_MAP.clear();
     MODULE_MAP.clear();
 
     CHARACTER_MAP.clear();
 
-    for (auto& [nChar, font] : FONT_CACHE)
-    {
-        free(font);
-        font = nullptr;
-    }
+    for (auto& [nChar, font] : FONT_CACHE) free(font);
     FONT_CACHE.clear();
 }
 
@@ -958,135 +987,73 @@ std::wstring CObjectProxy::GetPatchFilePath(const COceanNode* const node)
     return buffer;
 }
 
-CVmCommand* CObjectProxy::Fetch(const CVmCommand* const ecx, Json::Value& edx)
+void CObjectProxy::Merge(const CVmMsg* message, Json::Value& text)
 {
-    auto result = static_cast<CVmCommand*>(nullptr);
-    auto prev = static_cast<CVmCommand*>(nullptr);
-    auto next = static_cast<CVmCommand*>(nullptr);
-    for (auto command = ecx; command != nullptr; command = command->m_pNext)
+    if (text.isString())
     {
-        const auto pClass = command->GetRuntimeClass();
-        char name[0x20];
-        sprintf(name, "%08X:%s", static_cast<UINT>(command->m_dwFlags & 0x000FFFFF), pClass->m_lpszClassName);
-        next = const_cast<CVmCommand*>(command);
-        switch (*reinterpret_cast<const DWORD*>(pClass->m_lpszClassName + 0x03))
-        {
-        // CVmMsg
-        case 0x0067734Du:
-            {
-                auto& message = reinterpret_cast<CVmMsg*&>(next);
-                Merge(message, edx[name]);
-                // cache 4 bytes character
-                for (auto lpsz = message->m_pVariableArea; *lpsz != '\0'; lpsz += CharacterByteSize(lpsz))
-                {
-                    if (static_cast<BYTE>(lpsz[0x00]) < 0x81u || static_cast<BYTE>(lpsz[0x01]) > 0x39u) continue;
-                    const auto uChar = 0u
-                        | static_cast<BYTE>(lpsz[0x00]) << 0x18
-                        | static_cast<BYTE>(lpsz[0x01]) << 0x10
-                        | static_cast<BYTE>(lpsz[0x02]) << 0x08
-                        | static_cast<BYTE>(lpsz[0x03]) << 0x00;
-                    CHARACTER_MAP[uChar & 0xFFFFu] = uChar;
-                }
-            }
-            break;
-        // CVmGenericMsg
-        case 0x656E6547:
-            {
-                auto& generic = reinterpret_cast<CVmGenericMsg*&>(next);
-                Merge(generic, edx[name]);
-            }
-            break;
-        // CVmCall
-        case 0x6C6C6143:
-            {
-                auto& call = reinterpret_cast<CVmCall*&>(next);
-                Merge(call, edx[name]);
-            }
-            break;
-        default:
-            {
-                edx[name] = Json::Value(Json::nullValue);
-                const auto size = pClass->m_nObjectSize + command->GetVariableAreaSize();
-                const auto clone = static_cast<CVmCommand*>(malloc(size));
-                memcpy(clone, command, size); // NOLINT(*-undefined-memory-manipulation)
-                next = clone;
-            }
-            break;
-        }
-
-        prev == nullptr ? (result = next) : (prev->m_pNext = next);
-        prev = next;
+        CACHE_MAP[message] = UnicodeX(text.asCString(), CP_UTF8);
     }
-
-    return result;
+    else
+    {
+        const auto unicode = CACHE_MAP[message] = UnicodeX(message->m_pVariableArea, CP_SHIFT_JIS);
+        text = AnsiX(unicode.c_str(), CP_UTF8);
+    }
 }
 
-void CObjectProxy::Merge(CVmMsg*& message, Json::Value& text)
+void CObjectProxy::Merge(const CVmGenericMsg* generic, Json::Value& obj)
 {
-    const auto pClass = message->GetRuntimeClass();
-    if (!text.isString()) text = AnsiX(message->m_pVariableArea, CP_SHIFT_JIS, CP_UTF8);
-    const auto ansi = AnsiX(text.asCString(), CP_UTF8, CP_GB18030);
-    const auto size = pClass->m_nObjectSize + (ansi.length() + 0x04 & ~0x03);
-    const auto clone = static_cast<CVmMsg*>(malloc(size));
-    memcpy(clone, message, pClass->m_nObjectSize); // NOLINT(*-undefined-memory-manipulation)
-    memcpy(clone->m_pVariableArea, ansi.c_str(), ansi.length() + 0x04 & ~0x03);
-    message = clone;
-}
-
-void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
-{
-    const auto pClass = generic->GetRuntimeClass();
     if (!obj.isObject()) obj = Json::Value(Json::objectValue);
     obj["#type"] = AnsiX(generic->m_pMsg->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
-    const auto size = pClass->m_nObjectSize + generic->GetVariableAreaSize();
-    const auto clone = static_cast<CVmGenericMsg*>(malloc(size));
-    memcpy(clone, generic, size); // NOLINT(*-undefined-memory-manipulation)
-    generic = clone;
 
     const auto params = generic->m_pMsg->m_pRTC->m_pParams;
-    if (params == nullptr) return;
-    auto map = std::map<std::wstring, CMemberInfo*>();
-    for (auto member = params; member->m_lpszName != nullptr; member++)
+    for (auto member = params; member && member->m_lpszName; member++)
     {
-        map[UnicodeX(member->m_lpszName, CP_SHIFT_JIS)] = member;
-        const auto key = AnsiX(member->m_lpszName, CP_SHIFT_JIS, CP_UTF8) + ":" +
-            AnsiX(member->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
         const auto address = reinterpret_cast<LPBYTE>(generic->m_pMsg) + member->m_nOffset;
+        const auto key =
+            UnicodeX(member->m_lpszName, CP_SHIFT_JIS) +
+            L":" +
+            UnicodeX(member->m_pRTC->m_lpszClassName, CP_SHIFT_JIS);
+        auto& value = obj[AnsiX(key.c_str(), CP_UTF8)];
         switch (*reinterpret_cast<const DWORD*>(member->m_pRTC->m_lpszClassName))
         {
         // 文字列
         case 0x9A8EB695u:
         // _CString
         case 0x7453435Fu:
+            if (value.isString())
             {
-                auto& content = *reinterpret_cast<CStringX*>(address);
-                obj[key] = AnsiX(content, CP_SHIFT_JIS, CP_UTF8);
-                content = AnsiX(content, CP_SHIFT_JIS, CP_GB18030).c_str();
+                CACHE_MAP[address] = UnicodeX(value.asCString(), CP_UTF8);
+            }
+            else
+            {
+                const auto text = reinterpret_cast<const CStringX*>(address)->operator LPCSTR();
+                const auto unicode = CACHE_MAP[address] = UnicodeX(text,CP_SHIFT_JIS);
+                value = AnsiX(unicode.c_str(), CP_UTF8);
             }
             break;
         // フラグ
         case 0x89837483u:
         // _bool
         case 0x6F6F625Fu:
-            obj[key] = *reinterpret_cast<bool*>(address);
+            value = *reinterpret_cast<bool*>(address);
             break;
         // １文字
         case 0xB6955082u:
         // _char
         case 0x6168635Fu:
-            obj[key] = *reinterpret_cast<char*>(address);
+            value = *reinterpret_cast<char*>(address);
             break;
         // バイト
         case 0x43836F83u:
         // _BYTE
         case 0x5459425Fu:
-            obj[key] = *reinterpret_cast<BYTE*>(address);
+            value = *reinterpret_cast<BYTE*>(address);
             break;
         // 短整数
         case 0xAE905A92u:
         // _short
         case 0x6F68735Fu:
-            obj[key] = *reinterpret_cast<short*>(address);
+            value = *reinterpret_cast<short*>(address);
             break;
         // 短正整数
         case 0xB3905A92u:
@@ -1094,37 +1061,37 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
         case 0x4853555Fu:
         // _WORD
         case 0x524F575Fu:
-            obj[key] = *reinterpret_cast<USHORT*>(address);
+            value = *reinterpret_cast<USHORT*>(address);
             break;
         // 整数
         case 0x9490AE90u:
         // _int
         case 0x746E695Fu:
-            obj[key] = *reinterpret_cast<int*>(address);
+            value = *reinterpret_cast<int*>(address);
             break;
         // 正整数
         case 0xAE90B390u:
         // _UINT
         case 0x4E49555Fu:
-            obj[key] = *reinterpret_cast<UINT*>(address);
+            value = *reinterpret_cast<UINT*>(address);
             break;
         // 低精度実数
         case 0xB890E192u:
         // _float
         case 0x6F6C665Fu:
-            obj[key] = *reinterpret_cast<float*>(address);
+            value = *reinterpret_cast<float*>(address);
             break;
         // 倍精度実数
         case 0xB8907B94u:
         // _double
         case 0x756F645Fu:
-            obj[key] = *reinterpret_cast<double*>(address);
+            value = *reinterpret_cast<double*>(address);
             break;
         // 色
         case 0x00004690u:
         // _VCOLOR
         case 0x4F43565Fu:
-            obj[key] = CStringX::FormatX("#%08X", *reinterpret_cast<DWORD*>(address)).operator LPCSTR();
+            value = CStringX::FormatX("#%08X", *reinterpret_cast<DWORD*>(address)).operator LPCSTR();
             break;
         // 仮想マシン汎用値
         case 0x7A91BC89u:
@@ -1135,46 +1102,95 @@ void CObjectProxy::Merge(CVmGenericMsg*& generic, Json::Value& obj)
         // _CVmVar
         case 0x6D56435Fu:
             // if (strcmp(member->m_pRTC->m_lpszClassName, "_CVmVar64") == 0) __debugbreak();
-            obj[key] = static_cast<LPCSTR>(reinterpret_cast<CVmVar*>(address)->ToSerialString());
+            switch (const auto param = reinterpret_cast<const CVmVar*>(address); param->m_pValue & 0x03)
+            {
+            case 0x00:
+                value = Json::Value(Json::nullValue);
+                {
+                    const auto node = param->operator const COceanNode*();
+                    value = AnsiX(GetUUID(node).c_str(), CP_UTF8);
+                }
+                break;
+            case 0x01:
+                if (value.isString())
+                {
+                    CACHE_MAP[address] = UnicodeX(value.asCString(), CP_UTF8);
+                }
+                else
+                {
+                    const auto text = param->operator LPCSTR();
+                    const auto unicode = CACHE_MAP[address] = UnicodeX(text,CP_SHIFT_JIS);
+                    value = AnsiX(unicode.c_str(), CP_UTF8);
+                }
+                break;
+            case 0x02:
+                value = param->operator int();
+                break;
+            case 0x03:
+                // TODO Get float value
+                value = AnsiX(param->ToSerialString(), CP_SHIFT_JIS, CP_UTF8);
+                break;
+            default:
+                break;
+            }
             break;
         default:
-            if (member->m_pRTC->m_nObjectSize > sizeof(DWORD))
+            if (member->m_pRTC->IsDerivedFrom(CRio::GetClassCRio()))
             {
                 const auto node = *reinterpret_cast<COceanNode**>(address);
-                obj[key] = AnsiX(GetUUID(node).c_str(), CP_UTF8);
-                // TODO expand
-                // om[key] = Json::Value(Json::objectValue);
-                // om[key]["#type"] = AnsiX(node->m_pRTC->m_lpszClassName, CP_SHIFT_JIS, CP_UTF8);
+                value = AnsiX(GetUUID(node).c_str(), CP_UTF8);
                 break;
             }
             __debugbreak();
-            obj[key] = Json::Value(Json::nullValue);
+            value = Json::Value(Json::nullValue);
             break;
         }
     }
 }
 
-void CObjectProxy::Merge(CVmCall*& call, Json::Value& arr)
+void CObjectProxy::Merge(const CVmCall* call, Json::Value& arr)
 {
-    const auto pClass = call->GetRuntimeClass();
     if (!arr.isArray()) arr = Json::Value(Json::arrayValue);
-    const auto size = pClass->m_nObjectSize + call->GetVariableAreaSize();
-    const auto clone = static_cast<CVmCall*>(malloc(size));
-    memcpy(clone, call, size); // NOLINT(*-undefined-memory-manipulation)
-    call = clone;
 
     arr[0] = AnsiX(GetUUID(call->m_refRsa.m_pNode).c_str(), CP_UTF8);
-    if (call->m_nCount == 0) return;
-    const auto block_size = call->GetVariableAreaSize() / call->m_nCount;
+    const auto size = call->GetVariableAreaSize();
     for (auto i = 0; i < call->m_nCount; i++)
     {
-        auto& param = *reinterpret_cast<CVmVar*>(call->m_pVariableArea + i * block_size);
-        if (param.m_pValue == NULL) __debugbreak();
-        arr[i + 1] = AnsiX(param.ToSerialString(), CP_SHIFT_JIS, CP_UTF8);
-        if ((param.m_pValue & 0x03) != 0x01) continue;
-        auto temp = reinterpret_cast<LPCSTR>(param.m_pValue ^ 0x01);
-        auto& str = *reinterpret_cast<CStringX*>(&temp);
-        str = AnsiX(str, CP_SHIFT_JIS, CP_ACP).c_str();
+        const auto address = call->m_pVariableArea + size / call->m_nCount * i;
+        const auto param = reinterpret_cast<const CVmVar*>(address);
+        auto& value = arr[i + 1];
+        switch (param->m_pValue & 0x03)
+        {
+        case 0x00:
+            // TODO Optimize GetUUID
+            value = Json::Value(Json::nullValue);
+            // {
+            //     const auto node = param->operator const COceanNode*();
+            //     if (node && node->m_pRTC && node->m_pRTC->m_lpszClassName) value = node->m_pRTC->m_lpszClassName;
+            // }
+            break;
+        case 0x01:
+            if (value.isString())
+            {
+                CACHE_MAP[address] = UnicodeX(value.asCString(), CP_UTF8);
+            }
+            else
+            {
+                const auto text = param->operator LPCSTR();
+                const auto unicode = CACHE_MAP[address] = UnicodeX(text,CP_SHIFT_JIS);
+                value = AnsiX(unicode.c_str(), CP_UTF8);
+            }
+            break;
+        case 0x02:
+            value = param->operator int();
+            break;
+        case 0x03:
+            // TODO Get float value
+            value = AnsiX(param->ToSerialString(), CP_SHIFT_JIS, CP_UTF8);
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -1190,33 +1206,17 @@ void CObjectProxy::HookDestructor(CRio* const ecx)
     const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
     wprintf(L"Hook %s::~%s(this=%s)\n", name.c_str(), name.c_str(), uuid.c_str());
 
-    auto cache = COMMAND_MAP[uuid];
-    COMMAND_MAP[uuid] = nullptr;
-    while (cache != nullptr)
-    {
-        const auto command = cache;
-        cache = cache->m_pNext;
-        free(command);
-    }
+    CACHE_MAP.erase(ecx);
 
     return ecx->FetchDestructor()(ecx);
 }
 
-void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
+void CObjectProxy::HookRipSerialize(CRip* const ecx, CPmArchive* const archive)
 {
+    if (ecx->m_pNode->m_dwResAddr == 0x00000000) return ecx->FetchSerialize()(ecx, archive);
     const auto uuid = GetUUID(ecx->m_pNode);
     const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
-    if (ecx->m_pNode->m_dwResAddr == 0x00000000) return ecx->FetchSerialize()(ecx, archive);
     wprintf(L"Hook %s::Serialize(this=%s)\n", name.c_str(), uuid.c_str());
-
-    if (ecx->IsKindOf(CEditData::GetClassCEditData()))
-    {
-        auto& text = reinterpret_cast<CEditData*>(ecx)->FetchText();
-        if (archive->GetNative()->IsStoring()) text = AnsiX(text, CP_GB18030, CP_SHIFT_JIS).c_str();
-        ecx->FetchSerialize()(ecx, archive);
-        text = AnsiX(text, CP_SHIFT_JIS, CP_GB18030).c_str();
-        return;
-    }
 
     const auto path = GetPatchFilePath(ecx->m_pNode);
     const auto hFile = CreateFileW(
@@ -1235,10 +1235,12 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
         load->GetNative()->SerializeClass(ecx->GetRuntimeClass());
         ecx->FetchSerialize()(ecx, load);
         CPmArchive::DestroyPmArchive(load);
+        return;
     }
-    else
+
+    ecx->FetchSerialize()(ecx, archive);
+    if (IsDebuggerPresent())
     {
-        ecx->FetchSerialize()(ecx, archive);
         const auto ansi = AnsiX(path.c_str(), CP_ACP);
         const auto save = CPmArchive::CreateSaveFilePmArchive(ansi.c_str());
         save->GetNative()->SerializeClass(ecx->GetRuntimeClass());
@@ -1247,16 +1249,29 @@ void CObjectProxy::HookSerialize(CRio* const ecx, CPmArchive* const archive)
     }
 }
 
-CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
+void CObjectProxy::HookEditDataSerialize(CEditData* const ecx, CPmArchive* const archive)
 {
     const auto uuid = GetUUID(ecx->m_pNode);
-    auto& cache = COMMAND_MAP[uuid];
-    if (cache != nullptr) return cache;
+    const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
+    wprintf(L"Hook %s::Serialize(this=%s)\n", name.c_str(), uuid.c_str());
+
+    auto& text = ecx->FetchText();
+    if (archive->GetNative()->IsStoring()) text = AnsiX(text, CP_GB18030, CP_SHIFT_JIS).c_str();
+    ecx->FetchSerialize()(ecx, archive);
+    text = AnsiX(text, CP_SHIFT_JIS, CP_GB18030).c_str();
+}
+
+CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
+{
+    if (CACHE_MAP.count(ecx)) return ecx->GetNextCommand();
+    const auto uuid = GetUUID(ecx->m_pNode);
     const auto name = UnicodeX(ecx->GetRuntimeClass()->m_lpszClassName, CP_SHIFT_JIS);
     wprintf(L"Hook %s::GetNextCommand(this=%s)\n", name.c_str(), uuid.c_str());
     const auto value = ecx->GetNextCommand();
 
+    auto context = Json::Value(Json::objectValue);
     const auto path = GetPatchFilePath(ecx->m_pNode) + L".json";
+    CACHE_MAP[ecx] = path;
     const auto hFile = CreateFileW(
         path.c_str(),
         GENERIC_READ | GENERIC_WRITE,
@@ -1265,63 +1280,155 @@ CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
         OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL,
         nullptr);
-    if (hFile == INVALID_HANDLE_VALUE) return value;
     if (GetLastError() == ERROR_ALREADY_EXISTS)
     {
         const auto size = GetFileSize(hFile, nullptr);
         const auto buffer = static_cast<char*>(malloc(size));
         ReadFile(hFile, buffer, size, nullptr, nullptr);
         CloseHandle(hFile);
-        const auto document = std::string(buffer);
-        free(buffer);
         auto reader = Json::Reader();
-        auto patch = Json::Value(Json::objectValue);
-        reader.parse(document, patch, false);
-        cache = Fetch(value, patch);
+        reader.parse(buffer, buffer + size, context, false);
+        free(buffer);
+        for (auto command = value; command != nullptr; command = command->m_pNext)
+        {
+            const auto clazz = command->GetRuntimeClass();
+            char key[0x20];
+            sprintf(key, "%08X:%s", command->GetIndex(), clazz->m_lpszClassName);
+            switch (*reinterpret_cast<const DWORD*>(clazz->m_lpszClassName + 0x03))
+            {
+            // CVmMsg
+            case 0x0067734Du:
+                Merge(reinterpret_cast<CVmMsg*&>(command), context[key]);
+                break;
+            // CVmGenericMsg
+            case 0x656E6547:
+                // Merge(reinterpret_cast<CVmGenericMsg*&>(command), context[key]);
+                break;
+            // CVmCall
+            case 0x6C6C6143:
+                // Merge(reinterpret_cast<CVmCall*&>(command), context[key]);
+                break;
+            default:
+                break;
+            }
+        }
     }
     else
     {
-        auto patch = Json::Value(Json::objectValue);
-        cache = Fetch(value, patch);
+        for (auto command = value; command != nullptr; command = command->m_pNext)
+        {
+            const auto clazz = command->GetRuntimeClass();
+            char key[0x20];
+            sprintf(key, "%08X:%s", command->GetIndex(), clazz->m_lpszClassName);
+            switch (*reinterpret_cast<const DWORD*>(clazz->m_lpszClassName + 0x03))
+            {
+            // CVmMsg
+            case 0x0067734Du:
+                Merge(reinterpret_cast<CVmMsg*&>(command), context[key]);
+                break;
+            // CVmGenericMsg
+            case 0x656E6547:
+                // Merge(reinterpret_cast<CVmGenericMsg*&>(command), context[key]);
+                break;
+            // CVmCall
+            case 0x6C6C6143:
+                // Merge(reinterpret_cast<CVmCall*&>(command), context[key]);
+                break;
+            default:
+                // context[key] = Json::Value(Json::nullValue);
+                break;
+            }
+        }
+        if (context.empty()) return value;
         auto writer = Json::FastWriter();
-        const auto text = writer.write(patch);
+        const auto text = writer.write(context);
         WriteFile(hFile, text.c_str(), text.length(), nullptr, nullptr);
         CloseHandle(hFile);
     }
 
-    return cache;
+    return value;
 }
 
-CVmCommand* CObjectProxy::HookExecCommand(CVmCommand* command)
+CVmCommand* CObjectProxy::HookExecMessage(CVmMsg* const command)
 {
     const auto clazz = command->GetRuntimeClass();
-    switch (*reinterpret_cast<const DWORD*>(clazz->m_lpszClassName + 0x03))
+    const auto origin = strlen(command->m_pVariableArea) + 0x04 & ~0x03;
+    const auto extra = command->GetVariableAreaSize() - origin;
+    const auto ansi = AnsiX(CACHE_MAP[command].c_str(), CP_GB18030);
+    const auto size = ansi.length() + 0x04 & ~0x03;
+    const auto clone = static_cast<CVmMsg*>(malloc(clazz->m_nObjectSize + size + extra));
+    memcpy(clone, command, clazz->m_nObjectSize);
+    memcpy(clone->m_pVariableArea, ansi.c_str(), size);
+    memcpy(clone->m_pVariableArea + size, command->m_pVariableArea + origin, extra);
+    const auto next = clone->ExecCommand();
+    memcpy(command, clone, clazz->m_nObjectSize);
+    free(clone);
+    return next;
+}
+
+CVmCommand* CObjectProxy::HookExecGenericMessage(CVmGenericMsg* const command)
+{
+    auto origin = std::map<const CMemberInfo*, std::wstring>();
+    const auto params = command->m_pMsg->m_pRTC->m_pParams;
+    for (auto member = params; member && member->m_lpszName; member++)
     {
-    // CVmMsg
-    case 0x0067734Du:
+        const auto address = reinterpret_cast<LPBYTE>(command->m_pMsg) + member->m_nOffset;
+        switch (*reinterpret_cast<const DWORD*>(member->m_pRTC->m_lpszClassName))
         {
-            const auto message = reinterpret_cast<CVmMsg*>(command);
-            wprintf(L"%d -> %d\n", message->GetVariableAreaSize(), strlen(message->m_pVariableArea));
-            const auto ansi = AnsiX(message->m_pVariableArea, CP_SHIFT_JIS, CP_GB18030);
-            const auto size = ansi.length() + 0x04 & ~0x03;
-            const auto clone = static_cast<CVmMsg*>(malloc(clazz->m_nObjectSize + size));
-            memcpy(clone, message, clazz->m_nObjectSize);
-            memcpy(clone->m_pVariableArea, ansi.c_str(), size);
-            const auto next = clone->ExecCommand();
-            memcpy(message, clone, clazz->m_nObjectSize);
-            free(clone);
-            return next;
+        // 文字列
+        case 0x9A8EB695u:
+        // _CString
+        case 0x7453435Fu:
+            break;
+        default:
+            continue;
         }
-    // CVmGenericMsg
-    case 0x656E6547:
-        break;
-    // CVmCall
-    case 0x6C6C6143:
-        break;
-    default:
-        break;
+        if (!CACHE_MAP.count(address)) continue;
+        auto& content = *reinterpret_cast<CStringX*>(address);
+        origin[member] = UnicodeX(content, CP_SHIFT_JIS);
+        const auto ansi = AnsiX(CACHE_MAP[address].c_str(), CP_GB18030);
+        content = ansi.c_str();
     }
-    return command->ExecCommand();
+    const auto next = command->ExecCommand();
+    for (auto member = params; member && member->m_lpszName; member++)
+    {
+        if (!origin.count(member)) continue;
+        const auto address = reinterpret_cast<LPBYTE>(command->m_pMsg) + member->m_nOffset;
+        switch (*reinterpret_cast<const DWORD*>(member->m_pRTC->m_lpszClassName))
+        {
+        // 文字列
+        case 0x9A8EB695u:
+        // _CString
+        case 0x7453435Fu:
+            break;
+        default:
+            continue;
+        }
+        auto& content = *reinterpret_cast<CStringX*>(address);
+        content = AnsiX(origin[member].c_str(), CP_SHIFT_JIS).c_str();
+    }
+    return next;
+}
+
+CVmCommand* CObjectProxy::HookExecCall(CVmCall* const command)
+{
+    const auto size = command->GetVariableAreaSize();
+    for (auto i = 0; i < command->m_nCount; i++)
+    {
+        const auto offset = size / command->m_nCount * i;
+        auto& param = *reinterpret_cast<CVmVar*>(command->m_pVariableArea + offset);
+        if ((param.m_pValue & 0x03) != 0x01) continue;
+        param = AnsiX(param, CP_SHIFT_JIS, CP_GB18030).c_str();
+    }
+    const auto next = command->ExecCommand();
+    for (auto i = 0; i < command->m_nCount; i++)
+    {
+        const auto offset = size / command->m_nCount * i;
+        auto& param = *reinterpret_cast<CVmVar*>(command->m_pVariableArea + offset);
+        if ((param.m_pValue & 0x03) != 0x01) continue;
+        param = AnsiX(param, CP_GB18030, CP_SHIFT_JIS).c_str();
+    }
+    return next;
 }
 
 CStringX* CObjectProxy::HookGetLocalFullPathName(const COceanNode* node, CStringX* x)
@@ -1443,7 +1550,7 @@ UINT CObjectProxy::HookBeginProcess(CProcessOcean* ecx, CView* view)
 
 std::map<std::wstring, const CRuntimeClass*> CObjectProxy::RTC_MAP;
 
-std::map<std::wstring, CVmCommand*> CObjectProxy::COMMAND_MAP;
+std::map<const void*, std::wstring> CObjectProxy::CACHE_MAP;
 
 std::map<HMODULE, const AFX_EXTENSION_MODULE*> CObjectProxy::MODULE_MAP;
 

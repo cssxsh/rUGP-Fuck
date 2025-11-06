@@ -1635,6 +1635,24 @@ CStringX CVmVar::ToSerialString() const
     return "(null)";
 }
 
+CVmVar::operator const COceanNode*() const
+{
+    if ((m_pValue & 0x03) != 0x00) return nullptr;
+    return reinterpret_cast<const CRef*>(this)->m_pNode;
+}
+
+CVmVar::operator LPCSTR() const
+{
+    if ((m_pValue & 0x03) != 0x01) return nullptr;
+    return reinterpret_cast<LPCSTR>(m_pValue ^ 0x01);
+}
+
+CVmVar::operator int() const
+{
+    if ((m_pValue & 0x03) != 0x02) return 0;
+    return m_pValue >> 0x02;
+}
+
 void CVmVar::FromSerialString(LPCSTR const text)
 {
     using LPFromSerialString = void (__thiscall *)(CVmVar*, LPCSTR);
@@ -1647,6 +1665,28 @@ void CVmVar::FromSerialString(LPCSTR const text)
     proc = reinterpret_cast<LPFromSerialString>(GetProcAddress(UnivUI, MAKEINTRESOURCE(462)));
     if (proc != nullptr) return proc(this, text);
     __debugbreak();
+}
+
+CVmVar& CVmVar::operator=(COceanNode* nodeSrc)
+{
+    if ((m_pValue & 0x03) != 0x00) return *this;
+    reinterpret_cast<CRef*>(this)->operator=(nodeSrc);
+    return *this;
+}
+
+CVmVar& CVmVar::operator=(const LPCSTR pszSrc)
+{
+    if ((m_pValue & 0x03) != 0x01) return *this;
+    auto data = reinterpret_cast<LPCSTR>(m_pValue ^ 0x01);
+    reinterpret_cast<CStringX&>(data).operator=(pszSrc);
+    return *this;
+}
+
+CVmVar& CVmVar::operator=(const int n)
+{
+    if ((m_pValue & 0x03) != 0x02) return *this;
+    m_pValue = n << 0x02 | 0x02;
+    return *this;
 }
 
 CStringX& CInstallSource::FetchName()
@@ -1836,6 +1876,12 @@ const CRuntimeClass* CVmCommand::GetClassCVmCommand()
     if (address != nullptr) return address;
     __debugbreak();
     return nullptr;
+}
+
+int CVmCommand::GetIndex() const
+{
+    // ?GetCommandFromSavePointID@CRsa@@QBEPAVCVmCommand@@K@Z
+    return m_dwFlags & 0x000FFFFF;
 }
 
 int CVmCommand::GetVariableAreaSize() const

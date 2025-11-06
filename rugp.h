@@ -216,6 +216,8 @@ class CRip : public CVisual
 {
 public:
     DECLARE_DYNAMIC_RIO(CRip)
+
+    using LPSerialize = void (__thiscall *)(CRip*, CPmArchive*);
 };
 
 class CS5i : public CVisual
@@ -258,6 +260,8 @@ class CEditData : public CVisual
 {
 public:
     DECLARE_DYNAMIC_RIO(CEditData)
+
+    using LPSerialize = void (__thiscall *)(CEditData*, CPmArchive*);
 
     CStringX& FetchText();
 };
@@ -519,8 +523,16 @@ public:
     DWORD m_pValue;
 
     CStringX ToSerialString() const;
+    // ReSharper disable CppNonExplicitConversionOperator
+    operator const COceanNode*() const; // NOLINT(*-explicit-constructor)
+    operator LPCSTR() const; // NOLINT(*-explicit-constructor)
+    operator int() const; // NOLINT(*-explicit-constructor)
+    // ReSharper restore CppNonExplicitConversionOperator
 
     void FromSerialString(LPCSTR);
+    CVmVar& operator=(COceanNode*);
+    CVmVar& operator=(LPCSTR);
+    CVmVar& operator=(int);
 };
 
 class CInstallSource
@@ -578,6 +590,7 @@ public:
     CVmCommand* m_pNext;
     DWORD m_dwFlags;
 
+    int GetIndex() const;
     int GetVariableAreaSize() const;
     CVmCommand* ExecCommand();
 
@@ -591,6 +604,8 @@ class CVmMsg : public CVmCommand
 {
 public:
     DECLARE_DYNAMIC_EX(CVmMsg)
+
+    using LPExecCommand = CVmCommand* (__thiscall *)(CVmMsg*);
 
     COceanNode* m_pMessBoxNode; // CMessBox
     COceanNode* m_pCRioNode; // COptimizedObs
@@ -608,6 +623,8 @@ public:
 
     DECLARE_DYNAMIC_EX(CVmGenericMsg)
 
+    using LPExecCommand = CVmCommand* (__thiscall *)(CVmGenericMsg*);
+
     CRioMsg* m_pMsg;
     CVmVar field_0010;
     const CMsgRTC* m_pRTC;
@@ -619,6 +636,8 @@ class CVmCall : public CVmCommand
 {
 public:
     DECLARE_DYNAMIC_EX(CVmCall)
+
+    using LPExecCommand = CVmCommand* (__thiscall *)(CVmCall*);
 
     CRef m_refRsa;
     INT m_nCount;
