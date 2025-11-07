@@ -61,6 +61,7 @@ protected:
     static std::map<UINT, LPVOID> FONT_CACHE;
 
     static void __fastcall AttachCharacterSplit(LPBYTE address, LPCSTR lpszModuleName);
+    static void __fastcall Merge(const CVmVar* param, Json::Value& value);
     static void __fastcall Merge(const CVmMsg* message, Json::Value& text);
     static void __fastcall Merge(const CVmGenericMsg* generic, Json::Value& obj);
     static void __fastcall Merge(const CVmCall* call, Json::Value& arr);
