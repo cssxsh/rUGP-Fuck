@@ -1145,9 +1145,7 @@ CInstallSource* CObjectArcMan::GetSourceObject(INT_PTR const index)
 
 CObjectArcMan* CObjectArcMan::GetGlobal()
 {
-    const auto node = COceanNode::GetRoot()->FindChildrenTypeOf(GetClassCObjectArcMan());
-    if (node == nullptr) return nullptr;
-    return reinterpret_cast<CObjectArcMan*>(node->Fetch());
+    return COceanNode::GetRoot()->FindChildrenTypeOf(GetClassCObjectArcMan());
 }
 
 const CRuntimeClass* CProcessOcean::GetClassCProcessOcean()
@@ -1299,34 +1297,34 @@ void COceanNode::ReleaseRef()
     __debugbreak();
 }
 
-const COceanNode* COceanNode::FindChildrenTypeOf(const CRuntimeClass* rtc) const
+CRef COceanNode::FindChildrenTypeOf(const CRuntimeClass* rtc) const
 {
     if (rtc == nullptr) return nullptr;
     using LPFindChildrenTypeOf = CRef* (__thiscall *)(const COceanNode*, CRef*, const CRuntimeClass*);
     const auto name = "?__FindChildrenTypeof@COceanNode@@QBE?AVCRefBase@@PBUCRioRTC@@@Z";
     auto& proc = reinterpret_cast<LPFindChildrenTypeOf&>(cache[name]);
-    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc);
     const auto UnivUI = GetModuleHandleA("UnivUI");
     proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, name));
-    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc);
     proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, MAKEINTRESOURCE(116)));
-    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc);
     __debugbreak();
     return nullptr;
 }
 
-const COceanNode* COceanNode::FindParentTypeOf(const CRuntimeClass* rtc) const
+CRef COceanNode::FindParentTypeOf(const CRuntimeClass* rtc) const
 {
     if (rtc == nullptr) return nullptr;
     using LPFindChildrenTypeOf = CRef* (__thiscall *)(const COceanNode*, CRef*, const CRuntimeClass*);
     const auto name = "?__FindParentTypeof@COceanNode@@QBE?AVCRefBase@@PBUCRioRTC@@@Z";
     auto& proc = reinterpret_cast<LPFindChildrenTypeOf&>(cache[name]);
-    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc);
     const auto UnivUI = GetModuleHandleA("UnivUI");
     proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, name));
-    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc);
     proc = reinterpret_cast<LPFindChildrenTypeOf>(GetProcAddress(UnivUI, MAKEINTRESOURCE(115)));
-    if (proc != nullptr) return CRef::Fetch(this, rtc, proc).m_pNode;
+    if (proc != nullptr) return CRef::Fetch(this, rtc, proc);
     __debugbreak();
     return nullptr;
 }
@@ -1503,8 +1501,36 @@ template <class T>
 CRef::operator T*() const
 {
     static_assert(std::is_base_of_v<CRio, T>, "T must be derived from CRio");
-    if (m_pNode == nullptr) return nullptr;
+    if (m_pNode == nullptr || m_pNode == COceanNode::GetNull()) return nullptr;
     return reinterpret_cast<T*>(m_pNode->Fetch());
+}
+
+template <>
+CRef::operator CVmVar*() const
+{
+    const auto obj = this->operator CVmVarObj*();
+    return obj ? &obj->m_Variable : nullptr;
+}
+
+template <>
+CRef::operator CStringX*() const
+{
+    const auto obj = this->operator CStrObj*();
+    return obj ? &obj->m_String : nullptr;
+}
+
+template <>
+CRef::operator bool*() const
+{
+    const auto obj = this->operator CBool*();
+    return obj ? &obj->m_Boolean : nullptr;
+}
+
+template <>
+CRef::operator int*() const
+{
+    const auto obj = this->operator CInt*();
+    return obj ? &obj->m_Integer : nullptr;
 }
 
 template <class C, typename P>
@@ -1754,7 +1780,7 @@ LPINT CRegistryCache::FetchInt(LPCSTR const lpszKey, LPCSTR const lpszSubKey)
         case 0x0000E878u:
             m_pProfileInfo = reinterpret_cast<ProfileInfo*>(reinterpret_cast<DWORD>(this) & 0xFFFF0000u | 0x000057B0u);
             break;
-        default: 
+        default:
             return nullptr;
         }
     }
@@ -1779,7 +1805,7 @@ CStringX* CRegistryCache::FetchString(LPCSTR const lpszKey, LPCSTR const lpszSub
         case 0x0000E878u:
             m_pProfileInfo = reinterpret_cast<ProfileInfo*>(reinterpret_cast<DWORD>(this) & 0xFFFF0000u | 0x000057B0u);
             break;
-        default: 
+        default:
             return nullptr;
         }
     }

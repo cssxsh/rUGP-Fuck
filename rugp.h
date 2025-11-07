@@ -12,6 +12,10 @@ class CWinRegistry;
 
 class CObjectEx;
 class CRio;
+class CPmArchive;
+class COceanNode;
+class COceanHashTable;
+class CRef;
 
 class CVisual;
 class CRip;
@@ -29,10 +33,6 @@ class CrelicUnitedGameProject;
 class CObjectArcMan;
 class CProcessOcean;
 
-class CPmArchive;
-class COceanNode;
-class COceanHashTable;
-class CRef;
 class CrUGP;
 class CUuiGlobals;
 class CFontContext;
@@ -211,6 +211,119 @@ public:
     static LPLibrarySupport& FetchLibrarySupport();
 };
 
+class CPmArchive
+{
+protected:
+    CPmArchive();
+    ~CPmArchive();
+
+public:
+    virtual LONG Seek(LONG, UINT) = 0;
+
+    CArchive* GetNative() const;
+
+    static CPmArchive* CreateLoadFilePmArchive(LPCSTR);
+    static CPmArchive* CreateSaveFilePmArchive(LPCSTR);
+    static void DestroyPmArchive(CPmArchive*);
+};
+
+class COceanNode
+{
+public:
+    struct POS
+    {
+        const COceanNode* m_pNode = nullptr;
+        INT m_nIndex = 0;
+    };
+
+    const CRio* m_pObject;
+    const COceanNode* m_pNext;
+    CStringX m_strName;
+    const COceanNode* m_pParent;
+    const COceanHashTable* m_pChildren;
+    const CRuntimeClass* m_pRTC;
+    UINT m_nRefCount;
+    DWORD m_dwFlags;
+    UINT_PTR m_dwResAddr;
+    UINT_PTR m_dwResSize;
+    DWORD field_0028;
+
+protected:
+    COceanNode();
+    ~COceanNode();
+
+public:
+    using LPGetLocalFullPathName = CStringX* (__thiscall *)(const COceanNode*, CStringX*);
+
+    BOOL IsDerivedFrom(const CRuntimeClass*) const;
+    CRio* Fetch() const;
+    void ReleaseRef();
+    CRef FindChildrenTypeOf(const CRuntimeClass*) const;
+    CRef FindParentTypeOf(const CRuntimeClass*) const;
+    const COceanNode* GetNextAssocRef(POS&, CStringX&) const;
+    BOOL AccessChildNodes() const;
+    UINT_PTR GetAddress() const;
+
+    static const COceanNode* GetRoot();
+    static const COceanNode* GetNull();
+
+    static LPGetLocalFullPathName& FetchGetLocalFullPathName();
+
+    class Iterator final
+    {
+    protected:
+        const COceanNode* m_current;
+        const COceanNode* m_root;
+        std::map<const COceanNode*, POS> m_record;
+
+    public:
+        explicit Iterator(const COceanNode* node);
+        const COceanNode* operator*() const;
+        Iterator& operator++();
+        Iterator operator++(int count);
+        bool operator!=(const Iterator& other) const;
+    };
+
+    Iterator begin() const;
+    static Iterator end();
+};
+
+class COceanHashTable
+{
+public:
+    UINT m_nCount;
+    const COceanNode* m_arrBucket[0x0C];
+};
+
+class CRef
+{
+public:
+    COceanNode* m_pNode;
+
+    // ReSharper disable CppNonExplicitConvertingConstructor
+    CRef(const CRef&);
+    CRef(COceanNode*); // NOLINT(*-explicit-constructor)
+    CRef();
+    // ReSharper restore CppNonExplicitConvertingConstructor
+    ~CRef();
+
+    CRef& operator=(COceanNode*);
+    // ReSharper disable CppNonExplicitConversionOperator
+    template <class T>
+    operator T*() const; // NOLINT(*-explicit-constructor)
+    // ReSharper restore CppNonExplicitConversionOperator
+
+protected:
+    template <class C, typename P>
+    CRef(const C*, const P*, CRef* (__thiscall *)(const C*, CRef*, const P*));
+
+public:
+    static CRef Fetch(
+        const COceanNode*,
+        const CRuntimeClass*,
+        CRef* (__thiscall *)(const COceanNode*, CRef*, const CRuntimeClass*));
+};
+
 class CVisual : public CRio
 {
 public:
@@ -342,122 +455,16 @@ class CProcessOcean : public CObjectOcean
 public:
     DECLARE_DYNAMIC_RIO(CProcessOcean)
 
+    CRef field_000C;
+    CRef field_0010;
+    CRef field_0014;
+    CRef field_0018;
+    CRef field_001C;
+    CRef field_0020;
+
     using LPBeginProcess = UINT (__thiscall *)(CProcessOcean*, CView*);
 
     static LPBeginProcess& FetchBeginProcess();
-};
-
-class CPmArchive
-{
-protected:
-    CPmArchive();
-    ~CPmArchive();
-
-public:
-    virtual LONG Seek(LONG, UINT) = 0;
-
-    CArchive* GetNative() const;
-
-    static CPmArchive* CreateLoadFilePmArchive(LPCSTR);
-    static CPmArchive* CreateSaveFilePmArchive(LPCSTR);
-    static void DestroyPmArchive(CPmArchive*);
-};
-
-class COceanNode
-{
-public:
-    struct POS
-    {
-        const COceanNode* m_pNode = nullptr;
-        INT m_nIndex = 0;
-    };
-
-    const CRio* m_pObject;
-    const COceanNode* m_pNext;
-    CStringX m_strName;
-    const COceanNode* m_pParent;
-    const COceanHashTable* m_pChildren;
-    const CRuntimeClass* m_pRTC;
-    UINT m_nRefCount;
-    DWORD m_dwFlags;
-    UINT_PTR m_dwResAddr;
-    UINT_PTR m_dwResSize;
-    DWORD field_0028;
-
-protected:
-    COceanNode();
-    ~COceanNode();
-
-public:
-    using LPGetLocalFullPathName = CStringX* (__thiscall *)(const COceanNode*, CStringX*);
-
-    BOOL IsDerivedFrom(const CRuntimeClass*) const;
-    CRio* Fetch() const;
-    void ReleaseRef();
-    const COceanNode* FindChildrenTypeOf(const CRuntimeClass*) const;
-    const COceanNode* FindParentTypeOf(const CRuntimeClass*) const;
-    const COceanNode* GetNextAssocRef(POS&, CStringX&) const;
-    BOOL AccessChildNodes() const;
-    UINT_PTR GetAddress() const;
-
-    static const COceanNode* GetRoot();
-    static const COceanNode* GetNull();
-
-    static LPGetLocalFullPathName& FetchGetLocalFullPathName();
-
-    class Iterator final
-    {
-    protected:
-        const COceanNode* m_current;
-        const COceanNode* m_root;
-        std::map<const COceanNode*, POS> m_record;
-
-    public:
-        explicit Iterator(const COceanNode* node);
-        const COceanNode* operator*() const;
-        Iterator& operator++();
-        Iterator operator++(int count);
-        bool operator!=(const Iterator& other) const;
-    };
-
-    Iterator begin() const;
-    static Iterator end();
-};
-
-class COceanHashTable
-{
-public:
-    UINT m_nCount;
-    const COceanNode* m_arrBucket[0x0C];
-};
-
-class CRef
-{
-public:
-    COceanNode* m_pNode;
-
-    // ReSharper disable CppNonExplicitConvertingConstructor
-    CRef(const CRef&);
-    CRef(COceanNode*); // NOLINT(*-explicit-constructor)
-    CRef();
-    // ReSharper restore CppNonExplicitConvertingConstructor
-    ~CRef();
-
-    CRef& operator=(COceanNode*);
-    // ReSharper disable CppNonExplicitConversionOperator
-    template <class T>
-    operator T*() const; // NOLINT(*-explicit-constructor)
-    // ReSharper restore CppNonExplicitConversionOperator
-
-protected:
-    template <class C, typename P>
-    CRef(const C*, const P*, CRef* (__thiscall *)(const C*, CRef*, const P*));
-
-public:
-    static CRef Fetch(
-        const COceanNode*,
-        const CRuntimeClass*,
-        CRef* (__thiscall *)(const COceanNode*, CRef*, const CRuntimeClass*));
 };
 
 class CrUGP
@@ -612,8 +619,8 @@ public:
 
     using LPExecCommand = CVmCommand* (__thiscall *)(CVmMsg*);
 
-    COceanNode* m_pMessBoxNode; // CMessBox
-    COceanNode* m_pCRioNode; // COptimizedObs
+    CRef m_refMessBox; // CMessBox
+    CRef m_refOptimizedObs; // COptimizedObs
     CHAR m_pVariableArea[];
 };
 
