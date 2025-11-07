@@ -1994,7 +1994,21 @@ const CRuntimeClass* CVmCall::GetClassCVmCall()
     return nullptr;
 }
 
-const CRuntimeClass* CVmVarObj::GetClassCVmGenericMsg()
+const CRuntimeClass* CBasic::GetClassCBasic()
+{
+    const auto name = "?classCBasic@CBasic@@2UCRioRTC@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto UnivUI = GetModuleHandleA("UnivUI");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(UnivUI, MAKEINTRESOURCE(814)));
+    if (address != nullptr) return address;
+    __debugbreak();
+    return nullptr;
+}
+
+const CRuntimeClass* CVmVarObj::GetClassCVmVarObj()
 {
     const auto name = "?classCVmVarObj@CVmVarObj@@2UCRtcEx@@A";
     auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
@@ -2003,6 +2017,48 @@ const CRuntimeClass* CVmVarObj::GetClassCVmGenericMsg()
     address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
     if (address != nullptr) return address;
     address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(868)));
+    if (address != nullptr) return address;
+    __debugbreak();
+    return nullptr;
+}
+
+const CRuntimeClass* CStrObj::GetClassCStrObj()
+{
+    const auto name = "?classCStrObj@CStrObj@@2UCRtcEx@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(861)));
+    if (address != nullptr) return address;
+    __debugbreak();
+    return nullptr;
+}
+
+const CRuntimeClass* CBool::GetClassCBool()
+{
+    const auto name = "?classCBool@CBool@@2UCRtcEx@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(819)));
+    if (address != nullptr) return address;
+    __debugbreak();
+    return nullptr;
+}
+
+const CRuntimeClass* CInt::GetClassCInt()
+{
+    const auto name = "?classCInt@CInt@@2UCRtcEx@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(833)));
     if (address != nullptr) return address;
     __debugbreak();
     return nullptr;

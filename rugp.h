@@ -45,7 +45,12 @@ class CCommandRef;
 class CVmCommand;
 class CVmMsg;
 class CVmGenericMsg;
+
+class CBasic;
 class CVmVarObj;
+class CStrObj;
+class CBool;
+class CInt;
 
 struct CMemberInfo;
 struct CMsgRTC;
@@ -644,13 +649,44 @@ public:
     BYTE m_pVariableArea[];
 };
 
-class CVmVarObj : public CRio
+class CBasic : public CRio
 {
 public:
-    DECLARE_DYNAMIC_EX(CVmGenericMsg)
+    DECLARE_DYNAMIC_RIO(CBasic)
 
-    const CRuntimeClass* m_pBasicTypeRTC; // CBasicTypeRTC
+    const CRuntimeClass* m_pBasicTypeRTC;
+};
+
+class CVmVarObj : public CBasic
+{
+public:
+    DECLARE_DYNAMIC_EX(CVmVarObj)
+
     CVmVar m_Variable;
+};
+
+class CStrObj : public CBasic
+{
+public:
+    DECLARE_DYNAMIC_EX(CStrObj)
+
+    CStringX m_String;
+};
+
+class CBool : public CBasic
+{
+public:
+    DECLARE_DYNAMIC_EX(CBool)
+
+    bool m_Boolean;
+};
+
+class CInt : public CBasic
+{
+public:
+    DECLARE_DYNAMIC_EX(CInt)
+
+    INT m_Integer;
 };
 
 struct CMemberInfo
