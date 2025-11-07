@@ -28,6 +28,7 @@ class COceanNode;
 class COceanHashTable;
 class CrUGP;
 class CUuiGlobals;
+class CAgesWndThunk;
 
 class CCommandRef;
 class CVmCommand;
@@ -257,24 +258,38 @@ protected:
     ~CUuiGlobals();
 };
 
+class CAgesWndThunk : public CNoTrackObject
+{
+public:
+    ~CAgesWndThunk() override = 0;
+
+    FARPROC field_0004;
+    CView* m_pView;
+};
+
 class CObjectProxy final
 {
 public:
     static void AttachHook();
     static void DetachHook();
+    static void Clear();
 
 protected:
     static std::map<std::string, FARPROC> PROC_CACHE;
 
     static CString __fastcall GetPatchFilePath(const COceanNode* node);
 
-    using SerializeProc = void (__thiscall *)(CRio*, CPolymorphicArchive*);
-    static SerializeProc& FetchSerialize(CRuntimeClass*);
-    static std::remove_pointer_t<SerializeProc> HookSerialize;
+    using CRipSerializeProc = void (__thiscall *)(CRip*, CPolymorphicArchive*);
+    static CRipSerializeProc& FetchRipSerialize(CRuntimeClass*);
+    static std::remove_pointer_t<CRipSerializeProc> HookRipSerialize;
 
     using GetNextCommandProc = CVmCommand* (__thiscall *)(CCommandRef*);
     static GetNextCommandProc& FetchGetNextCommand(CRuntimeClass*);
     static std::remove_pointer_t<GetNextCommandProc> HookGetNextCommand;
+
+    using BeginProcessProc = UINT (__thiscall *)(CProcessOcean*, CAgesWndThunk* thunk, DWORD dwFlags);
+    static BeginProcessProc& FetchBeginProcess();
+    static std::remove_pointer_t<BeginProcessProc> HookBeginProcess;
 };
 
 #endif // RUGP_7_H

@@ -9,13 +9,16 @@
 #pragma comment(lib, "dbghelp.lib")
 #endif // _DBGHELP_
 
+static HMODULE Ages7 = nullptr;
+
+static DWORD Timestamp = 0;
+
 static HMODULE Ages3ResT = nullptr;
 
 const AFX_EXTENSION_MODULE* PluginThisLibrary()
 {
     if (!Ages3ResT) return nullptr;
     const auto proc = GetProcAddress(Ages3ResT, "PluginThisLibrary");
-    CreateDirectory(CUuiGlobals::GetGlobal()->m_strGameName, nullptr);
     return reinterpret_cast<decltype(PluginThisLibrary)*>(proc)();
 }
 
@@ -23,6 +26,7 @@ BOOL PluginThisLibrary_Ages3Res()
 {
     if (!Ages3ResT) return FALSE;
     const auto proc = GetProcAddress(Ages3ResT, "PluginThisLibrary_Ages3Res");
+    CreateDirectory(CUuiGlobals::GetGlobal()->m_strGameName, nullptr);
     CObjectProxy::AttachHook();
     return reinterpret_cast<decltype(PluginThisLibrary_Ages3Res)*>(proc)();
 }
@@ -32,7 +36,10 @@ BOOL APIENTRY DllMain(HINSTANCE /*hInstance*/, const DWORD dwReason, LPVOID /*lp
     switch (dwReason)
     {
     case DLL_PROCESS_ATTACH:
+        if (IsDebuggerPresent()) setvbuf(stdout, nullptr, _IONBF, 0);
+        Ages7 = GetModuleHandle(nullptr);
         Ages3ResT = LoadLibrary(L"Ages3ResT");
+        Timestamp = GetTimestampForLoadedLibrary(Ages7);
         break;
     case DLL_PROCESS_DETACH:
         CObjectProxy::DetachHook();
@@ -69,13 +76,17 @@ void CObjectProxy::AttachHook()
         if (clazz->m_pfnCreateObject == nullptr) continue;
         if (clazz->IsDerivedFrom(CRip_RTC))
         {
-            DetourAttach(&reinterpret_cast<PVOID&>(FetchSerialize(clazz)), &HookSerialize);
+            wprintf(L"DetourAttach: %hs::Serialize\n", clazz->m_lpszClassName);
+            DetourAttach(&reinterpret_cast<PVOID&>(FetchRipSerialize(clazz)), &HookRipSerialize);
         }
         if (clazz->IsDerivedFrom(CCommandRef_RTC))
         {
-            DetourAttach(&reinterpret_cast<PVOID&>(FetchSerialize(clazz)), &HookSerialize);
+            wprintf(L"DetourAttach: %hs::GetNextCommand\n", clazz->m_lpszClassName);
+            DetourAttach(&reinterpret_cast<PVOID&>(FetchGetNextCommand(clazz)), &HookGetNextCommand);
         }
     }
+    wprintf(L"DetourAttach: CProcessOcean::GetNextCommand\n");
+    DetourAttach(&reinterpret_cast<PVOID&>(FetchBeginProcess()), &HookBeginProcess);
     DetourTransactionCommit();
 }
 
@@ -91,13 +102,17 @@ void CObjectProxy::DetachHook()
         if (clazz->m_pfnCreateObject == nullptr) continue;
         if (clazz->IsDerivedFrom(CRip_RTC))
         {
-            DetourDetach(&reinterpret_cast<PVOID&>(FetchSerialize(clazz)), &HookSerialize);
+            wprintf(L"DetourDetach: %hs::Serialize\n", clazz->m_lpszClassName);
+            DetourDetach(&reinterpret_cast<PVOID&>(FetchRipSerialize(clazz)), &HookRipSerialize);
         }
         if (clazz->IsDerivedFrom(CCommandRef_RTC))
         {
-            DetourDetach(&reinterpret_cast<PVOID&>(FetchSerialize(clazz)), &HookSerialize);
+            wprintf(L"DetourDetach: %hs::GetNextCommand\n", clazz->m_lpszClassName);
+            DetourDetach(&reinterpret_cast<PVOID&>(FetchGetNextCommand(clazz)), &HookGetNextCommand);
         }
     }
+    wprintf(L"DetourDetach: CProcessOcean::GetNextCommand\n");
+    DetourDetach(&reinterpret_cast<PVOID&>(FetchBeginProcess()), &HookBeginProcess);
     DetourTransactionCommit();
 }
 
@@ -116,28 +131,28 @@ CString CObjectProxy::GetPatchFilePath(const COceanNode* node)
     return path;
 }
 
-CObjectProxy::SerializeProc& CObjectProxy::FetchSerialize(CRuntimeClass* const clazz)
+CObjectProxy::CRipSerializeProc& CObjectProxy::FetchRipSerialize(CRuntimeClass* const clazz)
 {
     const auto name = "?Serialize@" + std::string(clazz->m_lpszClassName) + "@@UAEXAAVCPmArchive@@@Z";
-    auto& proc = reinterpret_cast<SerializeProc&>(PROC_CACHE[name]);
+    auto& proc = reinterpret_cast<CRipSerializeProc&>(PROC_CACHE[name]);
     if (proc != nullptr) return proc;
-    if (clazz->m_pfnCreateObject == nullptr) return proc;
-    if (!clazz->IsDerivedFrom(CRio::GetThisClass())) return proc;
+    // ??_7CRip@@6B@
     const auto impl = clazz->CreateObject();
     const auto vtbl = *reinterpret_cast<FARPROC**>(impl);
-    proc = reinterpret_cast<SerializeProc>(vtbl[0x05]);
+    proc = reinterpret_cast<CRipSerializeProc>(vtbl[0x05]);
     delete impl;
     return proc;
 }
 
-void CObjectProxy::HookSerialize(CRio* const ecx, CPolymorphicArchive* const archive)
+void CObjectProxy::HookRipSerialize(CRip* const ecx, CPolymorphicArchive* const archive)
 {
-    FetchSerialize(ecx->GetRuntimeClass())(ecx, archive);
+    const auto Serialize = FetchRipSerialize(ecx->GetRuntimeClass());
+    Serialize(ecx, archive);
     if (ecx->m_pNode->m_dwResAddr == 0x00000000u) return;
     const auto path = GetPatchFilePath(ecx->m_pNode);
     const auto save = CPolymorphicArchive::CreateSaveFileArchive(path);
     save->m_native.SerializeClass(ecx->GetRuntimeClass());
-    FetchSerialize(ecx->GetRuntimeClass())(ecx, save);
+    Serialize(ecx, save);
     CPolymorphicArchive::DestroyArchive(save);
 }
 
@@ -146,72 +161,116 @@ CObjectProxy::GetNextCommandProc& CObjectProxy::FetchGetNextCommand(CRuntimeClas
     const auto name = "?GetNextCommand@" + std::string(clazz->m_lpszClassName) + "@@UBEPAVCVmCommand@@XZ";
     auto& proc = reinterpret_cast<GetNextCommandProc&>(PROC_CACHE[name]);
     if (proc != nullptr) return proc;
-    if (clazz->m_pfnCreateObject == nullptr) return proc;
-    if (!clazz->IsDerivedFrom(CCommandRef::GetThisClass())) return proc;
+    // ??_7CCommandRef@@6B@
     const auto impl = clazz->CreateObject();
     const auto vtbl = *reinterpret_cast<FARPROC**>(impl);
-    proc = reinterpret_cast<GetNextCommandProc>(vtbl[0x06]);
+    proc = reinterpret_cast<GetNextCommandProc>(vtbl[0x0C]);
     delete impl;
     return proc;
 }
 
 CVmCommand* CObjectProxy::HookGetNextCommand(CCommandRef* const ecx)
 {
-    return FetchGetNextCommand(ecx->GetRuntimeClass())(ecx);
+    const auto GetNextCommand = FetchGetNextCommand(ecx->GetRuntimeClass());
+    const auto value = GetNextCommand(ecx);
+    for (auto command = value; command != nullptr; command = command->m_pNext)
+    {
+        const auto clazz = command->GetRuntimeClass();
+        // char key[0x20];
+        // sprintf(key, "%08X:%s", command->GetIndex(), clazz->m_lpszClassName);
+        switch (*reinterpret_cast<const DWORD*>(clazz->m_lpszClassName + 0x03))
+        {
+        // CVmMsg
+        case 0x0067734Du:
+            // Merge(reinterpret_cast<CVmMsg*&>(command), context[key]);
+            __debugbreak();
+            break;
+        // CVmGenericMsg
+        case 0x656E6547:
+            // Merge(reinterpret_cast<CVmGenericMsg*&>(command), context[key]);
+            break;
+        // CVmCall
+        case 0x6C6C6143:
+            // Merge(reinterpret_cast<CVmCall*&>(command), context[key]);
+            break;
+        default:
+            break;
+        }
+    }
+    return value;
+}
+
+CObjectProxy::BeginProcessProc& CObjectProxy::FetchBeginProcess()
+{
+    const auto name = "?BeginProcess@CProcessOcean@@QAEIPAVCVmmView@@@Z";
+    auto& proc = reinterpret_cast<BeginProcessProc&>(PROC_CACHE[name]);
+    if (proc != nullptr) return proc;
+    // ??_7CProcessOcean@@6B@
+    const auto impl = CProcessOcean::GetThisClass()->CreateObject();
+    const auto vtbl = *reinterpret_cast<FARPROC**>(impl);
+    delete impl;
+    return proc = reinterpret_cast<BeginProcessProc>(vtbl[0x10]);
+}
+
+UINT CObjectProxy::HookBeginProcess(CProcessOcean* const ecx, CAgesWndThunk* const thunk, DWORD const dwFlags)
+{
+    const auto BeginProcess = FetchBeginProcess();
+    // ??_7CAgesWndThunk@@6B@
+    // ??_7CSystem6View@@6B@
+    // thunk->m_pView;
+    return BeginProcess(ecx, thunk, dwFlags);
 }
 
 CPolymorphicArchive* CPolymorphicArchive::CreateLoadFileArchive(LPCTSTR const path)
 {
-    const auto module = GetModuleHandle(nullptr);
-    switch (GetTimestampForLoadedLibrary(module))
+    switch (Timestamp)
     {
     // 2016-09-30 19:18:43
     case 0x57EE4A13u:
-        return GetProcAddress<decltype(CreateSaveFileArchive)*>(module, 0x005C2FD0u)(path);
+        return GetProcAddress<decltype(CreateSaveFileArchive)*>(Ages7, 0x005C2FD0u)(path);
     // 2019-12-08 23:00:39
     case 0x5DED1017u:
-        return GetProcAddress<decltype(CreateSaveFileArchive)*>(module, 0x005B2E00u)(path);
+        return GetProcAddress<decltype(CreateSaveFileArchive)*>(Ages7, 0x005B2E00u)(path);
     default:
         break;
     }
     __debugbreak();
-    return nullptr;
+    throw;
 }
 
 CPolymorphicArchive* CPolymorphicArchive::CreateSaveFileArchive(LPCTSTR const path)
 {
-    const auto module = GetModuleHandle(nullptr);
-    switch (GetTimestampForLoadedLibrary(module))
+    switch (Timestamp)
     {
     // 2016-09-30 19:18:43
     case 0x57EE4A13u:
-        return GetProcAddress<decltype(CreateSaveFileArchive)*>(module, 0x005C3080u)(path);
+        return GetProcAddress<decltype(CreateSaveFileArchive)*>(Ages7, 0x005C3080u)(path);
     // 2019-12-08 23:00:39
     case 0x5DED1017u:
-        return GetProcAddress<decltype(CreateSaveFileArchive)*>(module, 0x005B2EB0u)(path);
+        return GetProcAddress<decltype(CreateSaveFileArchive)*>(Ages7, 0x005B2EB0u)(path);
     default:
         break;
     }
     __debugbreak();
-    return nullptr;
+    throw;
 }
 
 void CPolymorphicArchive::DestroyArchive(CPolymorphicArchive* archive)
 {
     if (archive == nullptr) return;
-    const auto module = GetModuleHandle(nullptr);
-    switch (GetTimestampForLoadedLibrary(module))
+    switch (Timestamp)
     {
     // 2016-09-30 19:18:43
     case 0x57EE4A13u:
-        return GetProcAddress<decltype(DestroyArchive)*>(module, 0x005C3270u)(archive);
+        return GetProcAddress<decltype(DestroyArchive)*>(Ages7, 0x005C3270u)(archive);
     // 2019-12-08 23:00:39
     case 0x5DED1017u:
-        return GetProcAddress<decltype(DestroyArchive)*>(module, 0x005B30A0u)(archive);
+        return GetProcAddress<decltype(DestroyArchive)*>(Ages7, 0x005B30A0u)(archive);
     default:
         break;
     }
     __debugbreak();
+    throw;
 }
 
 BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
@@ -222,20 +281,19 @@ BOOL COceanNode::IsDerivedFrom(const CRuntimeClass* rtc) const
 CRio* COceanNode::Fetch() const
 {
     using FetchProc = CRio* (__thiscall *)(const COceanNode*);
-    const auto module = GetModuleHandle(nullptr);
-    switch (GetTimestampForLoadedLibrary(module))
+    switch (Timestamp)
     {
     // 2016-09-30 19:18:43
     case 0x57EE4A13u:
-        return GetProcAddress<FetchProc>(module, 0x005DAA30u)(this);
+        return GetProcAddress<FetchProc>(Ages7, 0x005DAA30u)(this);
     // 2019-12-08 23:00:39
     case 0x5DED1017u:
-        return GetProcAddress<FetchProc>(module, 0x005C93B0u)(this);
+        return GetProcAddress<FetchProc>(Ages7, 0x005C93B0u)(this);
     default:
         break;
     }
     __debugbreak();
-    return nullptr;
+    throw;
 }
 
 BOOL COceanNode::AccessChildNodes() const
@@ -243,20 +301,19 @@ BOOL COceanNode::AccessChildNodes() const
     if (m_pChildren == nullptr) return TRUE;
     if (m_dwFlags & 0x00800000u) return FALSE;
     using AccessProc = INT (__thiscall *)(const COceanNode*);
-    const auto module = GetModuleHandle(nullptr);
-    switch (GetTimestampForLoadedLibrary(module))
+    switch (Timestamp)
     {
     // 2016-09-30 19:18:43
     case 0x57EE4A13u:
-        return GetProcAddress<AccessProc>(module, 0x005DA200u)(this) > 0;
+        return GetProcAddress<AccessProc>(Ages7, 0x005DA200u)(this) > 0;
     // 2019-12-08 23:00:39
     case 0x5DED1017u:
-        return GetProcAddress<AccessProc>(module, 0x005C8B50u)(this) > 0;
+        return GetProcAddress<AccessProc>(Ages7, 0x005C8B50u)(this) > 0;
     default:
         break;
     }
     __debugbreak();
-    return FALSE;
+    throw;
 }
 
 UINT_PTR COceanNode::GetAddress() const
@@ -266,38 +323,36 @@ UINT_PTR COceanNode::GetAddress() const
 
 const COceanNode* COceanNode::GetRoot()
 {
-    const auto module = GetModuleHandle(nullptr);
-    switch (GetTimestampForLoadedLibrary(module))
+    switch (Timestamp)
     {
     // 2016-09-30 19:18:43
     case 0x57EE4A13u:
-        return GetProcAddress<COceanNode*>(module, 0x006E22FCu);
+        return GetProcAddress<COceanNode*>(Ages7, 0x006E22FCu);
     // 2019-12-08 23:00:39
     case 0x5DED1017u:
-        return GetProcAddress<COceanNode*>(module, 0x006AEECCu);
+        return GetProcAddress<COceanNode*>(Ages7, 0x006AEECCu);
     default:
         break;
     }
     __debugbreak();
-    return nullptr;
+    throw;
 }
 
 const COceanNode* COceanNode::GetNull()
 {
-    const auto module = GetModuleHandle(nullptr);
-    switch (GetTimestampForLoadedLibrary(module))
+    switch (Timestamp)
     {
     // 2016-09-30 19:18:43
     case 0x57EE4A13u:
-        return GetProcAddress<COceanNode*>(module, 0x006E13B4u);
+        return GetProcAddress<COceanNode*>(Ages7, 0x006E13B4u);
     // 2019-12-08 23:00:39
     case 0x5DED1017u:
-        return GetProcAddress<COceanNode*>(module, 0x006AEE84u);
+        return GetProcAddress<COceanNode*>(Ages7, 0x006AEE84u);
     default:
         break;
     }
     __debugbreak();
-    return nullptr;
+    throw;
 }
 
 auto COceanNode::begin() const -> Iterator
@@ -381,36 +436,34 @@ auto COceanNode::Iterator::operator!=(const Iterator& other) const -> bool
 
 const CrUGP* CrUGP::GetGlobal()
 {
-    const auto module = GetModuleHandle(nullptr);
-    switch (GetTimestampForLoadedLibrary(module))
+    switch (Timestamp)
     {
     // 2016-09-30 19:18:43
     case 0x57EE4A13u:
-        return GetProcAddress<CrUGP*>(module, 0x006E2658u);
+        return GetProcAddress<CrUGP*>(Ages7, 0x006E2658u);
     // 2019-12-08 23:00:39
     case 0x5DED1017u:
-        return GetProcAddress<CrUGP*>(module, 0x006AF230u);
+        return GetProcAddress<CrUGP*>(Ages7, 0x006AF230u);
     default:
         break;
     }
     __debugbreak();
-    return nullptr;
+    throw;
 }
 
 const CUuiGlobals* CUuiGlobals::GetGlobal()
 {
-    const auto module = GetModuleHandle(nullptr);
-    switch (GetTimestampForLoadedLibrary(module))
+    switch (Timestamp)
     {
     // 2016-09-30 19:18:43
     case 0x57EE4A13u:
-        return GetProcAddress<CUuiGlobals*>(module, 0x006E13E0u);
+        return GetProcAddress<CUuiGlobals*>(Ages7, 0x006E13E0u);
     // 2019-12-08 23:00:39
     case 0x5DED1017u:
-        return GetProcAddress<CUuiGlobals*>(module, 0x006ADF80u);
+        return GetProcAddress<CUuiGlobals*>(Ages7, 0x006ADF80u);
     default:
         break;
     }
     __debugbreak();
-    return nullptr;
+    throw;
 }
