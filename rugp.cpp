@@ -1853,6 +1853,20 @@ const CRuntimeClass* CCommandRef::GetClassCCommandRef()
     return nullptr;
 }
 
+const CRuntimeClass* CRsa::GetClassCRsa()
+{
+    const auto name = "?classCRsa@CRsa@@2UCRioRTC@@A";
+    auto& address = reinterpret_cast<CRuntimeClass*&>(cache[name]);
+    if (address != nullptr) return address;
+    const auto Vm60 = GetModuleHandleA("Vm60");
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, name));
+    if (address != nullptr) return address;
+    address = reinterpret_cast<CRuntimeClass*>(GetProcAddress(Vm60, MAKEINTRESOURCE(179)));
+    if (address != nullptr) return address;
+    __debugbreak();
+    return nullptr;
+}
+
 CVmCommand* CCommandRef::GetNextCommand()
 {
     const auto clazz = this->GetRuntimeClass();

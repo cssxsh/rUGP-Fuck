@@ -42,6 +42,7 @@ class CInstallSource;
 class CRegistryCache;
 
 class CCommandRef;
+class CRsa;
 class CVmCommand;
 class CVmMsg;
 class CVmGenericMsg;
@@ -590,6 +591,23 @@ public:
 
 protected:
     static LPGetNextCommand FindGetNextCommand(const CObject_vtbl*);
+};
+
+class CRsa : public CCommandRef
+{
+public:
+    DECLARE_DYNAMIC_RIO(CRsa)
+
+    DWORD field_000C;
+    DWORD field_0010;
+    DWORD field_0014;
+    DWORD field_0018;
+    DWORD field_001C;
+    DWORD field_0020;
+    DWORD field_0024;
+    DWORD field_0028;
+    DWORD field_002C;
+    DWORD field_0030;
 };
 
 class CVmCommand : public CObjectEx
